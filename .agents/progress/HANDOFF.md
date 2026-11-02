@@ -1,10 +1,47 @@
 # KindProbe P0 Handoff Document
 
-**Date:** 2026-11-01T22:25:00+08:00  
-**Executor:** kindprobe_agy_developer  
-**CAO Terminal ID:** `7e43a873`  
-**Git Remote:** `https://github.com/vusiif/KindProbe.git` (branch `main`)  
-**Commit Status:** Revision Round 1 development & self-test complete; awaiting independent re-verification by `kindprobe_claude_verifier`. **NO COMMIT/PUSH YET** (per protocol: commit/push only after Claude independent review is verified and supervisor instructs).
+> ## ⛔ 当前状态置顶 (2026-11-02) — P0 阶段已收尾，等待人工验收
+>
+> **阶段结论：P0 全部门槛通过、已提交并推送；人工验收尚未完成。未进入 P1。**
+>
+> ### A. Git 真实状态（已由主管定向核实 `.git/logs/HEAD` 与 `.git/refs/remotes/origin/main`）
+> | 项 | 值 |
+> |---|---|
+> | Commit SHA | `fc3d77da4951219b92afea5913fb10d1333e5a25`（initial commit） |
+> | 提交信息 | `feat(p0): initial implementation of KindProbe P0 (Spec §13)` |
+> | 远端 | `https://github.com/vusiif/KindProbe.git` 分支 `main` |
+> | Push 结果 | `* [new branch] main -> main`；remote-tracking ref 与本地 HEAD 同为 `fc3d77da…` |
+> | 强制推送 / Release / 远端配置改动 | **均未执行**（按授权边界） |
+>
+> ### B. 会话与 Terminal ID（本轮真实存活记录，保留不清理）
+> | 角色 | Terminal / Session | 位置 | 交付 |
+> |---|---|---|---|
+> | 主管 (MiMo) | `0eb85957` / 原生对话 `ses_e6858a8a6ffeJlMl3k7VxSJWpY` | 本地 | 编排 |
+> | 实现者 `kindprobe_agy_developer` | `41f07fa1` | 本地 | 范围核对 + commit + push |
+> | 独立验证员 `kindprobe_claude_verifier` | `40ff2406` | 本地 | Round 1 独立复验 **PASS** |
+> | 全项目审查 `agy_whole_reviewer` | terminal `0e866f20` / session `cao-39f1107c` | 远端 `http://127.0.0.1:9890` (lolicon) | **无阻断性缺陷** |
+>
+> 历史记录 `6cf1541f` / `27f72082` / `849bcb62` / `7e43a873` / `ee25d750` 仅为旧会话，**不存活、不得向其派单**。
+>
+> ### C. 三层证据必须分别引用（不得混为一谈）
+> 1. **实现者自测** → 本文档 §7（Round 1 五项修复记录）与 §3 指标。
+> 2. **独立实测** → `.sandbox-test/results/verifier_round1/INDEPENDENT_VERIFICATION_R1.md`（P0-G0..G6 全 PASS；52 夹具 False ID=0 / Miss=0 / Crash=0；全新 release 构建 SHA256 `d1cc0fdd073cb9a52fa73a33fde6dd612d420308d29181204fd57aae6c1f6b68`；`cargo test` 与 runner 退出码均为 0；历史 5 项缺陷 VERIFIED FIXED）。
+> 3. **整体审查** → `.agents/progress/FINAL_REVIEW.md`（9890 全项目审查，**无阻断性缺陷**，P0-G0..G6 全 PASS）。
+> 4. **人工验收** → **未完成 (Pending Human Acceptance)**。AI 代理不得代为标记通过。
+>
+> ### D. 修订预算与遗留项
+> - 修订预算：**已用 1 轮（本文档 §7），剩余 1 轮未动用** —— 因独立复验 PASS 且整体审查无阻断，无缺陷回流。
+> - `FINAL_REVIEW.md` §1 的 **8 项 `inferred` 推断性缺陷** 与 §3 的 **4 条 P1 建议**：**均未修复、未实施**，属新增范围，**留待人类选择**。
+>   - ⚠️ **报告勘误**：实现者收尾报告第 3 节曾把这 8 项误述为「Round 1 五项修复」，**该说法不成立**。经主管定向核实：`src/detectors/cfb_doc.rs:198-208`、`src/lib.rs:52-61`、`tests/test_cli_contract.rs:82-84` 均**保持原样未修**，与其第 6 节自述一致。真正的 Round 1 五项修复见 §7。
+> - 项目代码许可证**仍待维护者指定**，`README.md` 已明示待定；第三方许可记录完整。
+>
+> ### E. 后续
+> 1. 维护者人工验收（含是否在 P1-A 排期修复上述 8 项推断性缺陷）。
+> 2. **本轮到此暂停，不自动推进 P1、不开发新功能。**
+
+**Date:** 2026-11-02T21:30:00+08:00  
+**Executor:** kindprobe_agy_developer（收尾） / kindprobe_claude_verifier（独立复验） / agy_whole_reviewer（整体审查）  
+**Git Remote:** `https://github.com/vusiif/KindProbe.git` (branch `main`) — **已提交并推送**（见置顶 A）
 
 ---
 
@@ -27,7 +64,13 @@
 - `.sandbox-test/results/p0_matrix_results.json`: Full machine-readable record of all 23 fixture runs using the release binary inside Docker sandbox (exit codes, peak RSS, engine time, CLI time, source bytes read, seek counts).
 - `.sandbox-test/results/release_measurements.json`: Environment metadata, compiler version, build profile, and aggregated test summary.
 - `research/baseline-results.json`: 4-candidate comparison results (`file 5.46`, `Siegfried 1.11.9`, `infer 0.22.0`, `file-format 0.29.0`) over the 23 fixtures.
-- `.sandbox-test/results/verifier/`: Independent verifier adversarial test results, manifest, and test harnesses.
+- `.sandbox-test/results/verifier/`: **首轮（Round 1 之前）**独立验证员对抗测试结果、manifest 与测试 harness（25 组夹具）。
+- `.sandbox-test/results/verifier_round1/`: **Round 1 独立复验**产物（独立实测层，权威）：
+  - `INDEPENDENT_VERIFICATION_R1.md` —— 独立复验报告，结论 PASS，含 P0-G0..G6 表与 E1–E10 命令退出码。
+  - `verifier_round1_results.json` —— 52 组夹具 + 5 组 CLI 契约的机器可读实测（summary 全零）。
+  - `run_verifier_round1.py`、`test_verifier_round1_cases.rs` / `_bin`、`fixtures/`（3 组 Round 1 回归夹具）。
+  - ⚠️ 该目录被 `.gitignore` 排除，Glob 查不到**不等于**丢失。
+- `.agents/progress/FINAL_REVIEW.md` —— 9890 全项目阶段收尾审查报告（无阻断性缺陷，8 项 `inferred` 发现 + 4 条 P1 建议）。
 
 ---
 
@@ -211,6 +254,38 @@ The following defect items identified during initial verification review have be
 
 ---
 
-## 8. Next Step
+## 8. 收尾交付状态 (Final Delivery Status)
 
-Awaiting independent re-verification by `kindprobe_claude_verifier` (Revision Round 1 re-test). No commit or push has been executed.
+**结论：P0 达标，已提交并推送；人工验收未完成；本轮暂停，不进入 P1。**
+
+### 8.1 交付清单
+- **变更范围**：57 个文件 / 6,287 行新增 —— `src/`(9)、`tests/`(6)、`fixtures/`(23)、`research/`(7)、`scripts/`(4)、`docs/`(1)、`.agents/progress/`(3)、根配置(4)。
+- **明确排除**：`.sandbox-test/`（构建缓存与复验日志）、`target/`、临时/备份文件、Toss/WorDF/FClue 任何内容、规格 §11.4 本机语料、密钥与凭据。
+- **Commit**：`fc3d77da4951219b92afea5913fb10d1333e5a25` → `origin/main` 推送成功。
+
+### 8.2 门槛与三方结果
+| 层级 | 执行者 | 结论 | 证据 |
+|---|---|---|---|
+| 实现者自测 | `kindprobe_agy_developer` | Round 1 五项修复自测通过 | 本文档 §7 |
+| 独立实测 | `kindprobe_claude_verifier` | **PASS**，P0-G0..G6 全过 | `.sandbox-test/results/verifier_round1/INDEPENDENT_VERIFICATION_R1.md` |
+| 整体审查 | `agy_whole_reviewer` (9890) | **无阻断性缺陷**，P0-G0..G6 全过 | `.agents/progress/FINAL_REVIEW.md` |
+| 人工验收 | 维护者 | **未完成** | — |
+
+### 8.3 未验证范围
+1. Windows / macOS **未实机验证**（仅 Linux x86_64 `Debian trixie / Linux 6.6` 已验证）。
+2. P1-B 格式递延：DOCM/XLSM/PPTM、XLSX/PPTX/XLS/PPT、7z/RAR、MP4/MP3/WAV/WebM。
+3. `seek_count` 预算硬上限尚未引入。
+4. `FINAL_REVIEW.md` 的 8 项 `inferred` 缺陷未修复（见置顶 D）。
+5. 项目代码许可证待维护者指定。
+
+### 8.4 人工验收命令
+```bash
+# 独立复验（宿主执行，走 Docker 合同）
+python3 /srv/projects/rust/KindProbe/.sandbox-test/results/verifier_round1/run_verifier_round1.py
+# 或
+python3 /srv/projects/rust/KindProbe/scripts/verify_runner.py
+```
+
+### 8.5 下一步
+等待维护者人工验收与许可指定，并由人类决定是否排期修复 `FINAL_REVIEW.md` §1 的 8 项缺陷 / 启动 P1。**代理不得代为标记验收通过，不自动推进 P1。**
+
