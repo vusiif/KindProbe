@@ -1,0 +1,209 @@
+[
+  {
+    "name": "valid_png.png",
+    "path": "fixtures/valid_png.png",
+    "size": 45,
+    "sha256": "029e2f6a9cb07d6f144d8b33262bd934ac21c7fcb579af4f3c9716a665296337",
+    "expected_format": "png",
+    "expected_container": null,
+    "description": "Valid 1x1 PNG image"
+  },
+  {
+    "name": "valid_pdf.pdf",
+    "path": "fixtures/valid_pdf.pdf",
+    "size": 77,
+    "sha256": "4f0721b2855d0ba9449d707e357a71b818155573a87bd0b3bb57f66627230175",
+    "expected_format": "pdf",
+    "expected_container": null,
+    "description": "Minimal valid PDF document"
+  },
+  {
+    "name": "plain_zip.zip",
+    "path": "fixtures/plain_zip.zip",
+    "size": 166,
+    "sha256": "a4100202d4770d9b86c497b605e5b71aafac94c33fbaddbe47d0719c55884936",
+    "expected_format": "zip",
+    "expected_container": "zip",
+    "description": "Standard plain ZIP archive with text file"
+  },
+  {
+    "name": "fake_docx_zip.zip",
+    "path": "fixtures/fake_docx_zip.zip",
+    "size": 183,
+    "sha256": "cc6d41add6a95be3ed54663f35d327838ee5c51a1ae919abb6201e04d2486e4b",
+    "expected_format": null,
+    "expected_container": "zip",
+    "description": "ZIP containing word/document.xml but no [Content_Types].xml or _rels (suspected OOXML without required evidence)"
+  },
+  {
+    "name": "partial_ooxml_missing_rels.zip",
+    "path": "fixtures/partial_ooxml_missing_rels.zip",
+    "size": 570,
+    "sha256": "e82e212ea1c9229403e9b8e900a20e1a2dee0779f283d9ef99ebdba3702221e0",
+    "expected_format": null,
+    "expected_container": "zip",
+    "description": "Partial OOXML ZIP: has [Content_Types].xml but missing _rels/.rels"
+  },
+  {
+    "name": "partial_ooxml_missing_main_part.zip",
+    "path": "fixtures/partial_ooxml_missing_main_part.zip",
+    "size": 598,
+    "sha256": "96fda9f6e559fbe304c63c2c151055ffb5f9742a313d6a3316da80b177348ba5",
+    "expected_format": null,
+    "expected_container": "zip",
+    "description": "Partial OOXML ZIP: relationship targets word/document.xml which does not exist"
+  },
+  {
+    "name": "true_docx.docx",
+    "path": "fixtures/true_docx.docx",
+    "size": 859,
+    "sha256": "8b65775caa93690b07ea2e91f6a48e8d7510663e04fb84b804f689ef38edb4a7",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Genuine Transitional DOCX with verified OPC parts and namespaces"
+  },
+  {
+    "name": "true_docx_strict.docx",
+    "path": "fixtures/true_docx_strict.docx",
+    "size": 857,
+    "sha256": "bf939412d1c9665ed21d865299972d02f8e54f4685a778c618de2d8e946c6360",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Genuine Strict DOCX with purl.oclc.org namespaces"
+  },
+  {
+    "name": "true_docx_rel_path.docx",
+    "path": "fixtures/true_docx_rel_path.docx",
+    "size": 821,
+    "sha256": "b5d1ca04cc03048f2bd347e3dff07ba4bfd402b19f9281da2eae3079156a8962",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Genuine DOCX with relative target path document.xml in root"
+  },
+  {
+    "name": "plain_cfb.cfb",
+    "path": "fixtures/plain_cfb.cfb",
+    "size": 5632,
+    "sha256": "a3fbe0017c89a104ce71d306a51b03d4ece2303cf67b3e9955dda1cc0982592a",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "description": "Valid CFB container with non-Word Data stream"
+  },
+  {
+    "name": "fake_doc_cfb.doc",
+    "path": "fixtures/fake_doc_cfb.doc",
+    "size": 5632,
+    "sha256": "2ed4562486a808f43bf8b178fc20af894d62d672363001d786ce1e61870e267b",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "description": "CFB containing WordDocument stream name but invalid FIB magic/version"
+  },
+  {
+    "name": "true_doc.doc",
+    "path": "fixtures/true_doc.doc",
+    "size": 5632,
+    "sha256": "0a41574cc9b2623b99970a0baa5dbe959d35800b6cecda3987f7a5e9c2a8d885",
+    "expected_format": "doc",
+    "expected_container": "cfb",
+    "description": "Genuine Word 97+ binary DOC with verified FIB wIdent 0xA5EC and nFib 0x00C1"
+  },
+  {
+    "name": "mismatched_png.pdf",
+    "path": "fixtures/mismatched_png.pdf",
+    "size": 45,
+    "sha256": "029e2f6a9cb07d6f144d8b33262bd934ac21c7fcb579af4f3c9716a665296337",
+    "expected_format": "png",
+    "expected_container": null,
+    "description": "Valid PNG renamed with .pdf extension"
+  },
+  {
+    "name": "mismatched_docx.zip",
+    "path": "fixtures/mismatched_docx.zip",
+    "size": 859,
+    "sha256": "8b65775caa93690b07ea2e91f6a48e8d7510663e04fb84b804f689ef38edb4a7",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Valid DOCX renamed with .zip extension"
+  },
+  {
+    "name": "mismatched_doc.docx",
+    "path": "fixtures/mismatched_doc.docx",
+    "size": 5632,
+    "sha256": "0a41574cc9b2623b99970a0baa5dbe959d35800b6cecda3987f7a5e9c2a8d885",
+    "expected_format": "doc",
+    "expected_container": "cfb",
+    "description": "Valid DOC renamed with .docx extension"
+  },
+  {
+    "name": "empty_file.bin",
+    "path": "fixtures/empty_file.bin",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "0-byte empty file"
+  },
+  {
+    "name": "truncated_png.png",
+    "path": "fixtures/truncated_png.png",
+    "size": 4,
+    "sha256": "0f4636c78f65d3639ece5a064b5ae753e3408614a14fb18ab4d7540d2c248543",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "Truncated 4-byte PNG prefix"
+  },
+  {
+    "name": "truncated_pdf.pdf",
+    "path": "fixtures/truncated_pdf.pdf",
+    "size": 3,
+    "sha256": "a135fc158ef93b36ab22c78a03eefd3406e4ebaf78499576e5c555977e205dc9",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "Truncated 3-byte PDF prefix"
+  },
+  {
+    "name": "truncated_zip.zip",
+    "path": "fixtures/truncated_zip.zip",
+    "size": 8,
+    "sha256": "4bc961e8ca5ed1566ca76e0986ba99290b4fe8fbc177eaa9c99761dc2bb74cc1",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "Truncated 8-byte ZIP local header"
+  },
+  {
+    "name": "truncated_cfb.doc",
+    "path": "fixtures/truncated_cfb.doc",
+    "size": 12,
+    "sha256": "c0d2a8c0e4c4874399a7a787f8a40eb7416f9935c8f14f58f947f4e2291cb477",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "Truncated 12-byte CFB header"
+  },
+  {
+    "name": "random_garbage.bin",
+    "path": "fixtures/random_garbage.bin",
+    "size": 256,
+    "sha256": "7131bef2339cd6567c51aeaecc27fa860781d4d466676db49db2f7c05a2bbb13",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "256 bytes of pseudo-random binary data"
+  },
+  {
+    "name": "budget_xml_deep.docx",
+    "path": "fixtures/budget_xml_deep.docx",
+    "size": 1144,
+    "sha256": "5f8073faec67ddf45027837fca395430514985ff779443869c13108fc0e00920",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Adversarial DOCX with 80 nested XML levels (exceeds depth budget 64)"
+  },
+  {
+    "name": "cfb_cyclic_chain.doc",
+    "path": "fixtures/cfb_cyclic_chain.doc",
+    "size": 5632,
+    "sha256": "a9f50f4d83d86bd962c00f8f6c5019bcaf763955605dc2906b0dc3801a4ed902",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "description": "CFB with FAT sector cycle (sector 2 points to sector 2)"
+  }
+]

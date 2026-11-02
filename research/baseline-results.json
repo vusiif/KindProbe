@@ -1,0 +1,876 @@
+[
+  {
+    "name": "valid_png.png",
+    "expected_format": "png",
+    "expected_container": null,
+    "description": "Valid 1x1 PNG image",
+    "sha256": "029e2f6a9cb07d6f144d8b33262bd934ac21c7fcb579af4f3c9716a665296337",
+    "size": 45,
+    "candidates": {
+      "file_5_46": {
+        "raw": "PNG image data, 1 x 1, 8-bit/color RGB, non-interlaced",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/11",
+            "format": "Portable Network Graphics",
+            "version": "1.0",
+            "mime": "image/png",
+            "class": "Image (Raster)",
+            "basis": "extension match png; byte match at [[0 16] [33 12]]",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "png",
+        "mime": "image/png"
+      },
+      "file_format_0_29_0": {
+        "name": "Portable Network Graphics",
+        "extension": "png",
+        "media_type": "image/png"
+      }
+    }
+  },
+  {
+    "name": "valid_pdf.pdf",
+    "expected_format": "pdf",
+    "expected_container": null,
+    "description": "Minimal valid PDF document",
+    "sha256": "4f0721b2855d0ba9449d707e357a71b818155573a87bd0b3bb57f66627230175",
+    "size": 77,
+    "candidates": {
+      "file_5_46": {
+        "raw": "PDF document, version 1.7",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/276",
+            "format": "Acrobat PDF 1.7 - Portable Document Format",
+            "version": "1.7",
+            "mime": "application/pdf",
+            "class": "Page Description",
+            "basis": "extension match pdf; byte match at [[0 8] [71 6]]",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "pdf",
+        "mime": "application/pdf"
+      },
+      "file_format_0_29_0": {
+        "name": "Portable Document Format",
+        "extension": "pdf",
+        "media_type": "application/pdf"
+      }
+    }
+  },
+  {
+    "name": "plain_zip.zip",
+    "expected_format": "zip",
+    "expected_container": "zip",
+    "description": "Standard plain ZIP archive with text file",
+    "sha256": "0c5367a4fc576385655d3d4f04318b8898d45bce491b7d9b060fd6abcb28cb10",
+    "size": 166,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Zip archive data, made by v2.0 UNIX, extract using at least v2.0, last modified Oct 31 2026 22:55:54, uncompressed size 48, method=deflate",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "x-fmt/263",
+            "format": "ZIP Format",
+            "version": "",
+            "mime": "application/zip",
+            "class": "Aggregate",
+            "basis": "extension match zip; container match with trigger and default extension",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "ZIP",
+        "extension": "zip",
+        "media_type": "application/zip"
+      }
+    }
+  },
+  {
+    "name": "fake_docx_zip.zip",
+    "expected_format": "zip",
+    "expected_container": "zip",
+    "description": "ZIP containing word/document.xml but no [Content_Types].xml or _rels",
+    "sha256": "f32b11a7c7f2d09b995d9730cb0647b6352bd419a260a5d08be135c531c27644",
+    "size": 183,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Microsoft Word 2007+",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "x-fmt/263",
+            "format": "ZIP Format",
+            "version": "",
+            "mime": "application/zip",
+            "class": "Aggregate",
+            "basis": "extension match zip; container match with trigger and default extension",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "docx",
+        "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      },
+      "file_format_0_29_0": {
+        "name": "Office Open XML Document",
+        "extension": "docx",
+        "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      }
+    }
+  },
+  {
+    "name": "partial_ooxml_missing_rels.zip",
+    "expected_format": null,
+    "expected_container": "zip",
+    "description": "Partial OOXML ZIP: has [Content_Types].xml but missing _rels/.rels",
+    "sha256": "995a1e497b6d57c2115198b6dc11f0054bb402aebe3a81145c55fb1675df26d6",
+    "size": 570,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Microsoft Word 2007+",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/412",
+            "format": "Microsoft Word for Windows",
+            "version": "2007 onwards",
+            "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "class": "Word Processor",
+            "basis": "container name [Content_Types].xml with byte match at 210, 94 (signature 1/3)",
+            "warning": "extension mismatch"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "Office Open XML Document",
+        "extension": "docx",
+        "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      }
+    }
+  },
+  {
+    "name": "partial_ooxml_missing_main_part.zip",
+    "expected_format": null,
+    "expected_container": "zip",
+    "description": "Partial OOXML ZIP: relationship targets word/document.xml which does not exist",
+    "sha256": "287ef0c62de09404edfe3bc4c1787ee4f5cfaebe9aff09011e4c7c03e15c5ff8",
+    "size": 598,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Zip archive data, made by v2.0 UNIX, extract using at least v2.0, last modified Oct 31 2026 22:55:54, uncompressed size 314, method=deflate",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/412",
+            "format": "Microsoft Word for Windows",
+            "version": "2007 onwards",
+            "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "class": "Word Processor",
+            "basis": "container name [Content_Types].xml with byte match at 210, 94 (signature 1/3)",
+            "warning": "extension mismatch"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "ZIP",
+        "extension": "zip",
+        "media_type": "application/zip"
+      }
+    }
+  },
+  {
+    "name": "true_docx.docx",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Genuine Transitional DOCX with verified OPC parts and namespaces",
+    "sha256": "1a96a139f9f35d85ad0c307ea10916974b8b3724dcf4bd28b1b3efad3c1429d4",
+    "size": 859,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Microsoft Word 2007+",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/412",
+            "format": "Microsoft Word for Windows",
+            "version": "2007 onwards",
+            "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "class": "Word Processor",
+            "basis": "extension match docx; container name [Content_Types].xml with byte match at 210, 94 (signature 1/3)",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "Office Open XML Document",
+        "extension": "docx",
+        "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      }
+    }
+  },
+  {
+    "name": "true_docx_strict.docx",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Genuine Strict DOCX with purl.oclc.org namespaces",
+    "sha256": "40adb251409ba32b5305d6fc8901e23f47d39b517bef1fcab66fe847eb2ebd65",
+    "size": 857,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Microsoft Word 2007+",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/1827",
+            "format": "DOCX Strict OOXML Document",
+            "version": "2007 onwards",
+            "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "class": "Word Processor",
+            "basis": "extension match docx; container name word/document.xml with byte match at 50, 58",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "Office Open XML Document",
+        "extension": "docx",
+        "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      }
+    }
+  },
+  {
+    "name": "true_docx_rel_path.docx",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Genuine DOCX with relative target path document.xml in root",
+    "sha256": "d0ea4b280a310685abe6e10c47d6071fa479dd7968675586ae9f3e1018f7ab34",
+    "size": 821,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Microsoft OOXML",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/412",
+            "format": "Microsoft Word for Windows",
+            "version": "2007 onwards",
+            "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "class": "Word Processor",
+            "basis": "extension match docx; container name [Content_Types].xml with byte match at 205, 94 (signature 1/3)",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "ZIP",
+        "extension": "zip",
+        "media_type": "application/zip"
+      }
+    }
+  },
+  {
+    "name": "plain_cfb.cfb",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "description": "Valid CFB container with non-Word Data stream",
+    "sha256": "b54a9ed71da99cd834d1190f1a40111fe7643cea201b9f0a3625fb1d9811f3cf",
+    "size": 2048,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Composite Document File V2 Document, Cannot read section info",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/111",
+            "format": "OLE2 Compound Document Format",
+            "version": "",
+            "mime": "",
+            "class": "Text (Structured)",
+            "basis": "byte match at 0, 30",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "msi",
+        "mime": "application/x-ole-storage"
+      },
+      "file_format_0_29_0": {
+        "name": "Compound File Binary",
+        "extension": "cfb",
+        "media_type": "application/x-cfb"
+      }
+    }
+  },
+  {
+    "name": "fake_doc_cfb.doc",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "description": "CFB containing WordDocument stream name but invalid FIB magic/version",
+    "sha256": "3a59aaf6dac35a6c908d26a4089eb46f11319354d0c38c21c7ca2efa94ff3b94",
+    "size": 2048,
+    "candidates": {
+      "file_5_46": {
+        "raw": "CDFV2 Microsoft Word",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/609",
+            "format": "Microsoft Word (Generic)",
+            "version": "6.0-2003",
+            "mime": "application/msword",
+            "class": "Word Processor",
+            "basis": "extension match doc; container name WordDocument with name only",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "msi",
+        "mime": "application/x-ole-storage"
+      },
+      "file_format_0_29_0": {
+        "name": "Compound File Binary",
+        "extension": "cfb",
+        "media_type": "application/x-cfb"
+      }
+    }
+  },
+  {
+    "name": "true_doc.doc",
+    "expected_format": "doc",
+    "expected_container": "cfb",
+    "description": "Genuine Word 97+ binary DOC with verified FIB wIdent 0xA5EC and nFib 0x00C1",
+    "sha256": "b6742df703425c9266720d5910c5a200ce1feccb966ff86434dc31176492965b",
+    "size": 2048,
+    "candidates": {
+      "file_5_46": {
+        "raw": "CDFV2 Microsoft Word",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/609",
+            "format": "Microsoft Word (Generic)",
+            "version": "6.0-2003",
+            "mime": "application/msword",
+            "class": "Word Processor",
+            "basis": "extension match doc; container name WordDocument with name only",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "msi",
+        "mime": "application/x-ole-storage"
+      },
+      "file_format_0_29_0": {
+        "name": "Compound File Binary",
+        "extension": "cfb",
+        "media_type": "application/x-cfb"
+      }
+    }
+  },
+  {
+    "name": "mismatched_png.pdf",
+    "expected_format": "png",
+    "expected_container": null,
+    "description": "Valid PNG renamed with .pdf extension",
+    "sha256": "029e2f6a9cb07d6f144d8b33262bd934ac21c7fcb579af4f3c9716a665296337",
+    "size": 45,
+    "candidates": {
+      "file_5_46": {
+        "raw": "PNG image data, 1 x 1, 8-bit/color RGB, non-interlaced",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/11",
+            "format": "Portable Network Graphics",
+            "version": "1.0",
+            "mime": "image/png",
+            "class": "Image (Raster)",
+            "basis": "byte match at [[0 16] [33 12]]",
+            "warning": "extension mismatch"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "png",
+        "mime": "image/png"
+      },
+      "file_format_0_29_0": {
+        "name": "Portable Network Graphics",
+        "extension": "png",
+        "media_type": "image/png"
+      }
+    }
+  },
+  {
+    "name": "mismatched_docx.zip",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Valid DOCX renamed with .zip extension",
+    "sha256": "1a96a139f9f35d85ad0c307ea10916974b8b3724dcf4bd28b1b3efad3c1429d4",
+    "size": 859,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Microsoft Word 2007+",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/412",
+            "format": "Microsoft Word for Windows",
+            "version": "2007 onwards",
+            "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "class": "Word Processor",
+            "basis": "container name [Content_Types].xml with byte match at 210, 94 (signature 1/3)",
+            "warning": "extension mismatch"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "Office Open XML Document",
+        "extension": "docx",
+        "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      }
+    }
+  },
+  {
+    "name": "mismatched_doc.docx",
+    "expected_format": "doc",
+    "expected_container": "cfb",
+    "description": "Valid DOC renamed with .docx extension",
+    "sha256": "b6742df703425c9266720d5910c5a200ce1feccb966ff86434dc31176492965b",
+    "size": 2048,
+    "candidates": {
+      "file_5_46": {
+        "raw": "CDFV2 Microsoft Word",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/609",
+            "format": "Microsoft Word (Generic)",
+            "version": "6.0-2003",
+            "mime": "application/msword",
+            "class": "Word Processor",
+            "basis": "container name WordDocument with name only",
+            "warning": "extension mismatch"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "msi",
+        "mime": "application/x-ole-storage"
+      },
+      "file_format_0_29_0": {
+        "name": "Compound File Binary",
+        "extension": "cfb",
+        "media_type": "application/x-cfb"
+      }
+    }
+  },
+  {
+    "name": "empty_file.bin",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "0-byte empty file",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0,
+    "candidates": {
+      "file_5_46": {
+        "raw": "empty",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/208",
+            "format": "Binary File",
+            "version": "",
+            "mime": "",
+            "class": "Aggregate",
+            "basis": "extension match bin",
+            "warning": "match on extension only"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": null,
+        "mime": null
+      },
+      "file_format_0_29_0": {
+        "name": "Empty",
+        "extension": "empty",
+        "media_type": "application/x-empty"
+      }
+    }
+  },
+  {
+    "name": "truncated_png.png",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "Truncated 4-byte PNG prefix",
+    "sha256": "0f4636c78f65d3639ece5a064b5ae753e3408614a14fb18ab4d7540d2c248543",
+    "size": 4,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Non-ISO extended-ASCII text, with no line terminators",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "UNKNOWN",
+            "format": "",
+            "version": "",
+            "mime": "",
+            "class": "",
+            "basis": "",
+            "warning": "no match; possibilities based on extension are fmt/11, fmt/12, fmt/13, fmt/935"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "png",
+        "mime": "image/png"
+      },
+      "file_format_0_29_0": {
+        "name": "Arbitrary Binary Data",
+        "extension": "bin",
+        "media_type": "application/octet-stream"
+      }
+    }
+  },
+  {
+    "name": "truncated_pdf.pdf",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "Truncated 3-byte PDF prefix",
+    "sha256": "a135fc158ef93b36ab22c78a03eefd3406e4ebaf78499576e5c555977e205dc9",
+    "size": 3,
+    "candidates": {
+      "file_5_46": {
+        "raw": "ASCII text, with no line terminators",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "UNKNOWN",
+            "format": "",
+            "version": "",
+            "mime": "",
+            "class": "",
+            "basis": "",
+            "warning": "no match; possibilities based on extension are fmt/14, fmt/15, fmt/16, fmt/17, fmt/18, fmt/19, fmt/20, fmt/95, fmt/144, fmt/145, fmt/146, fmt/147, fmt/148, fmt/157, fmt/158, fmt/276, fmt/354, fmt/476, fmt/477, fmt/478, fmt/479, fmt/480, fmt/481, fmt/488, fmt/489, fmt/490, fmt/491, fmt/492, fmt/493, fmt/558, fmt/559, fmt/560, fmt/561, fmt/562, fmt/563, fmt/564, fmt/565, fmt/1129, fmt/1451, fmt/1910, fmt/1911, fmt/1912, fmt/2050, fmt/2052"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": null,
+        "mime": null
+      },
+      "file_format_0_29_0": {
+        "name": "Arbitrary Binary Data",
+        "extension": "bin",
+        "media_type": "application/octet-stream"
+      }
+    }
+  },
+  {
+    "name": "truncated_zip.zip",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "Truncated 8-byte ZIP local header",
+    "sha256": "4bc961e8ca5ed1566ca76e0986ba99290b4fe8fbc177eaa9c99761dc2bb74cc1",
+    "size": 8,
+    "candidates": {
+      "file_5_46": {
+        "raw": "data",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "UNKNOWN",
+            "format": "",
+            "version": "",
+            "mime": "",
+            "class": "",
+            "basis": "",
+            "warning": "no match; possibilities based on extension are x-fmt/263, fmt/2113, fmt/2114"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "Arbitrary Binary Data",
+        "extension": "bin",
+        "media_type": "application/octet-stream"
+      }
+    }
+  },
+  {
+    "name": "truncated_cfb.doc",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "Truncated 12-byte CFB header",
+    "sha256": "c0d2a8c0e4c4874399a7a787f8a40eb7416f9935c8f14f58f947f4e2291cb477",
+    "size": 12,
+    "candidates": {
+      "file_5_46": {
+        "raw": "OLE 2 Compound Document",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "UNKNOWN",
+            "format": "",
+            "version": "",
+            "mime": "",
+            "class": "",
+            "basis": "",
+            "warning": "no match; possibilities based on extension are x-fmt/42, x-fmt/43, x-fmt/44, x-fmt/131, x-fmt/274, x-fmt/275, x-fmt/276, x-fmt/329, fmt/39, fmt/40, fmt/37, fmt/38, x-fmt/393, x-fmt/394, fmt/473, fmt/609, fmt/754, fmt/892, fmt/1282, fmt/1283, fmt/1688"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "msi",
+        "mime": "application/x-ole-storage"
+      },
+      "file_format_0_29_0": {
+        "name": "Arbitrary Binary Data",
+        "extension": "bin",
+        "media_type": "application/octet-stream"
+      }
+    }
+  },
+  {
+    "name": "random_garbage.bin",
+    "expected_format": null,
+    "expected_container": null,
+    "description": "256 bytes of pseudo-random binary data",
+    "sha256": "9a53e812199ec19f2a1aa5614ffb87af8bc26bdc9401e183d7c0289abc4a975a",
+    "size": 256,
+    "candidates": {
+      "file_5_46": {
+        "raw": "data",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/208",
+            "format": "Binary File",
+            "version": "",
+            "mime": "",
+            "class": "Aggregate",
+            "basis": "extension match bin",
+            "warning": "match on extension only"
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": null,
+        "mime": null
+      },
+      "file_format_0_29_0": {
+        "name": "Arbitrary Binary Data",
+        "extension": "bin",
+        "media_type": "application/octet-stream"
+      }
+    }
+  },
+  {
+    "name": "budget_xml_deep.docx",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "description": "Adversarial DOCX with 80 nested XML levels (exceeds depth budget 64)",
+    "sha256": "73a9d967fe43231a5f1f41b5e8c449d706bba9a6ebca91108ae4293fb515a654",
+    "size": 1144,
+    "candidates": {
+      "file_5_46": {
+        "raw": "Microsoft Word 2007+",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/412",
+            "format": "Microsoft Word for Windows",
+            "version": "2007 onwards",
+            "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "class": "Word Processor",
+            "basis": "extension match docx; container name [Content_Types].xml with byte match at 210, 94 (signature 1/3)",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "zip",
+        "mime": "application/zip"
+      },
+      "file_format_0_29_0": {
+        "name": "Office Open XML Document",
+        "extension": "docx",
+        "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      }
+    }
+  },
+  {
+    "name": "cfb_cyclic_chain.doc",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "description": "CFB with FAT sector cycle (sector 2 points to sector 2)",
+    "sha256": "f39ab3f32ac00d113108924fd9251cfa65cc1391e2dc42f9574fb28eec13993d",
+    "size": 2048,
+    "candidates": {
+      "file_5_46": {
+        "raw": "CDFV2 Microsoft Word",
+        "exit_code": 0
+      },
+      "siegfried_1_11_9": {
+        "matches": [
+          {
+            "ns": "pronom",
+            "id": "fmt/609",
+            "format": "Microsoft Word (Generic)",
+            "version": "6.0-2003",
+            "mime": "application/msword",
+            "class": "Word Processor",
+            "basis": "extension match doc; container name WordDocument with name only",
+            "warning": ""
+          }
+        ],
+        "exit_code": 0
+      },
+      "infer_0_22_0": {
+        "extension": "msi",
+        "mime": "application/x-ole-storage"
+      },
+      "file_format_0_29_0": {
+        "name": "Compound File Binary",
+        "extension": "cfb",
+        "media_type": "application/x-cfb"
+      }
+    }
+  }
+]

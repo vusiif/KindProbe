@@ -1,0 +1,6 @@
+target/
+.sandbox-test/
+Cargo.lock.bak
+**/*.rs.bk
+*.swp
+*~

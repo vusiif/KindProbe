@@ -1,0 +1,148 @@
+[
+  {
+    "rule_id": "rule.sig.png",
+    "name": "Portable Network Graphics (PNG)",
+    "target_format_id": "png",
+    "target_container_id": null,
+    "category": "image",
+    "recommended_extension": "png",
+    "accepted_extensions": ["png"],
+    "evidence_level": "structure",
+    "source": {
+      "origin": "ISO/IEC 15948:2004 / PRONOM fmt/11",
+      "license": "Public Standard / OGL-v2.0 reference",
+      "anchor": "bof",
+      "offset": 0
+    },
+    "requirements": [
+      "BOF magic 89 50 4E 47 0D 0A 1A 0A",
+      "First chunk length 13 bytes, type IHDR (49 48 44 52)"
+    ],
+    "test_fixtures": ["valid_png.png", "mismatched_png.pdf", "truncated_png.png"]
+  },
+  {
+    "rule_id": "rule.sig.pdf",
+    "name": "Portable Document Format (PDF)",
+    "target_format_id": "pdf",
+    "target_container_id": null,
+    "category": "document",
+    "recommended_extension": "pdf",
+    "accepted_extensions": ["pdf"],
+    "evidence_level": "signature",
+    "source": {
+      "origin": "ISO 32000-1 / PRONOM fmt/18",
+      "license": "Public Standard / OGL-v2.0 reference",
+      "anchor": "bof",
+      "offset_range": [0, 1024]
+    },
+    "requirements": [
+      "BOF prefix %PDF- within initial 1024 bytes",
+      "Followed by major/minor version digits"
+    ],
+    "test_fixtures": ["valid_pdf.pdf", "truncated_pdf.pdf"]
+  },
+  {
+    "rule_id": "rule.container.zip",
+    "name": "ZIP Archive Container",
+    "target_format_id": "zip",
+    "target_container_id": "zip",
+    "category": "archive",
+    "recommended_extension": "zip",
+    "accepted_extensions": ["zip"],
+    "evidence_level": "structure",
+    "source": {
+      "origin": "PKWARE APPNOTE / PRONOM x-fmt/263",
+      "license": "Public Standard",
+      "anchor": "eof_central_directory"
+    },
+    "requirements": [
+      "End of Central Directory (EOCD) signature 50 4B 05 06 within bounded 1 MiB window",
+      "Central Directory header parsing within max entries (10,000)"
+    ],
+    "test_fixtures": ["plain_zip.zip", "fake_docx_zip.zip", "truncated_zip.zip"]
+  },
+  {
+    "rule_id": "rule.format.docx",
+    "name": "Microsoft Word Open XML Document (DOCX)",
+    "target_format_id": "docx",
+    "target_container_id": "zip",
+    "category": "document",
+    "recommended_extension": "docx",
+    "accepted_extensions": ["docx"],
+    "evidence_level": "structure",
+    "source": {
+      "origin": "ECMA-376 5th Edition Part 2 (OPC) & ISO/IEC 29500",
+      "license": "Public Open Standard",
+      "anchor": "opc_package_relationships"
+    },
+    "requirements": [
+      "ZIP container confirmed",
+      "[Content_Types].xml parsed within 256 KiB decompressed budget",
+      "_rels/.rels parsed within 256 KiB decompressed budget",
+      "Package relationship targets main document part with officeDocument relationship type (Transitional or Strict)",
+      "Main document part exists in ZIP package",
+      "Main document part ContentType matches wordprocessingml.document.main+xml (or template / macroEnabled)",
+      "Main document part XML root tag matches w:document within nesting depth budget 64"
+    ],
+    "test_fixtures": [
+      "true_docx.docx",
+      "true_docx_strict.docx",
+      "true_docx_rel_path.docx",
+      "mismatched_docx.zip",
+      "fake_docx_zip.zip",
+      "partial_ooxml_missing_rels.zip",
+      "partial_ooxml_missing_main_part.zip",
+      "budget_xml_deep.docx"
+    ]
+  },
+  {
+    "rule_id": "rule.container.cfb",
+    "name": "Compound File Binary (CFB) Container",
+    "target_format_id": null,
+    "target_container_id": "cfb",
+    "category": "container",
+    "recommended_extension": null,
+    "accepted_extensions": [],
+    "evidence_level": "structure",
+    "source": {
+      "origin": "Microsoft [MS-CFB] v20240521",
+      "license": "Microsoft Open Specifications Promise",
+      "anchor": "bof",
+      "offset": 0
+    },
+    "requirements": [
+      "BOF magic D0 CF 11 E0 A1 B1 1A E1",
+      "CFB Header sector shift validation (512 or 4096 bytes)",
+      "FAT and Directory sector traversal with cycle detection and bounded read limits"
+    ],
+    "test_fixtures": ["plain_cfb.cfb", "truncated_cfb.doc", "cfb_cyclic_chain.doc"]
+  },
+  {
+    "rule_id": "rule.format.doc",
+    "name": "Microsoft Word 97-2003 Binary Document (DOC)",
+    "target_format_id": "doc",
+    "target_container_id": "cfb",
+    "category": "document",
+    "recommended_extension": "doc",
+    "accepted_extensions": ["doc", "dot"],
+    "evidence_level": "structure",
+    "source": {
+      "origin": "Microsoft [MS-DOC] Section 2.5.1 FibBase",
+      "license": "Microsoft Open Specifications Promise",
+      "anchor": "cfb_stream_WordDocument"
+    },
+    "requirements": [
+      "CFB container confirmed",
+      "User stream 'WordDocument' exists (type 2 stream, size >= 32 bytes)",
+      "FibBase wIdent == 0xA5EC (little-endian at offset 0)",
+      "FibBase nFib >= 0x00C1 (little-endian at offset 2, Word 97 and later)",
+      "fcMin and fcMac valid character positions (offset 0x20 and 0x24)"
+    ],
+    "test_fixtures": [
+      "true_doc.doc",
+      "mismatched_doc.docx",
+      "fake_doc_cfb.doc",
+      "plain_cfb.cfb"
+    ]
+  }
+]
