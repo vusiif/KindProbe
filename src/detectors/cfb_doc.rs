@@ -63,10 +63,7 @@ pub fn detect_cfb_doc<R: Read + Seek>(
 
     // Check CFB entries budget and count inspected entries
     let mut entries_count = 0;
-    let mut word_stream_path = None;
-    let mut word_stream_len = 0u64;
-
-    for entry in comp.walk() {
+    for _ in comp.walk() {
         entries_count += 1;
         if entries_count > options.max_entries {
             report.stats.entries_inspected = entries_count;
@@ -80,20 +77,27 @@ pub fn detect_cfb_doc<R: Read + Seek>(
             ));
             return Ok(report);
         }
-        if word_stream_path.is_none()
-            && entry.name().eq_ignore_ascii_case("WordDocument")
-            && entry.is_stream()
-        {
-            word_stream_path = Some(entry.path().to_path_buf());
-            word_stream_len = entry.len();
-        }
     }
     report.stats.entries_inspected = entries_count;
+
+    // WordDocument must be a direct top-level stream under the root storage
+    let mut word_stream_path = None;
+    let mut word_stream_len = 0u64;
+
+    if let Ok(root_entries) = comp.read_storage("/") {
+        for entry in root_entries {
+            if entry.name().eq_ignore_ascii_case("WordDocument") && entry.is_stream() {
+                word_stream_path = Some(entry.path().to_path_buf());
+                word_stream_len = entry.len();
+                break;
+            }
+        }
+    }
 
     let stream_path = match word_stream_path {
         Some(p) => p,
         None => {
-            // Valid CFB container, but not a Word document
+            // Valid CFB container, but not a Word document at root
             return Ok(report);
         }
     };
@@ -176,15 +180,15 @@ pub fn detect_cfb_doc<R: Read + Seek>(
         return Ok(report);
     }
 
-    if n_fib < FIB_NFIB_WORD97_MIN {
+    if n_fib < FIB_NFIB_WORD97_MIN || n_fib > 0x0112 {
         report.warnings.push(WarningItem::new(
             "cfb.unsupported_word_version",
-            format!("Unsupported pre-Word97 nFib version: 0x{:04X} (< 0x00C1)", n_fib),
+            format!("Unsupported nFib version: 0x{:04X} (expected Word 97..2007: 0x00C1..=0x0112)", n_fib),
         ));
         return Ok(report);
     }
 
-    // Check encryption flag (bit 8 of flags at offset 10)
+    // Check flags at offset 10..12
     let flags = u16::from_le_bytes([fib_header[10], fib_header[11]]);
     let is_encrypted = (flags & (1 << 8)) != 0;
     if is_encrypted {
@@ -192,6 +196,65 @@ pub fn detect_cfb_doc<R: Read + Seek>(
             "cfb.document_encrypted",
             "Word document stream indicates password protection / encryption",
         ));
+    }
+
+    // Verify required table stream indicated by fWhichTblStm (bit 9)
+    let is_1table = (flags & 0x0200) != 0;
+    let required_table_name = if is_1table { "1Table" } else { "0Table" };
+
+    let mut table_stream_found = false;
+    if let Ok(root_entries) = comp.read_storage("/") {
+        for entry in root_entries {
+            if entry.name().eq_ignore_ascii_case(required_table_name) && entry.is_stream() {
+                table_stream_found = true;
+                break;
+            }
+        }
+    }
+
+    if !table_stream_found {
+        report.warnings.push(WarningItem::new(
+            "cfb.table_stream_missing",
+            format!("Required table stream '{}' indicated by fWhichTblStm is missing", required_table_name),
+        ));
+        return Ok(report);
+    }
+
+    // Verify table stream can be opened and read
+    match comp.open_stream(format!("/{}", required_table_name)) {
+        Ok(mut t_stream) => {
+            let mut probe_buf = [0u8; 1];
+            if let Err(e) = t_stream.read(&mut probe_buf) {
+                if budget_handle.load(std::sync::atomic::Ordering::Relaxed) {
+                    report.inspection = Inspection::Limited;
+                    report.warnings.push(WarningItem::new(
+                        "budget.source_read_exceeded",
+                        "Total source read budget exceeded during detection",
+                    ));
+                    return Ok(report);
+                }
+                report.warnings.push(WarningItem::new(
+                    "cfb.table_stream_read_error",
+                    format!("Failed to read required table stream '{}': {}", required_table_name, e),
+                ));
+                return Ok(report);
+            }
+        }
+        Err(e) => {
+            if budget_handle.load(std::sync::atomic::Ordering::Relaxed) {
+                report.inspection = Inspection::Limited;
+                report.warnings.push(WarningItem::new(
+                    "budget.source_read_exceeded",
+                    "Total source read budget exceeded during detection",
+                ));
+                return Ok(report);
+            }
+            report.warnings.push(WarningItem::new(
+                "cfb.table_stream_open_error",
+                format!("Failed to open required table stream '{}': {}", required_table_name, e),
+            ));
+            return Ok(report);
+        }
     }
 
     // Check fcMin and fcMac offsets if available (offsets 0x20 and 0x24)

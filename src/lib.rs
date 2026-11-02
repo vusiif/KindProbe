@@ -86,6 +86,9 @@ pub fn detect_reader<R: Read + Seek>(
 
     report.stats.duration_micros = start.elapsed().as_micros() as u64;
 
+    // Independent extension diagnosis: readers and byte slices have no extension (None)
+    report.extension_status = compare_extension(&report, None);
+
     // Verify invariants
     if let Err(inv) = report.validate_invariants() {
         return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));

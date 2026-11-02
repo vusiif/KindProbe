@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek, SeekFrom};
 use quick_xml::events::Event;
+use quick_xml::reader::NsReader;
 use quick_xml::reader::Reader as XmlReader;
 use zip::ZipArchive;
 
@@ -583,7 +584,7 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         report.stats.decompressed_bytes += limit_reader.bytes_read();
 
         match verify_main_document_xml(&xml_data, options.max_xml_depth) {
-            Ok(true) => {
+            Ok(MainDocXmlOutcome::Valid) => {
                 // Fully confirmed DOCX!
                 report.identification = Identification::Format;
                 report.format_id = Some("docx".to_string());
@@ -595,28 +596,49 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
                 report.accepted_extensions = vec!["docx".to_string()];
                 report.evidence.push(EvidenceItem::new("ooxml.word_main_part"));
             }
-            Ok(false) => {
+            Ok(MainDocXmlOutcome::DepthExceededValidRoot) => {
+                report.identification = Identification::Format;
+                report.format_id = Some("docx".to_string());
+                report.category = "document".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Limited;
+                report.recommended_extension = Some("docx".to_string());
+                report.accepted_extensions = vec!["docx".to_string()];
+                report.evidence.push(EvidenceItem::new("ooxml.word_main_part"));
+                report.warnings.push(WarningItem::new(
+                    "budget.xml_depth_exceeded",
+                    format!(
+                        "XML element depth ({}) exceeded allowed maximum ({})",
+                        options.max_xml_depth + 1,
+                        options.max_xml_depth
+                    ),
+                ));
+            }
+            Ok(MainDocXmlOutcome::DepthExceededInvalidRoot) => {
+                // Root is not valid Word document; do not confirm DOCX!
+                report.inspection = Inspection::Limited;
                 report.warnings.push(WarningItem::new(
                     "ooxml.invalid_root_element",
                     "Main document part XML does not have valid <w:document> root element",
                 ));
+                report.warnings.push(WarningItem::new(
+                    "budget.xml_depth_exceeded",
+                    format!(
+                        "XML element depth ({}) exceeded allowed maximum ({})",
+                        options.max_xml_depth + 1,
+                        options.max_xml_depth
+                    ),
+                ));
+            }
+            Ok(MainDocXmlOutcome::InvalidRoot(msg)) => {
+                report.warnings.push(WarningItem::new(
+                    "ooxml.invalid_root_element",
+                    msg,
+                ));
             }
             Err(warn) => {
-                if warn.code == "budget.xml_depth_exceeded" {
-                    // Identification is confirmed DOCX, but depth budget was triggered
-                    report.identification = Identification::Format;
-                    report.format_id = Some("docx".to_string());
-                    report.category = "document".to_string();
-                    report.container_id = Some("zip".to_string());
-                    report.verification = Verification::Structure;
-                    report.inspection = Inspection::Limited;
-                    report.recommended_extension = Some("docx".to_string());
-                    report.accepted_extensions = vec!["docx".to_string()];
-                    report.evidence.push(EvidenceItem::new("ooxml.word_main_part"));
-                    report.warnings.push(warn);
-                } else {
-                    report.warnings.push(warn);
-                }
+                report.warnings.push(warn);
             }
         }
     }
@@ -774,16 +796,27 @@ fn parse_content_types(
     Ok(None)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum MainDocXmlOutcome {
+    Valid,
+    DepthExceededValidRoot,
+    DepthExceededInvalidRoot,
+    InvalidRoot(String),
+}
+
 fn verify_main_document_xml(
     xml_bytes: &[u8],
     max_depth: usize,
-) -> Result<bool, WarningItem> {
-    let mut reader = XmlReader::from_reader(xml_bytes);
+) -> Result<MainDocXmlOutcome, WarningItem> {
+    let mut reader = NsReader::from_reader(xml_bytes);
     reader.config_mut().trim_text(true);
 
     let mut current_depth: usize = 0;
-    let mut found_root = false;
-    let mut valid_root = false;
+    let mut root_seen = false;
+    let mut root_is_word_doc = false;
+    let mut root_closed = false;
+    let mut has_multiple_roots = false;
+    let mut depth_exceeded = false;
 
     let mut buf = Vec::new();
     loop {
@@ -791,45 +824,47 @@ fn verify_main_document_xml(
             Ok(Event::Start(ref e)) => {
                 current_depth += 1;
                 if current_depth > max_depth {
-                    return Err(WarningItem::new(
-                        "budget.xml_depth_exceeded",
-                        format!(
-                            "XML element depth ({}) exceeded allowed maximum ({})",
-                            current_depth, max_depth
-                        ),
-                    ));
+                    depth_exceeded = true;
+                    break;
                 }
 
-                if !found_root {
-                    found_root = true;
-                    let local_name = e.local_name();
-                    if local_name.as_ref() == b"document" {
-                        // Check attributes for Word XML namespace
-                        let mut has_ns = false;
-                        for attr in e.attributes().flatten() {
-                            let val = String::from_utf8_lossy(&attr.value);
-                            if val == WORD_XML_NS_TRANSITIONAL || val == WORD_XML_NS_STRICT {
-                                has_ns = true;
-                                break;
+                if !root_seen {
+                    root_seen = true;
+                    let (resolve, local) = reader.resolve_element(e.name());
+                    if local.as_ref() == b"document" {
+                        if let quick_xml::name::ResolveResult::Bound(quick_xml::name::Namespace(ns)) = resolve {
+                            if ns == WORD_XML_NS_TRANSITIONAL.as_bytes() || ns == WORD_XML_NS_STRICT.as_bytes() {
+                                root_is_word_doc = true;
                             }
                         }
-                        // Also accept if prefix is w:
-                        if has_ns || e.name().as_ref().starts_with(b"w:") {
-                            valid_root = true;
+                    }
+                } else if root_closed {
+                    has_multiple_roots = true;
+                    break;
+                }
+            }
+            Ok(Event::Empty(ref e)) => {
+                if !root_seen {
+                    root_seen = true;
+                    let (resolve, local) = reader.resolve_element(e.name());
+                    if local.as_ref() == b"document" {
+                        if let quick_xml::name::ResolveResult::Bound(quick_xml::name::Namespace(ns)) = resolve {
+                            if ns == WORD_XML_NS_TRANSITIONAL.as_bytes() || ns == WORD_XML_NS_STRICT.as_bytes() {
+                                root_is_word_doc = true;
+                            }
                         }
                     }
+                    root_closed = true;
+                } else if root_closed {
+                    has_multiple_roots = true;
+                    break;
                 }
             }
             Ok(Event::End(_)) => {
                 if current_depth > 0 {
                     current_depth -= 1;
-                }
-            }
-            Ok(Event::Empty(ref e)) => {
-                if !found_root {
-                    found_root = true;
-                    if e.local_name().as_ref() == b"document" {
-                        valid_root = true;
+                    if current_depth == 0 {
+                        root_closed = true;
                     }
                 }
             }
@@ -845,5 +880,31 @@ fn verify_main_document_xml(
         buf.clear();
     }
 
-    Ok(valid_root)
+    if has_multiple_roots {
+        return Ok(MainDocXmlOutcome::InvalidRoot(
+            "Main document part XML contains multiple root elements".to_string(),
+        ));
+    }
+
+    if depth_exceeded {
+        if root_is_word_doc {
+            return Ok(MainDocXmlOutcome::DepthExceededValidRoot);
+        } else {
+            return Ok(MainDocXmlOutcome::DepthExceededInvalidRoot);
+        }
+    }
+
+    if !root_seen || !root_is_word_doc {
+        return Ok(MainDocXmlOutcome::InvalidRoot(
+            "Main document part XML does not have valid <w:document> root element".to_string(),
+        ));
+    }
+
+    if !root_closed {
+        return Ok(MainDocXmlOutcome::InvalidRoot(
+            "Main document part XML root element was not closed".to_string(),
+        ));
+    }
+
+    Ok(MainDocXmlOutcome::Valid)
 }

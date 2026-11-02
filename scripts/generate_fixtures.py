@@ -76,6 +76,86 @@ def make_cfb(stream_name: str, stream_data: bytes, cyclic: bool = False) -> byte
         
     return bytes(hdr + fat + dir_sec + s_data)
 
+def make_word_cfb(fib_data: bytes, table_data: bytes = b"\x00" * 512) -> bytes:
+    # CFB v3 (512-byte sectors) with WordDocument and 0Table
+    hdr = bytearray(512)
+    hdr[0:8] = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+    struct.pack_into("<HHH", hdr, 24, 0x003e, 0x0003, 0xfffe)
+    struct.pack_into("<HH", hdr, 30, 9, 6) # sector shift 9 (512), mini shift 6 (64)
+    struct.pack_into("<I", hdr, 44, 1) # num fat sectors = 1
+    struct.pack_into("<I", hdr, 48, 1) # first dir sector = 1
+    struct.pack_into("<I", hdr, 56, 4096) # mini cutoff = 4096
+    struct.pack_into("<I", hdr, 60, 0xfffffffe) # first mini fat = ENDOFCHAIN
+    struct.pack_into("<I", hdr, 68, 0xfffffffe) # first difat = ENDOFCHAIN
+    # DIFAT table (109 entries)
+    struct.pack_into("<I", hdr, 76, 0) # sector 0 is FAT
+    for i in range(1, 109):
+        struct.pack_into("<I", hdr, 76 + i*4, 0xffffffff)
+
+    # Sector 0: FAT (128 entries of 4 bytes)
+    fat = bytearray(512)
+    for i in range(128):
+        struct.pack_into("<I", fat, i*4, 0xffffffff)
+    struct.pack_into("<I", fat, 0, 0xfffffffd) # Sector 0: FAT sector
+    struct.pack_into("<I", fat, 4, 0xfffffffe) # Sector 1: Dir sector (ENDOFCHAIN)
+
+    # WordDocument: sectors 2..9 (8 sectors = 4096 bytes)
+    for s in range(2, 9):
+        struct.pack_into("<I", fat, s*4, s + 1)
+    struct.pack_into("<I", fat, 9*4, 0xfffffffe) # Sector 9: ENDOFCHAIN
+
+    # 0Table: sectors 10..17 (8 sectors = 4096 bytes)
+    for s in range(10, 17):
+        struct.pack_into("<I", fat, s*4, s + 1)
+    struct.pack_into("<I", fat, 17*4, 0xfffffffe)
+
+    # Sector 1: Directory (4 entries of 128 bytes)
+    dir_sec = bytearray(512)
+
+    # Entry 0: Root Entry
+    root_name = "Root Entry\0".encode("utf-16le")
+    dir_sec[0:len(root_name)] = root_name
+    struct.pack_into("<H", dir_sec, 64, len(root_name))
+    dir_sec[66] = 5 # root storage
+    dir_sec[67] = 1 # black
+    struct.pack_into("<III", dir_sec, 68, 0xffffffff, 0xffffffff, 1) # child=1
+    struct.pack_into("<I", dir_sec, 116, 0xfffffffe)
+    struct.pack_into("<Q", dir_sec, 120, 0)
+
+    # Entry 1: WordDocument
+    s1_name = "WordDocument\0".encode("utf-16le")
+    dir_sec[128:128+len(s1_name)] = s1_name
+    struct.pack_into("<H", dir_sec, 128+64, len(s1_name))
+    dir_sec[128+66] = 2 # stream
+    dir_sec[128+67] = 1 # black
+    struct.pack_into("<III", dir_sec, 128+68, 2, 0xffffffff, 0xffffffff) # left=2 (0Table is shorter than WordDocument)
+    struct.pack_into("<I", dir_sec, 128+116, 2) # start sector = 2
+    struct.pack_into("<Q", dir_sec, 128+120, 4096)
+
+    # Entry 2: 0Table
+    s2_name = "0Table\0".encode("utf-16le")
+    dir_sec[256:256+len(s2_name)] = s2_name
+    struct.pack_into("<H", dir_sec, 256+64, len(s2_name))
+    dir_sec[256+66] = 2 # stream
+    dir_sec[256+67] = 1 # black
+    struct.pack_into("<III", dir_sec, 256+68, 0xffffffff, 0xffffffff, 0xffffffff)
+    struct.pack_into("<I", dir_sec, 256+116, 10) # start sector = 10
+    struct.pack_into("<Q", dir_sec, 256+120, 4096)
+
+    s1_data = bytearray(fib_data)
+    if len(s1_data) < 4096:
+        s1_data.extend(b"\x00" * (4096 - len(s1_data)))
+    elif len(s1_data) > 4096:
+        s1_data = s1_data[:4096]
+
+    s2_data = bytearray(table_data)
+    if len(s2_data) < 4096:
+        s2_data.extend(b"\x00" * (4096 - len(s2_data)))
+    elif len(s2_data) > 4096:
+        s2_data = s2_data[:4096]
+
+    return bytes(hdr + fat + dir_sec + s1_data + s2_data)
+
 def generate_all():
     os.makedirs(FIXTURES_DIR, exist_ok=True)
     manifest = []
@@ -171,10 +251,10 @@ def generate_all():
     # 12. True DOC in CFB (Word 97+ FIB)
     fib = bytearray(512)
     struct.pack_into("<HH", fib, 0, 0xA5EC, 0x00C1) # wIdent = 0xA5EC, nFib = 0x00C1 (Word 97)
-    struct.pack_into("<H", fib, 10, 0x0000) # flags (not encrypted)
+    struct.pack_into("<H", fib, 10, 0x0000) # flags (not encrypted, fWhichTblStm=0 -> 0Table)
     struct.pack_into("<II", fib, 0x0020, 0x00000400, 0x00000800) # fcMin, fcMac
-    true_doc_data = make_cfb("WordDocument", fib)
-    save("true_doc.doc", true_doc_data, "doc", "cfb", "Genuine Word 97+ binary DOC with verified FIB wIdent 0xA5EC and nFib 0x00C1")
+    true_doc_data = make_word_cfb(fib)
+    save("true_doc.doc", true_doc_data, "doc", "cfb", "Genuine Word 97+ binary DOC with verified FIB wIdent 0xA5EC, nFib 0x00C1, and 0Table stream")
 
     # 13. Mismatched extensions
     save("mismatched_png.pdf", png_bytes, "png", None, "Valid PNG renamed with .pdf extension")

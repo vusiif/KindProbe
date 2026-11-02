@@ -97,7 +97,8 @@ pub fn detect_stream<R: Read + Seek>(
 
     // Step 1: Check PNG and PDF signatures
     match probe_signatures(&header) {
-        SignatureMatch::Png => return Ok(make_png_report()),
+        SignatureMatch::PngStructure => return Ok(make_png_report(true)),
+        SignatureMatch::PngSignatureOnly => return Ok(make_png_report(false)),
         SignatureMatch::Pdf => return Ok(make_pdf_report()),
         SignatureMatch::Truncated(fmt) => {
             return Ok(DetectionReport {

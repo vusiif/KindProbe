@@ -1,47 +1,69 @@
 # KindProbe P0 Handoff Document
 
-> ## ⛔ 当前状态置顶 (2026-11-02) — P0 阶段已收尾，等待人工验收
+> ## ⛔ 当前状态置顶 (2026-11-02 深夜更新) — Codex 验收打回 → Round 2 修复并复验通过，**待人工验收**
 >
-> **阶段结论：P0 全部门槛通过、已提交并推送；人工验收尚未完成。未进入 P1。**
+> **阶段结论：Codex 亲自验收 FAIL 打回；Revision Round 2（终轮）已完成修复与独立复验，实测达标。人工验收尚未完成。未进入 P1。**
 >
-> ### A. Git 真实状态（已由主管定向核实 `.git/logs/HEAD` 与 `.git/refs/remotes/origin/main`）
-> | 项 | 值 |
+> ### A. ⚠️ 撤回声明（必须先读）
+> 1. **撤回**此前「P0 已验收 / 整体审查无阻断」的结论。Codex 对基线 `6c4dace5…` 亲自实测 **FAIL**（18 项中 9 项失败），**该实测已否定旧结论**。
+> 2. `.agents/progress/FINAL_REVIEW.md` 的「**无阻断性缺陷**」判断**已被实测推翻，不再作为正确性证明宣传**；其 §1.1 关于 `fcMin/fcMac` 的字段解释**未被采信**（现官方 FibBase 该区域为 reserved），本轮未照搬。
+> 3. **度量勘误**：Round-1 报告中「release 100% 可重现构建」的说法**不成立**。同源代码在不同 `CARGO_TARGET_DIR` 下产物不同（路径嵌入符号表/恐慌元数据）。
+>
+> ### B. Codex 验收打回（原始失败证据，永久保留不得覆盖）
+> - 目录：`.sandbox-test/results/codex-acceptance-20261102/`
+> - `REPORT.md`、`execution.json`（`conclusion: FAIL`，`total 18 / passed 9 / failed 9`，`source_unchanged: true`）
+> - `api-cfb-cases.json`、`cli-cases.json`、`run_acceptance.py`
+> - 失败 9 项：`invalid_root_deep`、`wrong_namespace_prefixed`、`no_namespace_empty_root`、`invalid_multiple_roots`、`cfb_forged_fib_missing_table`、`cfb_embedded_word_in_workbook`、`cfb_unsupported_fib_version`、`api_missing_extension`、`png_signature_only_evidence`
+>
+> ### C. Round 2 修复与独立复验（终轮）
+> | 项 | 实据 |
 > |---|---|
-> | Commit SHA | `fc3d77da4951219b92afea5913fb10d1333e5a25`（initial commit） |
-> | 提交信息 | `feat(p0): initial implementation of KindProbe P0 (Spec §13)` |
-> | 远端 | `https://github.com/vusiif/KindProbe.git` 分支 `main` |
-> | Push 结果 | `* [new branch] main -> main`；remote-tracking ref 与本地 HEAD 同为 `fc3d77da…` |
-> | 强制推送 / Release / 远端配置改动 | **均未执行**（按授权边界） |
+> | 实现者修复 | 9 项打回缺陷 + 收口补 2 个历史正例（`adv_true_doc.doc`、`adv_true_doc_renamed.zip` 补 `0Table` 直属流） |
+> | 新增永久回归 | `tests/test_codex_acceptance_regression.rs`（9 项） |
+> | **Codex 18 项** | 独立重跑 `codex-acceptance-rerun-20261102T145643/execution.json` → **`conclusion: PASS`，`passed 18 / failed 0 / failed_ids: []`** |
+> | **52 夹具** | `verifier_round2/52_fixtures_regression_results.json` → **`false_id 0 / misses 0 / crashes 0`**，`correct_degradations 30` |
+> | `cargo test` | **26/26**（17 既有 + 9 新回归），退出码 0；doctest 退出码 0 |
+> | 官方基准 | `scripts/verify_runner.py` 退出码 0（`false_id=0, misses=0, crashes=0`） |
+> | 独立复验报告 | `.sandbox-test/results/verifier_round2/INDEPENDENT_VERIFICATION_R2.md` 与 `INDEPENDENT_VERIFICATION_R2_FINAL.md` |
 >
-> ### B. 会话与 Terminal ID（本轮真实存活记录，保留不清理）
-> | 角色 | Terminal / Session | 位置 | 交付 |
-> |---|---|---|---|
-> | 主管 (MiMo) | `0eb85957` / 原生对话 `ses_e6858a8a6ffeJlMl3k7VxSJWpY` | 本地 | 编排 |
-> | 实现者 `kindprobe_agy_developer` | `41f07fa1` | 本地 | 范围核对 + commit + push |
-> | 独立验证员 `kindprobe_claude_verifier` | `40ff2406` | 本地 | Round 1 独立复验 **PASS** |
-> | 全项目审查 `agy_whole_reviewer` | terminal `0e866f20` / session `cao-39f1107c` | 远端 `http://127.0.0.1:9890` (lolicon) | **无阻断性缺陷** |
+> **Release 度量定案**（主管与验证员一致）：
+> - 规范路径 `/output/target/release/kindprobe`（宿主 `.sandbox-test/target/release/kindprobe`）= **909,048 字节 / SHA256 `74b4f7d4793431c8bb60927832ab0304c19d0bc50361e4cc033c0a6eae4a7c8e`**，与 `release_measurements.json` 比特级一致。
+> - `908,704 字节 / 5e5e2b50a8d46aa23c1f6f6fa813e751821358e7bd7c72c02b7c4756dc50f0f9` 系 `run_acceptance.py` 设 `CARGO_TARGET_DIR=/accept/build` 的临时产物，**不是**规范 release 度量。
+>
+> ### D. 修订预算（已用尽）
+> - **Revision Round 1**：本文档 §7（初始审查 5 项缺陷修复）。
+> - **Revision Round 2（终轮）**：Codex 打回 9 项 + 收口 2 正例。
+> - **预算已用 2 轮，剩余 0 轮。** 若后续再发现 P0 缺陷，**不得自动扩轮**，须保存摘要并报告阻塞、交人类决定。
+>
+> ### E. 会话与 Terminal ID（保留不清理）
+> | 角色 | Terminal / Session | 位置 |
+> |---|---|---|
+> | 主管 (MiMo) | `0eb85957` / 原生对话 `ses_e6858a8a6ffeJlMl3k7VxSJWpY` | 本地 |
+> | 实现者 `kindprobe_agy_developer` | `41f07fa1` | 本地 |
+> | 独立验证员 `kindprobe_claude_verifier` | `40ff2406` | 本地 |
+> | 全项目审查 `agy_whole_reviewer` | terminal `0e866f20` / session `cao-39f1107c` | 远端 `http://127.0.0.1:9890` (lolicon) |
 >
 > 历史记录 `6cf1541f` / `27f72082` / `849bcb62` / `7e43a873` / `ee25d750` 仅为旧会话，**不存活、不得向其派单**。
 >
-> ### C. 三层证据必须分别引用（不得混为一谈）
-> 1. **实现者自测** → 本文档 §7（Round 1 五项修复记录）与 §3 指标。
-> 2. **独立实测** → `.sandbox-test/results/verifier_round1/INDEPENDENT_VERIFICATION_R1.md`（P0-G0..G6 全 PASS；52 夹具 False ID=0 / Miss=0 / Crash=0；全新 release 构建 SHA256 `d1cc0fdd073cb9a52fa73a33fde6dd612d420308d29181204fd57aae6c1f6b68`；`cargo test` 与 runner 退出码均为 0；历史 5 项缺陷 VERIFIED FIXED）。
-> 3. **整体审查** → `.agents/progress/FINAL_REVIEW.md`（9890 全项目审查，**无阻断性缺陷**，P0-G0..G6 全 PASS）。
-> 4. **人工验收** → **未完成 (Pending Human Acceptance)**。AI 代理不得代为标记通过。
+> ### F. 证据分层（必须分别引用，不得混为一谈）
+> 1. **实现者自测** → 本文档 §7（Round 1）与 Round 2 收口汇报。⚠️ 实现者曾两次自报不实（「52 组无回归」实为 misses=2；release 路径与 SHA 张冠李戴），**均以独立实测为准**。
+> 2. **独立实测** → `verifier_round1/INDEPENDENT_VERIFICATION_R1.md`（Round 1）、`verifier_round2/INDEPENDENT_VERIFICATION_R2*.md`（Round 2，**权威**）。
+> 3. **Codex 亲自验收** → `codex-acceptance-20261102/REPORT.md`（**FAIL 历史**）及各 `codex-acceptance-rerun-*/execution.json`（修复后 PASS）。
+> 4. **整体审查** → `.agents/progress/FINAL_REVIEW.md` —— **其无阻断结论已被实测否定，仅作历史存档**。
+> 5. **人工验收** → **未完成 (Pending Human Acceptance)**。AI 代理不得代为标记通过。
 >
-> ### D. 修订预算与遗留项
-> - 修订预算：**已用 1 轮（本文档 §7），剩余 1 轮未动用** —— 因独立复验 PASS 且整体审查无阻断，无缺陷回流。
-> - `FINAL_REVIEW.md` §1 的 **8 项 `inferred` 推断性缺陷** 与 §3 的 **4 条 P1 建议**：**均未修复、未实施**，属新增范围，**留待人类选择**。
->   - ⚠️ **报告勘误**：实现者收尾报告第 3 节曾把这 8 项误述为「Round 1 五项修复」，**该说法不成立**。经主管定向核实：`src/detectors/cfb_doc.rs:198-208`、`src/lib.rs:52-61`、`tests/test_cli_contract.rs:82-84` 均**保持原样未修**，与其第 6 节自述一致。真正的 Round 1 五项修复见 §7。
+> ### G. 遗留与边界
+> - `FINAL_REVIEW.md` §1 的 8 项 `inferred` 缺陷与 §3 的 4 条 P1 建议：**未实施**，属新增范围，留待人类选择。
 > - 项目代码许可证**仍待维护者指定**，`README.md` 已明示待定；第三方许可记录完整。
+> - 未验证：Windows / macOS；P1-B 格式（DOCM/XLSM/PPTM、XLSX/PPTX、7z/RAR、媒体）。
 >
-> ### E. 后续
-> 1. 维护者人工验收（含是否在 P1-A 排期修复上述 8 项推断性缺陷）。
-> 2. **本轮到此暂停，不自动推进 P1、不开发新功能。**
+> ### H. 后续
+> 1. 维护者**再次人工验收**（Codex 打回后的复验结果需由人最终确认）。
+> 2. **本轮到此暂停，不自动推进 P1、不开发新功能、不自动扩轮。**
 
-**Date:** 2026-11-02T21:30:00+08:00  
-**Executor:** kindprobe_agy_developer（收尾） / kindprobe_claude_verifier（独立复验） / agy_whole_reviewer（整体审查）  
-**Git Remote:** `https://github.com/vusiif/KindProbe.git` (branch `main`) — **已提交并推送**（见置顶 A）
+**Date:** 2026-11-02T23:15:00+08:00  
+**Executor:** kindprobe_agy_developer（Round 2 修复） / kindprobe_claude_verifier（Round 2 独立复验）  
+**Git Remote:** `https://github.com/vusiif/KindProbe.git` (branch `main`) — Round 2 修复**待提交推送**（见置顶 C）
 
 ---
 

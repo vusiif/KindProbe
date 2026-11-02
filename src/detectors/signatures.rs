@@ -6,7 +6,8 @@ pub const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
 pub const PDF_SIGNATURE: &[u8] = b"%PDF-";
 
 pub enum SignatureMatch {
-    Png,
+    PngStructure,
+    PngSignatureOnly,
     Pdf,
     Truncated(String),
     None,
@@ -19,13 +20,10 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
             let chunk_len = u32::from_be_bytes([header[8], header[9], header[10], header[11]]);
             let chunk_type = &header[12..16];
             if chunk_len == 13 && chunk_type == b"IHDR" {
-                return SignatureMatch::Png;
+                return SignatureMatch::PngStructure;
             }
         }
-        // If file is smaller than 16 bytes but starts with full 8-byte PNG signature
-        if header.len() == 8 {
-            return SignatureMatch::Png;
-        }
+        return SignatureMatch::PngSignatureOnly;
     } else if (header.len() >= 4 && header.starts_with(b"\x89PNG"))
         || (header.len() >= 1 && header[0] == 0x89 && header.len() < 8)
     {
@@ -56,22 +54,30 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
     SignatureMatch::None
 }
 
-pub fn make_png_report() -> DetectionReport {
+pub fn make_png_report(has_ihdr: bool) -> DetectionReport {
     DetectionReport {
         schema_version: 1,
         format_id: Some("png".to_string()),
         category: "image".to_string(),
         container_id: None,
         identification: Identification::Format,
-        verification: Verification::Structure,
+        verification: if has_ihdr {
+            Verification::Structure
+        } else {
+            Verification::Signature
+        },
         inspection: Inspection::Complete,
         recommended_extension: Some("png".to_string()),
         accepted_extensions: vec!["png".to_string()],
         extension_status: ExtensionStatus::Undetermined,
-        evidence: vec![
-            EvidenceItem::new("sig.png.header"),
-            EvidenceItem::new("sig.png.ihdr"),
-        ],
+        evidence: if has_ihdr {
+            vec![
+                EvidenceItem::new("sig.png.header"),
+                EvidenceItem::new("sig.png.ihdr"),
+            ]
+        } else {
+            vec![EvidenceItem::new("sig.png.header")]
+        },
         warnings: Vec::new(),
         stats: Default::default(),
         candidates: None,
