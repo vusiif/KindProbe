@@ -211,3 +211,28 @@ fn test_zip_conflicting_duplicate_entries() {
     assert_eq!(rep.inspection, Inspection::Ambiguous);
     assert!(rep.warnings.iter().any(|w| w.code == "zip.conflicting_entries"));
 }
+
+#[test]
+fn test_decompress_limit_reader_exact_and_overflow_boundaries() {
+    use std::io::{Cursor, Read};
+    use kindprobe::budget::DecompressLimitReader;
+
+    let limit = 256 * 1024; // 256 KiB
+
+    // Case 1: Exact 256 KiB stream
+    let exact_data = vec![b'A'; limit];
+    let mut reader = DecompressLimitReader::new(Cursor::new(&exact_data), limit);
+    let mut out = Vec::new();
+    let res = reader.read_to_end(&mut out);
+    assert!(res.is_ok(), "reading exactly 256 KiB to EOF must succeed");
+    assert_eq!(out.len(), limit);
+    assert!(!reader.is_exceeded(), "must NOT report exceeded when input exactly equals limit and ends");
+
+    // Case 2: 256 KiB + 1 byte stream (truly exceeded)
+    let overflow_data = vec![b'A'; limit + 1];
+    let mut reader = DecompressLimitReader::new(Cursor::new(&overflow_data), limit);
+    let mut out = Vec::new();
+    let res = reader.read_to_end(&mut out);
+    assert!(res.is_err(), "reading 256 KiB + 1 must error when exceeding limit");
+    assert!(reader.is_exceeded(), "must report exceeded when input has extra byte beyond limit");
+}

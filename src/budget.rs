@@ -178,12 +178,30 @@ impl<R: Read> DecompressLimitReader<R> {
 
 impl<R: Read> Read for DecompressLimitReader<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+
         if self.current_read >= self.max_single_bytes {
-            self.exceeded = true;
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "budget.xml_output_exceeded: decompressed output budget exceeded",
-            ));
+            // Buffer already reached the budget limit.
+            // Probe if the underlying reader actually has more bytes (real overflow),
+            // or if it has reached normal EOF.
+            let mut probe = [0u8; 1];
+            match self.inner.read(&mut probe) {
+                Ok(0) => {
+                    // Normal EOF: exactly reached limit, no overflow.
+                    return Ok(0);
+                }
+                Ok(_) => {
+                    // There are additional bytes beyond budget limit -> truly exceeded.
+                    self.exceeded = true;
+                    return Err(io::Error::new(
+                        io::ErrorKind::UnexpectedEof,
+                        "budget.xml_output_exceeded: decompressed output budget exceeded",
+                    ));
+                }
+                Err(e) => return Err(e),
+            }
         }
 
         let remaining = self.max_single_bytes - self.current_read;

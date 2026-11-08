@@ -1,0 +1,292 @@
+[
+  {
+    "name": "adv_valid_png.png",
+    "path": "fixtures/verifier/adv_valid_png.png",
+    "size": 45,
+    "sha256": "029e2f6a9cb07d6f144d8b33262bd934ac21c7fcb579af4f3c9716a665296337",
+    "expected_format": "png",
+    "expected_container": null,
+    "expected_exit_code": 0,
+    "description": "Valid PNG"
+  },
+  {
+    "name": "adv_valid_pdf.pdf",
+    "path": "fixtures/verifier/adv_valid_pdf.pdf",
+    "size": 77,
+    "sha256": "4f0721b2855d0ba9449d707e357a71b818155573a87bd0b3bb57f66627230175",
+    "expected_format": "pdf",
+    "expected_container": null,
+    "expected_exit_code": 0,
+    "description": "Valid PDF"
+  },
+  {
+    "name": "adv_plain_zip.zip",
+    "path": "fixtures/verifier/adv_plain_zip.zip",
+    "size": 141,
+    "sha256": "567b6a6154e3a85c7a8ec6248d0515f2e5e7dbacc1f5d871be4c570c0652f7fc",
+    "expected_format": "zip",
+    "expected_container": "zip",
+    "expected_exit_code": 0,
+    "description": "Valid Plain ZIP"
+  },
+  {
+    "name": "adv_true_docx.docx",
+    "path": "fixtures/verifier/adv_true_docx.docx",
+    "size": 860,
+    "sha256": "735bb77bb0454418390659610bb7bfa1d25489985c8dec421ac0f7ec6edacb98",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "expected_exit_code": 0,
+    "description": "Valid Genuine DOCX"
+  },
+  {
+    "name": "adv_true_doc.doc",
+    "path": "fixtures/verifier/adv_true_doc.doc",
+    "size": 9728,
+    "sha256": "a9d618de1ce00f461d9a25865466faf019fe5581149d68eb2e913535fbf368dd",
+    "expected_format": "doc",
+    "expected_container": "cfb",
+    "expected_exit_code": 0,
+    "description": "Valid Genuine DOC with verified FIB and 0Table stream"
+  },
+  {
+    "name": "adv_fake_docx_only_word_dir.zip",
+    "path": "fixtures/verifier/adv_fake_docx_only_word_dir.zip",
+    "size": 142,
+    "sha256": "8e387e5b11ddbf3190b3f977739ebf29380dc4cf6c029bcd9587f4af885c85a9",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Fake DOCX: only word/document.xml"
+  },
+  {
+    "name": "adv_fake_docx_missing_main_in_content_types.docx",
+    "path": "fixtures/verifier/adv_fake_docx_missing_main_in_content_types.docx",
+    "size": 772,
+    "sha256": "af535367394994692c2fddd790be6a4308ce781a27072eeab8aa20d5ba16a1ba",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Fake DOCX: missing ContentType for main part"
+  },
+  {
+    "name": "adv_fake_docx_wrong_content_type.docx",
+    "path": "fixtures/verifier/adv_fake_docx_wrong_content_type.docx",
+    "size": 782,
+    "sha256": "822592cb52eda9bad5fc36123d210e68542edb1929fd06b50aa0a45247eae9e1",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Fake DOCX: non-Word ContentType"
+  },
+  {
+    "name": "adv_fake_docx_path_traversal.docx",
+    "path": "fixtures/verifier/adv_fake_docx_path_traversal.docx",
+    "size": 834,
+    "sha256": "54ed0844c2c870b09638e025b1ffa39ac26624b115eb4d78571e27d5a9dbf142",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Fake DOCX: path traversal escaping root"
+  },
+  {
+    "name": "adv_fake_docx_invalid_root_tag.docx",
+    "path": "fixtures/verifier/adv_fake_docx_invalid_root_tag.docx",
+    "size": 775,
+    "sha256": "cf37e294b9ed1c5e9e2d6c7a96bdcc0f391d50c474afff860a80e8ebded021a5",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Fake DOCX: invalid XML root tag"
+  },
+  {
+    "name": "adv_fake_doc_cfb_zero_fib.doc",
+    "path": "fixtures/verifier/adv_fake_doc_cfb_zero_fib.doc",
+    "size": 5632,
+    "sha256": "1e1c50d117936a4b03a2c0868d53cc4c6158ef045fe9e2bb9dc4f66acc2a9741",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "expected_exit_code": 3,
+    "description": "Fake DOC: WordDocument stream with 0 FIB magic"
+  },
+  {
+    "name": "adv_fake_doc_cfb_pre97_fib.doc",
+    "path": "fixtures/verifier/adv_fake_doc_cfb_pre97_fib.doc",
+    "size": 5632,
+    "sha256": "86524ed5192b651034890b61742db6058203de300f14d5c28b16c8b53c145496",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "expected_exit_code": 3,
+    "description": "Fake DOC: pre-Word97 nFib"
+  },
+  {
+    "name": "adv_fake_doc_cfb_fc_min_gt_mac.doc",
+    "path": "fixtures/verifier/adv_fake_doc_cfb_fc_min_gt_mac.doc",
+    "size": 5632,
+    "sha256": "907ddae6fbfe94d32bed23a31843f1ff25a567a7f1f2906194472bae09f88d3b",
+    "expected_format": null,
+    "expected_container": "cfb",
+    "expected_exit_code": 3,
+    "description": "Fake DOC: fcMin > fcMac"
+  },
+  {
+    "name": "adv_true_docx_renamed.pdf",
+    "path": "fixtures/verifier/adv_true_docx_renamed.pdf",
+    "size": 860,
+    "sha256": "735bb77bb0454418390659610bb7bfa1d25489985c8dec421ac0f7ec6edacb98",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "expected_exit_code": 0,
+    "description": "True DOCX renamed to .pdf (mismatch)"
+  },
+  {
+    "name": "adv_true_docx_no_ext",
+    "path": "fixtures/verifier/adv_true_docx_no_ext",
+    "size": 860,
+    "sha256": "735bb77bb0454418390659610bb7bfa1d25489985c8dec421ac0f7ec6edacb98",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "expected_exit_code": 0,
+    "description": "True DOCX without extension (missing)"
+  },
+  {
+    "name": "adv_true_png_renamed.docx",
+    "path": "fixtures/verifier/adv_true_png_renamed.docx",
+    "size": 45,
+    "sha256": "029e2f6a9cb07d6f144d8b33262bd934ac21c7fcb579af4f3c9716a665296337",
+    "expected_format": "png",
+    "expected_container": null,
+    "expected_exit_code": 0,
+    "description": "True PNG renamed to .docx (mismatch)"
+  },
+  {
+    "name": "adv_true_doc_renamed.zip",
+    "path": "fixtures/verifier/adv_true_doc_renamed.zip",
+    "size": 9728,
+    "sha256": "a9d618de1ce00f461d9a25865466faf019fe5581149d68eb2e913535fbf368dd",
+    "expected_format": "doc",
+    "expected_container": "cfb",
+    "expected_exit_code": 0,
+    "description": "True DOC renamed to .zip (mismatch)"
+  },
+  {
+    "name": "adv_valid_pdf_renamed.png",
+    "path": "fixtures/verifier/adv_valid_pdf_renamed.png",
+    "size": 77,
+    "sha256": "4f0721b2855d0ba9449d707e357a71b818155573a87bd0b3bb57f66627230175",
+    "expected_format": "pdf",
+    "expected_container": null,
+    "expected_exit_code": 0,
+    "description": "Valid PDF renamed to .png (mismatch)"
+  },
+  {
+    "name": "adv_truncated_zip_8bytes.zip",
+    "path": "fixtures/verifier/adv_truncated_zip_8bytes.zip",
+    "size": 8,
+    "sha256": "4bc961e8ca5ed1566ca76e0986ba99290b4fe8fbc177eaa9c99761dc2bb74cc1",
+    "expected_format": null,
+    "expected_container": null,
+    "expected_exit_code": 3,
+    "description": "Truncated 8-byte ZIP"
+  },
+  {
+    "name": "adv_truncated_cfb_16bytes.doc",
+    "path": "fixtures/verifier/adv_truncated_cfb_16bytes.doc",
+    "size": 16,
+    "sha256": "85cd14eafa023a1fbe1db3176281bde062b4497aa2bd7b367adb7ce91d4ae3b2",
+    "expected_format": null,
+    "expected_container": null,
+    "expected_exit_code": 3,
+    "description": "Truncated 16-byte CFB"
+  },
+  {
+    "name": "adv_truncated_png_4bytes.png",
+    "path": "fixtures/verifier/adv_truncated_png_4bytes.png",
+    "size": 4,
+    "sha256": "0f4636c78f65d3639ece5a064b5ae753e3408614a14fb18ab4d7540d2c248543",
+    "expected_format": null,
+    "expected_container": null,
+    "expected_exit_code": 3,
+    "description": "Truncated 4-byte PNG"
+  },
+  {
+    "name": "adv_truncated_pdf_3bytes.pdf",
+    "path": "fixtures/verifier/adv_truncated_pdf_3bytes.pdf",
+    "size": 3,
+    "sha256": "a135fc158ef93b36ab22c78a03eefd3406e4ebaf78499576e5c555977e205dc9",
+    "expected_format": null,
+    "expected_container": null,
+    "expected_exit_code": 3,
+    "description": "Truncated 3-byte PDF"
+  },
+  {
+    "name": "adv_empty_file.bin",
+    "path": "fixtures/verifier/adv_empty_file.bin",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "expected_format": null,
+    "expected_container": null,
+    "expected_exit_code": 3,
+    "description": "Empty 0-byte file"
+  },
+  {
+    "name": "adv_random_noise_512b.bin",
+    "path": "fixtures/verifier/adv_random_noise_512b.bin",
+    "size": 512,
+    "sha256": "917e690f2b344d25e07b5eb959092c725e32c6250289837f111fed823a536d53",
+    "expected_format": null,
+    "expected_container": null,
+    "expected_exit_code": 3,
+    "description": "512 bytes random noise"
+  },
+  {
+    "name": "adv_budget_xml_deep.docx",
+    "path": "fixtures/verifier/adv_budget_xml_deep.docx",
+    "size": 1162,
+    "sha256": "acf133e9504ce712a3d05c5a20f1512cc116fe8152e3bf4eac7a12c737ef9c2a",
+    "expected_format": "docx",
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Budget XML deep: 75 levels nesting"
+  },
+  {
+    "name": "adv_duplicate_key_members.zip",
+    "path": "fixtures/verifier/adv_duplicate_key_members.zip",
+    "size": 1178,
+    "sha256": "d073afa0b2dcdb72a9a0c87872d8331dd10296a0dbcd41584dbe114279fe7e4e",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Duplicate key members in ZIP"
+  },
+  {
+    "name": "adv_conflicting_rels.docx",
+    "path": "fixtures/verifier_round1/adv_conflicting_rels.docx",
+    "size": 1079,
+    "sha256": "bc122cbd2070074d50ab99b8ae06bf54845c50d1a5ad1e98d2740da950bea9f5",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Round 1 adversarial fixture: adv_conflicting_rels.docx"
+  },
+  {
+    "name": "adv_duplicate_raw_members.zip",
+    "path": "fixtures/verifier_round1/adv_duplicate_raw_members.zip",
+    "size": 170,
+    "sha256": "d21fcc95e1a6888a5e020e2affc993a5eed4650139b00df01cbadd6de290a54a",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Round 1 adversarial fixture: adv_duplicate_raw_members.zip"
+  },
+  {
+    "name": "adv_normalized_collision.zip",
+    "path": "fixtures/verifier_round1/adv_normalized_collision.zip",
+    "size": 189,
+    "sha256": "9909059e4d9c586a123eb9ef79b4016b889ee37f9aeedce2b23961bfee603fd1",
+    "expected_format": null,
+    "expected_container": "zip",
+    "expected_exit_code": 3,
+    "description": "Round 1 adversarial fixture: adv_normalized_collision.zip"
+  }
+]

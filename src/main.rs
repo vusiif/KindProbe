@@ -41,11 +41,42 @@ fn print_version() {
     println!("kindprobe {}", VERSION);
 }
 
+fn exit_with_arg_error(json_mode: bool, msg: &str) -> ! {
+    if json_mode {
+        let env = ErrorEnvelope {
+            schema_version: 1,
+            error: ErrorDetails {
+                code: "error.invalid_arguments".to_string(),
+                message: msg.to_string(),
+            },
+        };
+        let json_err = serde_json::to_string(&env).unwrap();
+        println!("{}", json_err);
+    } else {
+        eprintln!("Error: {}", msg);
+    }
+    process::exit(2);
+}
+
 fn main() {
     let cli_start = Instant::now();
     let args: Vec<OsString> = env::args_os().collect();
 
+    // Pre-scan for --json flag so argument errors occurring before or after --json
+    // can reliably emit the JSON ErrorEnvelope per specification §8
     let mut json_mode = false;
+    let mut saw_double_dash = false;
+    for arg in &args[1..] {
+        if saw_double_dash {
+            break;
+        }
+        if arg == OsStr::new("--") {
+            saw_double_dash = true;
+        } else if arg == OsStr::new("--json") {
+            json_mode = true;
+        }
+    }
+
     let mut target_file: Option<PathBuf> = None;
     let mut after_double_dash = false;
 
@@ -54,14 +85,13 @@ fn main() {
         let arg = &args[i];
         if after_double_dash {
             if target_file.is_some() {
-                eprintln!("Error: multiple file arguments provided");
-                process::exit(2);
+                exit_with_arg_error(json_mode, "multiple file arguments provided");
             }
             target_file = Some(PathBuf::from(arg));
         } else if arg == OsStr::new("--") {
             after_double_dash = true;
         } else if arg == OsStr::new("--json") {
-            json_mode = true;
+            // Handled in pre-scan
         } else if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
             print_help();
             process::exit(0);
@@ -71,12 +101,10 @@ fn main() {
         } else {
             let s = arg.to_string_lossy();
             if s.starts_with('-') {
-                eprintln!("Error: unrecognized option '{}'", s);
-                process::exit(2);
+                exit_with_arg_error(json_mode, &format!("unrecognized option '{}'", s));
             } else {
                 if target_file.is_some() {
-                    eprintln!("Error: multiple file arguments provided");
-                    process::exit(2);
+                    exit_with_arg_error(json_mode, "multiple file arguments provided");
                 }
                 target_file = Some(PathBuf::from(arg));
             }
@@ -87,8 +115,10 @@ fn main() {
     let file_path = match target_file {
         Some(f) => f,
         None => {
-            eprintln!("Error: missing file argument\nUse --help for usage information");
-            process::exit(2);
+            exit_with_arg_error(
+                json_mode,
+                "missing file argument; use --help for usage information",
+            );
         }
     };
 

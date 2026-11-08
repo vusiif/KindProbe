@@ -735,8 +735,8 @@ fn parse_content_types(
     let mut reader = XmlReader::from_reader(xml_bytes);
     reader.config_mut().trim_text(true);
 
-    let target_part_name = format!("/{}", normalized_target);
-    let target_ext = normalized_target.rsplit('.').next().unwrap_or("");
+    let target_part_name = format!("/{}", normalized_target).to_ascii_lowercase();
+    let target_ext = normalized_target.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
 
     let mut overrides = HashMap::new();
     let mut defaults = HashMap::new();
@@ -751,7 +751,7 @@ fn parse_content_types(
                     let mut content_type = String::new();
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"PartName" {
-                            part_name = String::from_utf8_lossy(&attr.value).to_string();
+                            part_name = String::from_utf8_lossy(&attr.value).to_ascii_lowercase();
                         } else if attr.key.as_ref() == b"ContentType" {
                             content_type = String::from_utf8_lossy(&attr.value).to_string();
                         }
@@ -764,7 +764,7 @@ fn parse_content_types(
                     let mut content_type = String::new();
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"Extension" {
-                            ext = String::from_utf8_lossy(&attr.value).to_string();
+                            ext = String::from_utf8_lossy(&attr.value).to_ascii_lowercase();
                         } else if attr.key.as_ref() == b"ContentType" {
                             content_type = String::from_utf8_lossy(&attr.value).to_string();
                         }
@@ -789,7 +789,7 @@ fn parse_content_types(
     if let Some(ct) = overrides.get(&target_part_name) {
         return Ok(Some(ct.clone()));
     }
-    if let Some(ct) = defaults.get(target_ext) {
+    if let Some(ct) = defaults.get(&target_ext) {
         return Ok(Some(ct.clone()));
     }
 

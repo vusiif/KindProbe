@@ -56,9 +56,11 @@ def run_measurements():
 
         container_name = f"kindprobe-rel-{name.replace('.', '_')}"
 
-        # We run /usr/bin/time -v on docker command to measure peak RSS and execution time
+        # Target process runs directly in container. Container lacks /usr/bin/time,
+        # and per specification §10.2 / Deliverable 10: "Measure target process memory if feasible;
+        # otherwise state not measured, never substitute docker client RSS."
+        # Thus target_process_rss_kb is explicitly recorded as None ("not measured").
         cmd = [
-            "/usr/bin/time", "-v",
             "docker", "run", "--rm", "--name", container_name,
             "--pull", "never", "--network", "none", "--read-only",
             "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
@@ -78,14 +80,9 @@ def run_measurements():
         stdout = p.stdout.strip()
         stderr = p.stderr.strip()
 
-        # Parse /usr/bin/time output from stderr
+        # Target process memory is not measured because container image lacks time / memory cgroup introspector;
+        # Per contract, we state not measured (None) and never substitute docker client RSS.
         peak_rss_kb = None
-        for line in stderr.splitlines():
-            if "Maximum resident set size" in line:
-                try:
-                    peak_rss_kb = int(line.split(":")[-1].strip())
-                except Exception:
-                    pass
 
         try:
             report = json.loads(stdout)

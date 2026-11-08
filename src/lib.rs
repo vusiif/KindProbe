@@ -25,7 +25,12 @@ pub fn detect_path(
 ) -> Result<DetectionReport, DetectError> {
     let start = Instant::now();
 
-    let meta = match std::fs::metadata(path) {
+    let mut file = match File::open(path) {
+        Ok(f) => f,
+        Err(e) => return Err(DetectError::Io(e)),
+    };
+
+    let meta = match file.metadata() {
         Ok(m) => m,
         Err(e) => return Err(DetectError::Io(e)),
     };
@@ -33,11 +38,6 @@ pub fn detect_path(
     if !meta.is_file() {
         return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
     }
-
-    let mut file = match File::open(path) {
-        Ok(f) => f,
-        Err(e) => return Err(DetectError::Io(e)),
-    };
 
     let mut report = detect_reader(&mut file, options)?;
 

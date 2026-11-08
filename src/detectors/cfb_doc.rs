@@ -202,26 +202,29 @@ pub fn detect_cfb_doc<R: Read + Seek>(
     let is_1table = (flags & 0x0200) != 0;
     let required_table_name = if is_1table { "1Table" } else { "0Table" };
 
-    let mut table_stream_found = false;
+    let mut table_stream_path = None;
     if let Ok(root_entries) = comp.read_storage("/") {
         for entry in root_entries {
             if entry.name().eq_ignore_ascii_case(required_table_name) && entry.is_stream() {
-                table_stream_found = true;
+                table_stream_path = Some(entry.path().to_path_buf());
                 break;
             }
         }
     }
 
-    if !table_stream_found {
-        report.warnings.push(WarningItem::new(
-            "cfb.table_stream_missing",
-            format!("Required table stream '{}' indicated by fWhichTblStm is missing", required_table_name),
-        ));
-        return Ok(report);
-    }
+    let actual_table_path = match table_stream_path {
+        Some(p) => p,
+        None => {
+            report.warnings.push(WarningItem::new(
+                "cfb.table_stream_missing",
+                format!("Required table stream '{}' indicated by fWhichTblStm is missing", required_table_name),
+            ));
+            return Ok(report);
+        }
+    };
 
-    // Verify table stream can be opened and read
-    match comp.open_stream(format!("/{}", required_table_name)) {
+    // Verify table stream can be opened and read using its actual path
+    match comp.open_stream(&actual_table_path) {
         Ok(mut t_stream) => {
             let mut probe_buf = [0u8; 1];
             if let Err(e) = t_stream.read(&mut probe_buf) {
@@ -252,19 +255,6 @@ pub fn detect_cfb_doc<R: Read + Seek>(
             report.warnings.push(WarningItem::new(
                 "cfb.table_stream_open_error",
                 format!("Failed to open required table stream '{}': {}", required_table_name, e),
-            ));
-            return Ok(report);
-        }
-    }
-
-    // Check fcMin and fcMac offsets if available (offsets 0x20 and 0x24)
-    if bytes_read >= 40 {
-        let fc_min = u32::from_le_bytes([fib_header[32], fib_header[33], fib_header[34], fib_header[35]]);
-        let fc_mac = u32::from_le_bytes([fib_header[36], fib_header[37], fib_header[38], fib_header[39]]);
-        if fc_min > fc_mac {
-            report.warnings.push(WarningItem::new(
-                "cfb.invalid_fib_offsets",
-                format!("FibBase fcMin ({}) > fcMac ({})", fc_min, fc_mac),
             ));
             return Ok(report);
         }
