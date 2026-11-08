@@ -4,7 +4,7 @@
 - **验证员亲自 Docker 复跑（全部退出码 0）**：cargo test 30/30、doctest、release 产物 912,408B / SHA256 `8665bd5efe4ce7ae3ae9fe1569fc84a966f7f2251f704ff96630df967b911c07`（与预期 100% 一致）、52 矩阵 52/52 false=0、Codex 18/18、release 度量 23/23。镜像 sha256 `cdf54f8f…` 与合同一致，参数含 --network none/只读/降权。
 - **主管证据抽查（在盘，.sandbox-test/results/verifier_round1/）**：`INDEPENDENT_VERIFICATION_P1A_ROUND1.md`、cargo_test.log（各二进制 test result: ok）、doctest.log、52_fixtures_regression_results.json（total 52/false 0/misses 0/crashes 0/degradations 30）、run_acceptance.log（PASS 18/18）、release_measurements.json、产物 SHA 独立复算一致。`.sandbox-test/` 按 .gitignore 不入库。
 - **修订预算**：Round1 消耗 1/2，剩余 1 轮。
-- **提交推送**：范围核对通过后一次 commit/push origin main（既有授权，无 force、无 Release、不改远端配置）。
+- **提交推送完成**：`0b55e49`（58 文件，+1556/−133）已推送 `origin main`（`892a40b..0b55e49`），一次提交，无 force、无 Release、未改远端配置。工作区干净。
 - **旧验证员**：`4e7658be` tmux session 已消失（record unknown），未复用、未新造已通过证据。
 
 - **新主管**：OMP 主管 `5beee9de` 接替 `567bae8e`（历史保留）；实现者回调已迁至 `receiver_id=5beee9de`。
