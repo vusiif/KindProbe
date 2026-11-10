@@ -3,6 +3,7 @@ name = "kindprobe"
 version = "0.1.0"
 edition = "2021"
 description = "Fast, bounded, content-first file format identification tool and library"
+license = "GPL-3.0-or-later"
 
 [dependencies]
 zip = { version = "2.6.1", default-features = false, features = ["deflate"] }

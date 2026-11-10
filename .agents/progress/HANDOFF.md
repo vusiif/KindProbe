@@ -1,3 +1,8 @@
+## License decision (2026-11-09, America/Los_Angeles)
+
+- Maintainer explicitly selected **GPL-3.0-or-later**. Added the complete unmodified GNU GPL v3 license text in `LICENSE`, set Cargo package SPDX metadata and updated the active README declaration. Earlier pending-license statements below describe historical checkpoints and are superseded by this decision. Third-party notices are unchanged.
+- This is a license/metadata update only; P1-A implementation and verification remain complete, human acceptance is still pending, and P1-B is not authorized. Validation: TOML parses with the exact SPDX expression, LICENSE matches the local canonical GNU GPL v3 text byte-for-byte, and `git diff --check` passes. No product test rerun is needed for unchanged source.
+
 ## Current checkpoint (2026-11-08 主管 5beee9de 接续, Round1 复验 PASS → 提交推送)
 
 - **独立复验 PASS（已核证据在盘）**：验证员 `181d8896`（kindprobe_agy_verifier 独立会话）逐项复验 5 项修复全 PASS、0 缺陷（reproduced=0/inferred=0）：①fcMin/fcMac 移除依据成立（MS-DOC 2.5.1 FibBase 32 字节、24..32 reserved MUST be ignored；夹具实测退出码 3 container_only 非假绿）；③表流真实路径+大写 /0TABLE 测试 PASS；②256KiB 恰好边界 1 字节 probe 触发测试 PASS；④归一化依据成立（ECMA-376 Part 2 §10.1.1.4/§10.1.2.3，仅 part_name/ext 归一、ContentType 原样，非全量小写）；⑤--json 预扫描 ErrorEnvelope（遇 `--` 停止）前后序实测 PASS；4 项新增触发测试非同义反复。
