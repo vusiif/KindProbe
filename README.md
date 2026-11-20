@@ -136,6 +136,35 @@ CLI 错误输出信封（退出码 4 或 1，使用 `--json` 时输出）：
 }
 ```
 
+### 4.4 Windows 资源管理器交互与拖拽工作流 (Explorer Drag-and-Drop)
+
+- **拖拽识别**：在 Windows 资源管理器中将单个文件拖拽到 `kindprobe.exe` 图标上，程序将检测由 Explorer 新分配的独立交互式控制台（仅宿主当前进程、标准输入输出为真实控制台缓冲区），完成格式识别后保持控制台开启，并显示 `Press Enter to close...` 提示，供用户阅读识别结论。用户敲击回车或直接关闭窗口均可安全退出。
+- **双击运行**：在资源管理器中直接双击 `kindprobe.exe`（无文件参数），程序会在独立交互控制台打印简明拖拽使用指引（`Drag and drop a file onto kindprobe.exe to identify its format.`），同样显示回车关闭提示并保持窗口开启，退出码保持 `2`。
+- **自动化无感兼容（硬契约）**：
+  - 在既有终端环境（`cmd.exe` / `PowerShell` / `wt.exe` 等父外壳已挂接控制台时，`GetConsoleProcessList > 1`）、CI 流水线、无交互脚本或任何重定向/管道模式（`kindprobe.exe file | more`、`kindprobe.exe file > out.txt`）下，程序**绝不暂停**、**绝不打印回车提示**，维持既有标准输出/错误与退出码契约。
+  - 在 `--json` 模式下，程序强制禁用控制台暂停逻辑，确保自动化与机器解析流程零阻塞。
+- **限制说明**：
+  - 仅支持单文件拖拽探测；若同时拖拽多个文件，程序输出标准参数错误（`multiple file arguments provided`）并在独立控制台保持可见。
+  - 不支持目录递归探测，不修改磁盘文件，不集成 GUI 框架。
+  - 此交互暂停与控制台宿主探测逻辑仅在 Windows 平台通过 `cfg(windows)` 原生生效；非 Windows 平台一律不触发。
+  - 测试环境变量覆盖（`KINDPROBE_TEST_DEDICATED_CONSOLE`）：test-only override; when set to `1` the session is treated as a dedicated console (and `--json` still never pauses); unset = normal detection behavior. 仅供测试与仿真覆盖使用，未设置时严格遵循上述原生检测行为。
+
+### 4.5 环境语言自动检测与中英文双语人读文本 (Automatic Locale Detection)
+
+- **语言检测机制**：
+  - **Windows 平台**：调用原生 Win32 `GetUserDefaultUILanguage()` 获取当前用户首选 UI 显示语言（含 `zh-CN`、`zh-TW`、`zh-HK`、`zh-SG`、`zh-MO`、`zh-Hans`、`zh-Hant` 等所有中文变体），自动切换为简体中文人读输出；非中文、未分配或 API 失败时安全回退为英文。不依赖时区、键盘布局、系统代码页、文件名或区域格式；不修改全局或控制台配置。
+  - **Linux / POSIX 平台**：严格遵循 POSIX 本地化变量优先级（`LC_ALL` > `LC_MESSAGES` > `LANG`）；`zh` 变体语言标签激活中文呈现，`C`、`POSIX`、非中文、空值或未知变量回退为英文。
+- **人读本地化范围**：
+  - 命令行帮助标题/选项描述/退出码说明。
+  - 独立控制台拖拽/无参数双击使用指引、退出前回车关闭提示（`按 Enter 键关闭...` / `Press Enter to close...`）。
+  - 命令行参数错误与 I/O 诊断说明（如 `错误: 未识别的选项` / `错误 [io.open_failed]: 打开或读取文件 '...' 失败`）。
+  - 格式识别结果、分类、验证方式、检测深度、扩展名状态描述、统计标签以及已知警告代码的中文释义。
+- **机器契约与稳定性保证**：
+  - 程序名（`kindprobe`）、命令行 flag（`--json`, `-h`, `--help` 等）、文件路径、格式 ID（`png`, `docx`, `doc` 等）、文件扩展名、稳定诊断码（如 `io.open_failed`, `cfb.table_stream_missing` 等）在任何语言下均严格保持原样。
+  - `--json` 输出路径严格不受语言检测影响：schema、字段名、枚举值、诊断码与序列化内容完全不变，不输出任何横幅、提示或中文化文本。
+  - 核心 DetectionReport / ErrorEnvelope 库契约与退出码（0/2/3/4/1）完全保持不变。
+  - 采用轻量内置 catalog 映射，零引入外部大型 i18n 框架或网络依赖。
+
 ---
 
 ## 5. 依赖与第三方许可清单
