@@ -98,10 +98,11 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         }
 
         // Walk central directory headers to check for duplicate entry names or conflicting paths
-        if cd_offset + (cd_size as u64) <= file_len {
-            if reader.seek(SeekFrom::Start(cd_offset)).is_ok() {
-                let mut cd_bytes = vec![0u8; cd_size];
-                if let Ok(n) = reader.read(&mut cd_bytes) {
+        if cd_offset + (cd_size as u64) <= file_len
+            && reader.seek(SeekFrom::Start(cd_offset)).is_ok()
+        {
+            let mut cd_bytes = vec![0u8; cd_size];
+            if let Ok(n) = reader.read(&mut cd_bytes) {
                     cd_bytes.truncate(n);
                     let mut pos = 0;
                     let mut seen_raw_names = HashSet::new();
@@ -164,7 +165,6 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
                     }
                 }
             }
-        }
     }
 
     Ok(Some(ZipCdPreCheckResult {

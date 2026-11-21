@@ -1,0 +1,5 @@
+# Auto-detect text files and normalize line endings to LF across all platforms
+* text=auto eol=lf
+
+# Raw binary test fixtures must never have line endings modified
+fixtures/** binary

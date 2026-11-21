@@ -37,13 +37,15 @@ impl Default for DetectOptions {
 }
 
 /// A counting, budget-enforcing wrapper around any Read + Seek stream.
+type WindowState = (Arc<AtomicUsize>, Arc<AtomicBool>, Arc<AtomicBool>, usize);
+
 pub struct BudgetReader<R> {
     inner: R,
     max_read_bytes: usize,
     total_read_bytes: usize,
     seek_count: usize,
     budget_exceeded: Arc<AtomicBool>,
-    window_state: Option<(Arc<AtomicUsize>, Arc<AtomicBool>, Arc<AtomicBool>, usize)>,
+    window_state: Option<WindowState>,
 }
 
 impl<R> BudgetReader<R> {

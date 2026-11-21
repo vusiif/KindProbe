@@ -28,7 +28,7 @@ pub fn is_chinese_locale_str(s: &str) -> bool {
         return false;
     }
     let lang = s
-        .split(|c| c == '_' || c == '-' || c == '.' || c == '@')
+        .split(['_', '-', '.', '@'])
         .next()
         .unwrap_or("");
     lang.eq_ignore_ascii_case("zh") || lang.eq_ignore_ascii_case("zho")
@@ -124,6 +124,7 @@ fn detect_app_language() -> AppLanguage {
 }
 
 #[cfg(windows)]
+#[allow(non_camel_case_types, clippy::upper_case_acronyms)]
 mod win_console {
     type DWORD = u32;
     type BOOL = i32;

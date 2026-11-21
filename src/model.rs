@@ -128,10 +128,10 @@ impl DetectionReport {
         }
 
         // Rule: verification=none cannot coexist with confirmed format or container
-        if self.verification == Verification::None {
-            if self.identification == Identification::Format || self.container_id.is_some() {
-                return Err("verification=none cannot coexist with confirmed format or container");
-            }
+        if self.verification == Verification::None
+            && (self.identification == Identification::Format || self.container_id.is_some())
+        {
+            return Err("verification=none cannot coexist with confirmed format or container");
         }
 
         Ok(())

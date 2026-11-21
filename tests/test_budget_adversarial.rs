@@ -75,7 +75,7 @@ fn test_real_io_errors_return_err() {
     impl Seek for FailingReader {
         fn seek(&mut self, _pos: SeekFrom) -> io::Result<u64> {
             if self.fail_seek {
-                Err(io::Error::new(io::ErrorKind::Other, "simulated seek error"))
+                Err(io::Error::other("simulated seek error"))
             } else {
                 Ok(0)
             }
@@ -101,9 +101,10 @@ fn test_real_io_errors_return_err() {
 
 #[test]
 fn test_budget_zip_directory_window() {
-    let mut options = DetectOptions::default();
-    // Set a very tiny directory window budget (10 bytes)
-    options.max_zip_directory_window = 10;
+    let options = DetectOptions {
+        max_zip_directory_window: 10,
+        ..Default::default()
+    };
 
     let rep = detect_path(Path::new("fixtures/plain_zip.zip"), &options).unwrap();
     assert_eq!(rep.identification, Identification::ContainerOnly);
@@ -113,9 +114,10 @@ fn test_budget_zip_directory_window() {
 
 #[test]
 fn test_budget_total_decompressed_bytes() {
-    let mut options = DetectOptions::default();
-    // Restrict total decompression budget to 50 bytes (DOCX parts exceed this)
-    options.max_total_decompressed_bytes = 50;
+    let options = DetectOptions {
+        max_total_decompressed_bytes: 50,
+        ..Default::default()
+    };
 
     let rep = detect_path(Path::new("fixtures/true_docx.docx"), &options).unwrap();
     assert_eq!(rep.identification, Identification::ContainerOnly);
@@ -132,8 +134,10 @@ fn test_cfb_entries_budget_and_stats() {
     assert!(rep.stats.entries_inspected > 0, "entries_inspected must be > 0 for CFB files");
 
     // 2. Verify max_entries triggers budget.entries_exceeded
-    let mut restricted_options = DetectOptions::default();
-    restricted_options.max_entries = 1;
+    let restricted_options = DetectOptions {
+        max_entries: 1,
+        ..Default::default()
+    };
 
     let rep_limited = detect_path(Path::new("fixtures/plain_cfb.cfb"), &restricted_options).unwrap();
     assert_eq!(rep_limited.inspection, Inspection::Limited);
