@@ -71,6 +71,11 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **微软虚拟硬盘 (VHDX)** | `vhdx` | `null` | **Supported** | `vhdxfile` 头部签名核验 |
 | **微软虚拟硬盘 (VHD)** | `vhd` | `null` | **Supported** | `conectix` 头部签名核验 |
 | **ISO 9660 光盘镜像** | `iso` | `null` | **Supported** | 扇区 16 (offset 0x8000) 主卷描述符 `\x01CD001` / `\x02CD001` 流探测核验 |
+| **POSIX Tar 归档格式** | `tar` | `tar` | **Supported** | 512 字节头部块 + `ustar\0`/`ustar ` 签名 + 八进制校验和 (Checksum) 累加核验 |
+| **Gzip 压缩容器** | `gzip` | `gzip` | **Supported** | RFC 1952 魔数 `\x1F\x8B` + DEFLATE 压缩方法 (8) 与保留标志位核验 |
+| **Bzip2 压缩格式** | `bzip2` | `bzip2` | **Supported** | `BZh` 魔数 + 块大小 (`'1'`..`'9'`) 与 Pi 常数块特征 (`0x314159265359`) 核验 |
+| **XZ 压缩格式** | `xz` | `xz` | **Supported** | `\xFD7zXZ\x00` 魔数 + Stream Flags 的 IEEE CRC32 完整性核验 |
+| **Zstandard 压缩格式** | `zstd` | `zstd` | **Supported** | `0x28 0xB5 0x2F 0xFD` 头部魔数核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**

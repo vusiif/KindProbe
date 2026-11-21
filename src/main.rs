@@ -470,6 +470,15 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.vhdx.magic" => "微软虚拟硬盘 (VHDX) 签名有效",
         "sig.vhd.magic" => "微软虚拟硬盘 (VHD) 签名有效",
         "sig.iso.volume_descriptor" => "ISO 9660 主卷描述符 (PVD) 签名有效",
+        "sig.tar.ustar" => "POSIX tar (ustar) 头部签名有效",
+        "sig.tar.checksum" => "POSIX tar 头部校验和 (Checksum) 验证有效",
+        "sig.gzip.magic" => "Gzip 压缩魔数签名有效",
+        "sig.gzip.header" => "Gzip 头部（DEFLATE 压缩方法与保留标志）有效",
+        "sig.bzip2.magic" => "Bzip2 压缩魔数签名有效",
+        "sig.bzip2.header" => "Bzip2 块大小与 Pi 常数块特征有效",
+        "sig.xz.magic" => "XZ 压缩魔数签名有效",
+        "sig.xz.crc" => "XZ Stream Flags CRC32 校验有效",
+        "sig.zstd.magic" => "Zstandard 压缩魔数签名有效",
         _ => default_msg,
     }
 }
