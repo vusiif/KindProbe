@@ -52,7 +52,9 @@ pub fn detect_posix_locale_from_env() -> Option<String> {
 
 #[cfg(windows)]
 mod platform_locale {
-    use super::{is_chinese_win_langid, AppLanguage};
+    use super::{
+        detect_posix_locale_from_env, is_chinese_locale_str, is_chinese_win_langid, AppLanguage,
+    };
 
     #[link(name = "kernel32")]
     extern "system" {
@@ -68,6 +70,15 @@ mod platform_locale {
                 } else {
                     AppLanguage::English
                 };
+            }
+        }
+
+        // On Windows: POSIX environment variables (LC_ALL -> LC_MESSAGES -> LANG) take precedence if set
+        if let Some(locale_str) = detect_posix_locale_from_env() {
+            if is_chinese_locale_str(&locale_str) {
+                return AppLanguage::Chinese;
+            } else {
+                return AppLanguage::English;
             }
         }
 

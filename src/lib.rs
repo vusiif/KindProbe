@@ -27,7 +27,16 @@ pub fn detect_path(
 
     let mut file = match File::open(path) {
         Ok(f) => f,
-        Err(e) => return Err(DetectError::Io(e)),
+        Err(e) => {
+            // On platforms like Windows, opening a directory returns PermissionDenied.
+            // Check if the path actually exists and is a directory / non-regular file.
+            if let Ok(meta) = path.metadata() {
+                if !meta.is_file() {
+                    return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
+                }
+            }
+            return Err(DetectError::Io(e));
+        }
     };
 
     let meta = match file.metadata() {

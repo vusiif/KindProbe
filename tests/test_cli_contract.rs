@@ -217,35 +217,38 @@ fn test_cli_double_dash_leading_dash() {
 
 #[test]
 fn test_cli_non_utf8_arguments_and_paths() {
-    use std::ffi::OsStr;
-    use std::os::unix::ffi::OsStrExt;
+    #[cfg(unix)]
+    {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
 
-    // 1. Non-UTF-8 option flag should return exit code 2, not panic
-    let output = Command::new(BIN_PATH)
-        .env("LC_ALL", "C")
-        .arg(OsStr::from_bytes(b"--invalid\xff\xfe"))
-        .output()
-        .expect("run non-utf8 flag");
-    assert_eq!(output.status.code(), Some(2));
+        // 1. Non-UTF-8 option flag should return exit code 2, not panic
+        let output = Command::new(BIN_PATH)
+            .env("LC_ALL", "C")
+            .arg(OsStr::from_bytes(b"--invalid\xff\xfe"))
+            .output()
+            .expect("run non-utf8 flag");
+        assert_eq!(output.status.code(), Some(2));
 
-    // 2. Non-UTF-8 file path should execute without panic
-    let non_utf8_path = OsStr::from_bytes(b"/tmp/kindprobe_test_non_utf8_\xff\xfe.png");
-    let png_sig = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x5c\x72\x1c\x5d\x00\x00\x00\x00IEND\xae\x42\x60\x82";
-    std::fs::write(std::path::Path::new(non_utf8_path), png_sig).expect("write non-utf8 file");
+        // 2. Non-UTF-8 file path should execute without panic
+        let non_utf8_path = OsStr::from_bytes(b"/tmp/kindprobe_test_non_utf8_\xff\xfe.png");
+        let png_sig = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x5c\x72\x1c\x5d\x00\x00\x00\x00IEND\xae\x42\x60\x82";
+        std::fs::write(std::path::Path::new(non_utf8_path), png_sig).expect("write non-utf8 file");
 
-    let output = Command::new(BIN_PATH)
-        .arg("--json")
-        .arg(non_utf8_path)
-        .output()
-        .expect("run non-utf8 path");
-    assert_eq!(output.status.code(), Some(0));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let report: DetectionReport = serde_json::from_str(stdout.trim())
-        .expect("must deserialize full DetectionReport on non-utf8 path");
-    assert_eq!(report.schema_version, 1);
-    assert_eq!(report.format_id.as_deref(), Some("png"));
+        let output = Command::new(BIN_PATH)
+            .arg("--json")
+            .arg(non_utf8_path)
+            .output()
+            .expect("run non-utf8 path");
+        assert_eq!(output.status.code(), Some(0));
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let report: DetectionReport = serde_json::from_str(stdout.trim())
+            .expect("must deserialize full DetectionReport on non-utf8 path");
+        assert_eq!(report.schema_version, 1);
+        assert_eq!(report.format_id.as_deref(), Some("png"));
 
-    let _ = std::fs::remove_file(std::path::Path::new(non_utf8_path));
+        let _ = std::fs::remove_file(std::path::Path::new(non_utf8_path));
+    }
 
     // 3. Long multibyte path exceeding 1024 bytes with boundary across non-ASCII character
     // Must safely truncate at unicode character boundary without slicing panic
@@ -860,7 +863,7 @@ fn test_cli_locale_precedence_and_fallback() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("USAGE:"));
 
-    // 5. All empty / unset => English fallback
+    // 5. All empty / unset => English fallback on POSIX, or native system locale on Windows
     let output = Command::new(BIN_PATH)
         .env("LC_ALL", "")
         .env("LC_MESSAGES", "")
@@ -870,7 +873,10 @@ fn test_cli_locale_precedence_and_fallback() {
         .expect("run precedence all empty");
     assert_eq!(output.status.code(), Some(0));
     let stdout = String::from_utf8_lossy(&output.stdout);
+    #[cfg(not(windows))]
     assert!(stdout.contains("USAGE:"));
+    #[cfg(windows)]
+    assert!(stdout.contains("USAGE:") || stdout.contains("用法:"));
 
     // 6. Test Windows Language ID mapping hook across variants without altering OS settings
     // 0x0804 (zh-CN) -> Chinese
