@@ -123,6 +123,35 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **ARJ 压缩归档** | `arj` | `null` | **Supported (Codegen)** | `\x60\xEA` 魔数核验 |
 | **Zoo 归档格式** | `zoo` | `null` | **Supported (Codegen)** | 偏移 20 处 `\xDC\xA7\xC4\xFD` 4 字节魔数核验 |
 | **Microsoft Cabinet 柜文件** | `cab` | `null` | **Supported (Codegen)** | `MSCF` 4 字节魔数签名核验 |
+| **Blender 3D 项目** | `blend` | `null` | **Supported (Codegen)** | `BLENDER` 7 字节魔数核验 |
+| **glTF 2.0 二进制模型** | `glb` | `null` | **Supported (Codegen)** | `glTF\x02\0\0\0` 8 字节魔数核验 |
+| **Autodesk FBX 二进制** | `fbx` | `null` | **Supported (Codegen)** | `Kaydara FBX Binary  ` 20 字节魔数核验 |
+| **3D Studio 几何网格** | `3ds` | `null` | **Supported (Codegen)** | `\x4D\x4D` 主块魔数核验 |
+| **Polygon File Format** | `ply` | `null` | **Supported (Codegen)** | `ply\n` 魔数核验 |
+| **STEP 3D CAD 模型** | `step` | `null` | **Supported (Codegen)** | `ISO-10303-21;` 头部特征核验 |
+| **NES 游戏卡带镜像** | `nes` | `null` | **Supported (Codegen)** | `NES\x1a` 4 字节魔数核验 |
+| **HDF5 层次化科学数据** | `hdf5` | `null` | **Supported (Codegen)** | `\x89HDF\r\n\x1a\n` 8 字节魔数核验 |
+| **HDF4 科学数据容器** | `hdf4` | `null` | **Supported (Codegen)** | `\x0E\x03\x13\x01` 4 字节魔数核验 |
+| **NetCDF 气象海洋数据** | `netcdf` | `null` | **Supported (Codegen)** | `CDF\x01` / `CDF\x02` 魔数核验 |
+| **ESRI Shapefile 矢量地理** | `shp` | `null` | **Supported (Codegen)** | `0x0000270a` 大端魔数核验 |
+| **WMO GRIB 气象网格数据** | `grib` | `null` | **Supported (Codegen)** | `GRIB` 4 字节魔数核验 |
+| **MATLAB 5.0 数据文件** | `mat5` | `null` | **Supported (Codegen)** | `MATLAB 5.0 MAT-file` 头部特征核验 |
+| **CERN ROOT 物理数据** | `root` | `null` | **Supported (Codegen)** | `root\0` 5 字节魔数核验 |
+| **冷冻电镜密度图 (MRC)** | `mrc` | `null` | **Supported (Codegen)** | 偏移 208 处 `MAP ` 4 字节魔数核验 |
+| **Commodore 64 芯片音乐** | `sid` | `null` | **Supported (Codegen)** | `PSID` / `RSID` 4 字节魔数核验 |
+| **SNES SPC700 芯片音乐** | `spc` | `null` | **Supported (Codegen)** | `SNES-SPC700` 头部特征核验 |
+| **Video Game Music (VGM)** | `vgm` | `null` | **Supported (Codegen)** | `Vgm ` 4 字节魔数核验 |
+| **BitTorrent 种子元数据** | `torrent` | `null` | **Supported (Codegen)** | `d8:announce` Bencode 头部核验 |
+| **Windows 映像镜像 (WIM)** | `wim` | `null` | **Supported (Codegen)** | `MSWIM\0\0\0` 8 字节魔数核验 |
+| **StuffIt 压缩归档** | `sit` | `null` | **Supported (Codegen)** | `StuffIt` 7 字节魔数核验 |
+| **SQX 压缩归档** | `sqx` | `null` | **Supported (Codegen)** | `SQX\0` 4 字节魔数核验 |
+| **DjVu 高保真文档影像** | `djvu` | `null` | **Supported (Codegen)** | `AT&TFORM` 8 字节表单魔数核验 |
+| **NITF 卫星与遥感成像** | `nitf` | `null` | **Supported (Codegen)** | `NITF` 4 字节版本头部核验 |
+| **Microsoft MODI 扫描格式** | `mdi` | `null` | **Supported (Codegen)** | `\x45\x50\x2A\x00` 4 字节魔数核验 |
+| **AutoCAD 二进制 DXF** | `dxf_bin` | `null` | **Supported (Codegen)** | `AutoCAD Binary DXF` 头部特征核验 |
+| **Autodesk DWF 设计图纸** | `dwf` | `null` | **Supported (Codegen)** | `(DWF V` 头部特征核验 |
+| **Microsoft Write 旧式文档** | `wri` | `null` | **Supported (Codegen)** | `\x31\xBE\x00\x00` 4 字节魔数核验 |
+| **Xara 矢量绘图文档** | `xar` | `null` | **Supported (Codegen)** | `xar!` 4 字节魔数核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**

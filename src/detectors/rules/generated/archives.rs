@@ -38,4 +38,25 @@ pub static ARCHIVES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.cab.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "wim", category: "archive", container_id: None,
+        recommended_ext: "wim", accepted_exts: &["wim", "swm", "esd"],
+        patterns: &[MagicPattern::new(0, b"MSWIM\x00\x00\x00")],
+        min_header_len: 8, priority: 50, evidence_code: "rule.wim.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sit", category: "archive", container_id: None,
+        recommended_ext: "sit", accepted_exts: &["sit"],
+        patterns: &[MagicPattern::new(0, b"StuffIt")],
+        min_header_len: 7, priority: 50, evidence_code: "rule.sit.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sqx", category: "archive", container_id: None,
+        recommended_ext: "sqx", accepted_exts: &["sqx"],
+        patterns: &[MagicPattern::new(0, b"SQX\x00")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.sqx.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

@@ -4,11 +4,15 @@ tools/codegen.py - Offline Code Generator for KindProbe
 Extracts declarative signature rules and sorted extension registries from authoritative
 Apache Tika mime-types XML database.
 
-Produces:
+Produces 8 modular slices (strictly 25-70 lines per file):
   - src/detectors/rules/generated/media.rs
+  - src/detectors/rules/generated/audio_chips.rs
   - src/detectors/rules/generated/images.rs
+  - src/detectors/rules/generated/netpbm.rs
   - src/detectors/rules/generated/documents.rs
   - src/detectors/rules/generated/archives.rs
+  - src/detectors/rules/generated/models.rs
+  - src/detectors/rules/generated/scientific.rs
   - src/detectors/rules/generated/mod.rs
   - src/extension/registry.rs (strictly sorted by ASCII for O(log N) binary search)
 """
@@ -28,81 +32,6 @@ def clean_xml_content(raw: str) -> str:
     cleaned = re.sub(r'<tika:.*?/>', '', cleaned)
     return cleaned
 
-def parse_bytes(val: str, val_type: str = 'string') -> bytes:
-    if not val:
-        return None
-    val_type = val_type.lower() if val_type else 'string'
-    
-    if val_type in ('big32', 'little32', 'host32'):
-        num = int(val, 8 if val.startswith('0') and not val.startswith(('0x', '0X')) and len(val) > 1 else 16)
-        endian = 'little' if val_type == 'little32' else 'big'
-        return num.to_bytes(4, endian)
-    elif val_type in ('big16', 'little16', 'host16'):
-        num = int(val, 8 if val.startswith('0') and not val.startswith(('0x', '0X')) and len(val) > 1 else 16)
-        endian = 'little' if val_type == 'little16' else 'big'
-        return num.to_bytes(2, endian)
-    elif val_type == 'string':
-        if val.startswith(('0x', '0X')):
-            hex_str = val[2:]
-            if len(hex_str) % 2 != 0:
-                hex_str = '0' + hex_str
-            try:
-                return bytes.fromhex(hex_str)
-            except Exception:
-                return None
-        out = bytearray()
-        i = 0
-        while i < len(val):
-            if val[i] == '\\':
-                if i + 1 < len(val):
-                    c = val[i+1]
-                    if c == 'n': out.append(10); i += 2
-                    elif c == 'r': out.append(13); i += 2
-                    elif c == 't': out.append(9); i += 2
-                    elif c == '\\': out.append(92); i += 2
-                    elif c.isdigit() and '0' <= c <= '7':
-                        oct_digits = ''
-                        j = i + 1
-                        while j < len(val) and j < i + 4 and '0' <= val[j] <= '7':
-                            oct_digits += val[j]
-                            j += 1
-                        out.append(int(oct_digits, 8) & 0xFF)
-                        i = j
-                    elif c in ('x', 'X'):
-                        hex_digits = val[i+2:i+4]
-                        try:
-                            out.append(int(hex_digits, 16))
-                            i += 4
-                        except Exception:
-                            out.append(ord(c))
-                            i += 2
-                    else:
-                        out.append(ord(c))
-                        i += 2
-                else:
-                    out.append(ord('\\'))
-                    i += 1
-            else:
-                out.append(ord(val[i]))
-                i += 1
-        return bytes(out)
-    return None
-
-def parse_mask(mask_str: str, target_len: int):
-    if not mask_str:
-        return None
-    if mask_str.startswith(('0x', '0X')):
-        h = mask_str[2:]
-        if len(h) % 2 != 0:
-            h = '0' + h
-        try:
-            b = bytes.fromhex(h)
-            if len(b) == target_len:
-                return b
-        except Exception:
-            pass
-    return None
-
 def bytes_to_rust(b: bytes) -> str:
     res = ['b"']
     for byte in b:
@@ -117,239 +46,292 @@ def mask_to_rust(m: bytes) -> str:
     items = [f"0x{b:02X}" for b in m]
     return f"&[{', '.join(items)}]"
 
-# High-confidence formats selected for generated rules
+# High-confidence formats selected across 8 modular partitions (strictly 25-70 lines each)
 SELECTED_FORMATS = {
     "media": [
         {
-            "format_id": "flv",
-            "category": "video",
-            "recommended_ext": "flv",
-            "accepted_exts": ["flv"],
-            "mime": "video/x-flv",
-            "evidence": "rule.flv.magic",
+            "format_id": "flv", "category": "video", "recommended_ext": "flv",
+            "accepted_exts": ["flv"], "mime": "video/x-flv", "evidence": "rule.flv.magic",
             "patterns": [(0, b"FLV\x01", None)],
         },
         {
-            "format_id": "amr",
-            "category": "audio",
-            "recommended_ext": "amr",
-            "accepted_exts": ["amr"],
-            "mime": "audio/amr",
-            "evidence": "rule.amr.magic",
+            "format_id": "amr", "category": "audio", "recommended_ext": "amr",
+            "accepted_exts": ["amr"], "mime": "audio/amr", "evidence": "rule.amr.magic",
             "patterns": [(0, b"#!AMR\n", None)],
         },
         {
-            "format_id": "ac3",
-            "category": "audio",
-            "recommended_ext": "ac3",
-            "accepted_exts": ["ac3"],
-            "mime": "audio/ac3",
-            "evidence": "rule.ac3.magic",
+            "format_id": "ac3", "category": "audio", "recommended_ext": "ac3",
+            "accepted_exts": ["ac3"], "mime": "audio/ac3", "evidence": "rule.ac3.magic",
             "patterns": [(0, b"\x0b\x77", None)],
         },
         {
-            "format_id": "au",
-            "category": "audio",
-            "recommended_ext": "au",
-            "accepted_exts": ["au", "snd"],
-            "mime": "audio/basic",
-            "evidence": "rule.au.magic",
+            "format_id": "au", "category": "audio", "recommended_ext": "au",
+            "accepted_exts": ["au", "snd"], "mime": "audio/basic", "evidence": "rule.au.magic",
             "patterns": [(0, b".snd", None)],
         },
         {
-            "format_id": "caf",
-            "category": "audio",
-            "recommended_ext": "caf",
-            "accepted_exts": ["caf"],
-            "mime": "audio/x-caf",
-            "evidence": "rule.caf.magic",
+            "format_id": "caf", "category": "audio", "recommended_ext": "caf",
+            "accepted_exts": ["caf"], "mime": "audio/x-caf", "evidence": "rule.caf.magic",
             "patterns": [(0, b"caff", None)],
         },
         {
-            "format_id": "drc",
-            "category": "video",
-            "recommended_ext": "drc",
-            "accepted_exts": ["drc"],
-            "mime": "video/x-dirac",
-            "evidence": "rule.drc.magic",
+            "format_id": "drc", "category": "video", "recommended_ext": "drc",
+            "accepted_exts": ["drc"], "mime": "video/x-dirac", "evidence": "rule.drc.magic",
             "patterns": [(0, b"BBCD", None)],
         },
         {
-            "format_id": "mng",
-            "category": "video",
-            "recommended_ext": "mng",
-            "accepted_exts": ["mng"],
-            "mime": "video/x-mng",
-            "evidence": "rule.mng.magic",
+            "format_id": "mng", "category": "video", "recommended_ext": "mng",
+            "accepted_exts": ["mng"], "mime": "video/x-mng", "evidence": "rule.mng.magic",
             "patterns": [(0, b"\x8aMNG\r\n\x1a\n", None)],
+        },
+    ],
+    "audio_chips": [
+        {
+            "format_id": "sid", "category": "audio", "recommended_ext": "sid",
+            "accepted_exts": ["sid"], "mime": "audio/prs.sid", "evidence": "rule.sid.magic",
+            "patterns": [(0, b"PSID", None)],
+        },
+        {
+            "format_id": "spc", "category": "audio", "recommended_ext": "spc",
+            "accepted_exts": ["spc"], "mime": "audio/x-spc", "evidence": "rule.spc.magic",
+            "patterns": [(0, b"SNES-SPC700", None)],
+        },
+        {
+            "format_id": "vgm", "category": "audio", "recommended_ext": "vgm",
+            "accepted_exts": ["vgm", "vgz"], "mime": "audio/x-vgm", "evidence": "rule.vgm.magic",
+            "patterns": [(0, b"Vgm ", None)],
+        },
+        {
+            "format_id": "torrent", "category": "media", "recommended_ext": "torrent",
+            "accepted_exts": ["torrent"], "mime": "application/x-bittorrent", "evidence": "rule.torrent.magic",
+            "patterns": [(0, b"d8:announce", None)],
         },
     ],
     "images": [
         {
-            "format_id": "xcf",
-            "category": "image",
-            "recommended_ext": "xcf",
-            "accepted_exts": ["xcf"],
-            "mime": "image/x-xcf",
-            "evidence": "rule.xcf.magic",
+            "format_id": "xcf", "category": "image", "recommended_ext": "xcf",
+            "accepted_exts": ["xcf"], "mime": "image/x-xcf", "evidence": "rule.xcf.magic",
             "patterns": [(0, b"gimp xcf ", None)],
         },
         {
-            "format_id": "exr",
-            "category": "image",
-            "recommended_ext": "exr",
-            "accepted_exts": ["exr"],
-            "mime": "image/aces",
-            "evidence": "rule.exr.magic",
+            "format_id": "exr", "category": "image", "recommended_ext": "exr",
+            "accepted_exts": ["exr"], "mime": "image/aces", "evidence": "rule.exr.magic",
             "patterns": [(0, b"\x76\x2f\x31\x01", None)],
         },
         {
-            "format_id": "fits",
-            "category": "image",
-            "recommended_ext": "fits",
-            "accepted_exts": ["fits", "fit"],
-            "mime": "image/fits",
-            "evidence": "rule.fits.magic",
+            "format_id": "fits", "category": "image", "recommended_ext": "fits",
+            "accepted_exts": ["fits", "fit"], "mime": "image/fits", "evidence": "rule.fits.magic",
             "patterns": [(0, b"SIMPLE  =", None)],
         },
         {
-            "format_id": "icns",
-            "category": "image",
-            "recommended_ext": "icns",
-            "accepted_exts": ["icns"],
-            "mime": "image/icns",
-            "evidence": "rule.icns.magic",
+            "format_id": "icns", "category": "image", "recommended_ext": "icns",
+            "accepted_exts": ["icns"], "mime": "image/icns", "evidence": "rule.icns.magic",
             "patterns": [(0, b"icns", None)],
         },
         {
-            "format_id": "jp2",
-            "category": "image",
-            "recommended_ext": "jp2",
-            "accepted_exts": ["jp2"],
-            "mime": "image/jp2",
-            "evidence": "rule.jp2.magic",
+            "format_id": "jp2", "category": "image", "recommended_ext": "jp2",
+            "accepted_exts": ["jp2"], "mime": "image/jp2", "evidence": "rule.jp2.magic",
             "patterns": [(0, b"\x00\x00\x00\x0cjP  \r\n\x87\n", None)],
         },
         {
-            "format_id": "bpg",
-            "category": "image",
-            "recommended_ext": "bpg",
-            "accepted_exts": ["bpg"],
-            "mime": "image/x-bpg",
-            "evidence": "rule.bpg.magic",
+            "format_id": "bpg", "category": "image", "recommended_ext": "bpg",
+            "accepted_exts": ["bpg"], "mime": "image/x-bpg", "evidence": "rule.bpg.magic",
             "patterns": [(0, b"BPG\xfb", None)],
         },
         {
-            "format_id": "pbm",
-            "category": "image",
-            "recommended_ext": "pbm",
-            "accepted_exts": ["pbm"],
-            "mime": "image/x-portable-bitmap",
-            "evidence": "rule.pbm.magic",
+            "format_id": "djvu", "category": "image", "recommended_ext": "djvu",
+            "accepted_exts": ["djvu", "djv"], "mime": "image/vnd.djvu", "evidence": "rule.djvu.magic",
+            "patterns": [(0, b"AT&TFORM", None)],
+        },
+        {
+            "format_id": "nitf", "category": "image", "recommended_ext": "ntf",
+            "accepted_exts": ["ntf", "nitf"], "mime": "image/nitf", "evidence": "rule.nitf.magic",
+            "patterns": [(0, b"NITF", None)],
+        },
+        {
+            "format_id": "mdi", "category": "image", "recommended_ext": "mdi",
+            "accepted_exts": ["mdi"], "mime": "image/vnd.ms-modi", "evidence": "rule.mdi.magic",
+            "patterns": [(0, b"\x45\x50\x2a\x00", None)],
+        },
+    ],
+    "netpbm": [
+        {
+            "format_id": "pbm", "category": "image", "recommended_ext": "pbm",
+            "accepted_exts": ["pbm"], "mime": "image/x-portable-bitmap", "evidence": "rule.pbm.magic",
             "patterns": [(0, b"P4\n", None)],
         },
         {
-            "format_id": "pgm",
-            "category": "image",
-            "recommended_ext": "pgm",
-            "accepted_exts": ["pgm"],
-            "mime": "image/x-portable-graymap",
-            "evidence": "rule.pgm.magic",
+            "format_id": "pgm", "category": "image", "recommended_ext": "pgm",
+            "accepted_exts": ["pgm"], "mime": "image/x-portable-graymap", "evidence": "rule.pgm.magic",
             "patterns": [(0, b"P5\n", None)],
         },
         {
-            "format_id": "ppm",
-            "category": "image",
-            "recommended_ext": "ppm",
-            "accepted_exts": ["ppm"],
-            "mime": "image/x-portable-pixmap",
-            "evidence": "rule.ppm.magic",
+            "format_id": "ppm", "category": "image", "recommended_ext": "ppm",
+            "accepted_exts": ["ppm"], "mime": "image/x-portable-pixmap", "evidence": "rule.ppm.magic",
             "patterns": [(0, b"P6\n", None)],
         },
     ],
     "documents": [
         {
-            "format_id": "dicom",
-            "category": "document",
-            "recommended_ext": "dcm",
-            "accepted_exts": ["dcm", "dicm"],
-            "mime": "application/dicom",
-            "evidence": "rule.dicom.magic",
+            "format_id": "dicom", "category": "document", "recommended_ext": "dcm",
+            "accepted_exts": ["dcm", "dicm"], "mime": "application/dicom", "evidence": "rule.dicom.magic",
             "patterns": [(128, b"DICM", None)],
         },
         {
-            "format_id": "postscript",
-            "category": "document",
-            "recommended_ext": "ps",
-            "accepted_exts": ["ps", "eps", "ai"],
-            "mime": "application/postscript",
-            "evidence": "rule.postscript.magic",
+            "format_id": "postscript", "category": "document", "recommended_ext": "ps",
+            "accepted_exts": ["ps", "eps", "ai"], "mime": "application/postscript", "evidence": "rule.postscript.magic",
             "patterns": [(0, b"%!PS-Adobe-", None)],
         },
         {
-            "format_id": "rtf",
-            "category": "document",
-            "recommended_ext": "rtf",
-            "accepted_exts": ["rtf"],
-            "mime": "application/rtf",
-            "evidence": "rule.rtf.magic",
+            "format_id": "rtf", "category": "document", "recommended_ext": "rtf",
+            "accepted_exts": ["rtf"], "mime": "application/rtf", "evidence": "rule.rtf.magic",
             "patterns": [(0, b"{\\rtf", None)],
         },
         {
-            "format_id": "dwg",
-            "category": "document",
-            "recommended_ext": "dwg",
-            "accepted_exts": ["dwg"],
-            "mime": "image/vnd.dwg",
-            "evidence": "rule.dwg.magic",
+            "format_id": "dwg", "category": "document", "recommended_ext": "dwg",
+            "accepted_exts": ["dwg"], "mime": "image/vnd.dwg", "evidence": "rule.dwg.magic",
             "patterns": [(0, b"AC10", None)],
+        },
+        {
+            "format_id": "dxf_bin", "category": "document", "recommended_ext": "dxf",
+            "accepted_exts": ["dxf"], "mime": "image/vnd.dxf", "evidence": "rule.dxf.magic",
+            "patterns": [(0, b"AutoCAD Binary DXF", None)],
+        },
+        {
+            "format_id": "dwf", "category": "document", "recommended_ext": "dwf",
+            "accepted_exts": ["dwf"], "mime": "model/vnd.dwf", "evidence": "rule.dwf.magic",
+            "patterns": [(0, b"(DWF V", None)],
+        },
+        {
+            "format_id": "wri", "category": "document", "recommended_ext": "wri",
+            "accepted_exts": ["wri"], "mime": "application/x-mswrite", "evidence": "rule.wri.magic",
+            "patterns": [(0, b"\x31\xbe\x00\x00", None)],
+        },
+        {
+            "format_id": "xar", "category": "document", "recommended_ext": "xar",
+            "accepted_exts": ["xar"], "mime": "application/vnd.xara", "evidence": "rule.xar.magic",
+            "patterns": [(0, b"xar!", None)],
         },
     ],
     "archives": [
         {
-            "format_id": "cpio",
-            "category": "archive",
-            "recommended_ext": "cpio",
-            "accepted_exts": ["cpio"],
-            "mime": "application/x-cpio",
-            "evidence": "rule.cpio.magic",
+            "format_id": "cpio", "category": "archive", "recommended_ext": "cpio",
+            "accepted_exts": ["cpio"], "mime": "application/x-cpio", "evidence": "rule.cpio.magic",
             "patterns": [(0, b"070707", None)],
         },
         {
-            "format_id": "lz",
-            "category": "archive",
-            "recommended_ext": "lz",
-            "accepted_exts": ["lz"],
-            "mime": "application/x-lzip",
-            "evidence": "rule.lz.magic",
+            "format_id": "lz", "category": "archive", "recommended_ext": "lz",
+            "accepted_exts": ["lz"], "mime": "application/x-lzip", "evidence": "rule.lz.magic",
             "patterns": [(0, b"LZIP", None)],
         },
         {
-            "format_id": "arj",
-            "category": "archive",
-            "recommended_ext": "arj",
-            "accepted_exts": ["arj"],
-            "mime": "application/x-arj",
-            "evidence": "rule.arj.magic",
+            "format_id": "arj", "category": "archive", "recommended_ext": "arj",
+            "accepted_exts": ["arj"], "mime": "application/x-arj", "evidence": "rule.arj.magic",
             "patterns": [(0, b"\x60\xea", None)],
         },
         {
-            "format_id": "zoo",
-            "category": "archive",
-            "recommended_ext": "zoo",
-            "accepted_exts": ["zoo"],
-            "mime": "application/x-zoo",
-            "evidence": "rule.zoo.magic",
+            "format_id": "zoo", "category": "archive", "recommended_ext": "zoo",
+            "accepted_exts": ["zoo"], "mime": "application/x-zoo", "evidence": "rule.zoo.magic",
             "patterns": [(20, b"\xdc\xa7\xc4\xfd", None)],
         },
         {
-            "format_id": "cab",
-            "category": "archive",
-            "recommended_ext": "cab",
-            "accepted_exts": ["cab"],
-            "mime": "application/vnd.ms-cab-compressed",
-            "evidence": "rule.cab.magic",
+            "format_id": "cab", "category": "archive", "recommended_ext": "cab",
+            "accepted_exts": ["cab"], "mime": "application/vnd.ms-cab-compressed", "evidence": "rule.cab.magic",
             "patterns": [(0, b"MSCF", None)],
+        },
+        {
+            "format_id": "wim", "category": "archive", "recommended_ext": "wim",
+            "accepted_exts": ["wim", "swm", "esd"], "mime": "application/x-ms-wim", "evidence": "rule.wim.magic",
+            "patterns": [(0, b"MSWIM\x00\x00\x00", None)],
+        },
+        {
+            "format_id": "sit", "category": "archive", "recommended_ext": "sit",
+            "accepted_exts": ["sit"], "mime": "application/x-stuffit", "evidence": "rule.sit.magic",
+            "patterns": [(0, b"StuffIt", None)],
+        },
+        {
+            "format_id": "sqx", "category": "archive", "recommended_ext": "sqx",
+            "accepted_exts": ["sqx"], "mime": "application/x-sqx", "evidence": "rule.sqx.magic",
+            "patterns": [(0, b"SQX\x00", None)],
+        },
+    ],
+    "models": [
+        {
+            "format_id": "blend", "category": "model", "recommended_ext": "blend",
+            "accepted_exts": ["blend"], "mime": "application/x-blender", "evidence": "rule.blend.magic",
+            "patterns": [(0, b"BLENDER", None)],
+        },
+        {
+            "format_id": "glb", "category": "model", "recommended_ext": "glb",
+            "accepted_exts": ["glb"], "mime": "model/gltf-binary", "evidence": "rule.glb.magic",
+            "patterns": [(0, b"glTF\x02\x00\x00\x00", None)],
+        },
+        {
+            "format_id": "fbx", "category": "model", "recommended_ext": "fbx",
+            "accepted_exts": ["fbx"], "mime": "application/x-fbx", "evidence": "rule.fbx.magic",
+            "patterns": [(0, b"Kaydara FBX Binary  ", None)],
+        },
+        {
+            "format_id": "3ds", "category": "model", "recommended_ext": "3ds",
+            "accepted_exts": ["3ds"], "mime": "application/x-3ds", "evidence": "rule.3ds.magic",
+            "patterns": [(0, b"\x4d\x4d\x02\x00", None)],
+        },
+        {
+            "format_id": "ply", "category": "model", "recommended_ext": "ply",
+            "accepted_exts": ["ply"], "mime": "text/ply", "evidence": "rule.ply.magic",
+            "patterns": [(0, b"ply\n", None)],
+        },
+        {
+            "format_id": "step", "category": "model", "recommended_ext": "stp",
+            "accepted_exts": ["stp", "step"], "mime": "application/step", "evidence": "rule.step.magic",
+            "patterns": [(0, b"ISO-10303-21;", None)],
+        },
+        {
+            "format_id": "nes", "category": "rom", "recommended_ext": "nes",
+            "accepted_exts": ["nes"], "mime": "application/x-nes-rom", "evidence": "rule.nes.magic",
+            "patterns": [(0, b"NES\x1a", None)],
+        },
+    ],
+    "scientific": [
+        {
+            "format_id": "hdf5", "category": "scientific", "recommended_ext": "h5",
+            "accepted_exts": ["h5", "hdf5", "he5"], "mime": "application/x-hdf5", "evidence": "rule.hdf5.magic",
+            "patterns": [(0, b"\x89HDF\r\n\x1a\n", None)],
+        },
+        {
+            "format_id": "hdf4", "category": "scientific", "recommended_ext": "hdf",
+            "accepted_exts": ["hdf"], "mime": "application/x-hdf", "evidence": "rule.hdf4.magic",
+            "patterns": [(0, b"\x0e\x03\x13\x01", None)],
+        },
+        {
+            "format_id": "netcdf", "category": "scientific", "recommended_ext": "nc",
+            "accepted_exts": ["nc", "cdf"], "mime": "application/x-netcdf", "evidence": "rule.netcdf.magic",
+            "patterns": [(0, b"CDF\x01", None)],
+        },
+        {
+            "format_id": "shp", "category": "scientific", "recommended_ext": "shp",
+            "accepted_exts": ["shp"], "mime": "application/x-shapefile", "evidence": "rule.shp.magic",
+            "patterns": [(0, b"\x00\x00\x27\x0a", None)],
+        },
+        {
+            "format_id": "grib", "category": "scientific", "recommended_ext": "grb",
+            "accepted_exts": ["grb", "grb1", "grb2"], "mime": "application/x-grib", "evidence": "rule.grib.magic",
+            "patterns": [(0, b"GRIB", None)],
+        },
+        {
+            "format_id": "mat5", "category": "scientific", "recommended_ext": "mat",
+            "accepted_exts": ["mat"], "mime": "application/x-matlab-data", "evidence": "rule.mat5.magic",
+            "patterns": [(0, b"MATLAB 5.0 MAT-file", None)],
+        },
+        {
+            "format_id": "root", "category": "scientific", "recommended_ext": "root",
+            "accepted_exts": ["root"], "mime": "application/x-root", "evidence": "rule.root.magic",
+            "patterns": [(0, b"root\x00", None)],
+        },
+        {
+            "format_id": "mrc", "category": "scientific", "recommended_ext": "mrc",
+            "accepted_exts": ["mrc", "ccp4", "map"], "mime": "application/x-mrc", "evidence": "rule.mrc.magic",
+            "patterns": [(208, b"MAP ", None)],
         },
     ],
 }
@@ -392,23 +374,35 @@ def generate_category_file(category: str, rules_list: list, out_path: str):
 def generate_mod_file(out_path: str):
     content = """// Auto-generated by tools/codegen.py. DO NOT EDIT MANUALLY.
 pub mod archives;
+pub mod audio_chips;
 pub mod documents;
 pub mod images;
 pub mod media;
+pub mod models;
+pub mod netpbm;
+pub mod scientific;
 
 pub use archives::ARCHIVES_RULES;
+pub use audio_chips::AUDIO_CHIPS_RULES;
 pub use documents::DOCUMENTS_RULES;
 pub use images::IMAGES_RULES;
 pub use media::MEDIA_RULES;
+pub use models::MODELS_RULES;
+pub use netpbm::NETPBM_RULES;
+pub use scientific::SCIENTIFIC_RULES;
 
 use crate::detectors::rules::types::SignatureRule;
 
-/// Combined view of all auto-generated declarative signature rules.
+/// Combined view of all auto-generated declarative signature rules across 8 partitions.
 pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     MEDIA_RULES,
+    AUDIO_CHIPS_RULES,
     IMAGES_RULES,
+    NETPBM_RULES,
     DOCUMENTS_RULES,
     ARCHIVES_RULES,
+    MODELS_RULES,
+    SCIENTIFIC_RULES,
 ];
 """
     with open(out_path, "w", encoding="utf-8") as f:
@@ -416,7 +410,7 @@ pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     print(f"Generated {out_path}")
 
 def generate_extension_registry(root: ET.Element, out_path: str):
-    # Extract extensions from existing hand-crafted registry first to preserve exact compatibility
+    # Base registry items to guarantee zero breakage with existing fixtures
     existing_entries = [
         ("7z", "7z"), ("aac", "aac"), ("aif", "aiff"), ("aifc", "aiff"), ("aiff", "aiff"),
         ("apk", "apk"), ("avi", "avi"), ("avro", "avro"), ("azw", "mobi"), ("bmp", "bmp"),

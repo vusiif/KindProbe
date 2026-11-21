@@ -31,4 +31,32 @@ pub static DOCUMENTS_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.dwg.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "dxf_bin", category: "document", container_id: None,
+        recommended_ext: "dxf", accepted_exts: &["dxf"],
+        patterns: &[MagicPattern::new(0, b"AutoCAD Binary DXF")],
+        min_header_len: 18, priority: 50, evidence_code: "rule.dxf.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "dwf", category: "document", container_id: None,
+        recommended_ext: "dwf", accepted_exts: &["dwf"],
+        patterns: &[MagicPattern::new(0, b"(DWF V")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.dwf.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "wri", category: "document", container_id: None,
+        recommended_ext: "wri", accepted_exts: &["wri"],
+        patterns: &[MagicPattern::new(0, b"1\xbe\x00\x00")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.wri.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "xar", category: "document", container_id: None,
+        recommended_ext: "xar", accepted_exts: &["xar"],
+        patterns: &[MagicPattern::new(0, b"xar!")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.xar.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];
