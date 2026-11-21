@@ -1,5 +1,6 @@
 pub mod archives;
 pub mod cfb;
+pub mod executables;
 pub mod images;
 pub mod media;
 pub mod signatures;

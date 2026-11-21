@@ -433,6 +433,15 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.avi.header" => "AVI 格式标识有效",
         "sig.id3.tag" => "ID3v2 元数据标签有效",
         "sig.mp3.frame_sync" => "MPEG Audio Layer III 帧同步有效",
+        "sig.elf.magic" => "ELF 魔数签名有效",
+        "sig.elf.header" => "ELF 32/64 位体系结构与版本有效",
+        "sig.pe.mz_header" => "DOS MZ 文件头签名有效",
+        "sig.pe.signature" => "Windows PE 头部签名有效",
+        "sig.wasm.magic" => "WebAssembly 魔数签名有效",
+        "sig.wasm.version" => "WebAssembly 版本号结构有效",
+        "sig.macho.magic" => "Mach-O 单架构魔数签名有效",
+        "sig.macho.fat_magic" => "Mach-O 通用二进制 (FAT) 魔数有效",
+        "sig.java.class" => "Java Class 字节码结构签名有效",
         _ => default_msg,
     }
 }

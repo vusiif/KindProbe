@@ -38,6 +38,16 @@ const KNOWN_REGISTRY_EXTENSIONS: &[(&str, &str)] = &[
     ("webp", "webp"),
     ("avi", "avi"),
     ("mp3", "mp3"),
+    ("elf", "elf"),
+    ("so", "elf"),
+    ("o", "elf"),
+    ("exe", "pe"),
+    ("dll", "pe"),
+    ("sys", "pe"),
+    ("efi", "pe"),
+    ("wasm", "wasm"),
+    ("dylib", "macho"),
+    ("class", "class"),
     ("txt", "txt"),
 ];
 

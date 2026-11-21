@@ -49,6 +49,11 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **WAV 音频格式** | `wav` | `riff` | **Supported** | RIFF 容器头部 + `WAVE` 格式标志 + `fmt ` 核心音频格式块结构核验 |
 | **MP3 音频格式** | `mp3` | `null` | **Supported** | 支持 ID3v2 容器标签与 synchsafe 尺寸校验，或直接核验 MPEG-1/2 Audio Layer III 帧同步字 (`0xFF 0xFB/0xF3`) |
 | **WebP 图像格式** | `webp` | `riff` | **Supported** | RIFF 容器头部 + `WEBP` 格式标志 + `VP8 `/`VP8L`/`VP8X` 图像数据块核验 |
+| **Linux/Unix ELF 二进制** | `elf` | `null` | **Supported** | `\x7FELF` 魔数 + 32/64 位类、字节序、版本及目标文件类型 (`ET_EXEC`/`ET_DYN`/`ET_REL`) 结构核验 |
+| **Windows Portable Executable** | `pe` | `null` | **Supported** | DOS `MZ` 头部 + `e_lfanew` 指针与 `PE\0\0` 签名核验；自动按 COFF 特征区分 EXE 与 DLL |
+| **WebAssembly 二进制格式** | `wasm` | `null` | **Supported** | `\0asm` 魔数 + 4 字节版本号 (`0x01\0\0\0`) 结构校验 |
+| **macOS Mach-O 二进制** | `macho` | `null` | **Supported** | 32/64 位单架构及通用 FAT 二进制魔数；严格与 Java `.class` 字节码消歧 |
+| **Java Class 字节码** | `class` | `null` | **Supported** | `0xCAFEBABE` 魔数 + 主次版本号结构核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**

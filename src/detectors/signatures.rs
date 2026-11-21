@@ -2,6 +2,7 @@ use crate::model::{
     DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
 };
 use super::archives::{probe_archive_signatures, ArchiveMatch};
+use super::executables::{probe_executable_signatures, ExecutableMatch};
 use super::images::{probe_image_signatures, ImageMatch};
 use super::media::{probe_media_signatures, MediaMatch};
 
@@ -35,7 +36,14 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         MediaMatch::None => (),
     }
 
-    // 4. Probe PDF signature within first 1024 bytes
+    // 4. Probe executable and system binary formats (ELF, PE, WASM, Mach-O)
+    match probe_executable_signatures(header) {
+        ExecutableMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+        ExecutableMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+        ExecutableMatch::None => (),
+    }
+
+    // 5. Probe PDF signature within first 1024 bytes
     let scan_limit = header.len().min(1024);
     if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));
