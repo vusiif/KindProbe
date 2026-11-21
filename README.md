@@ -100,6 +100,29 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **AIFF 音频格式** | `aiff` | `null` | **Supported** | 多段魔数联合校验：`FORM` 块 + `AIFF` / `AIFC` 标志 |
 | **MIDI 音乐格式** | `mid` | `null` | **Supported** | `MThd` 4 字节魔数 + 头块长度 6 字节结构核验 |
 | **已编译 HTML 帮助文档** | `chm` | `null` | **Supported** | `ITSF` 4 字节魔数 + 格式版本号核验 |
+| **Flash 视频格式** | `flv` | `null` | **Supported (Codegen)** | `FLV\x01` 4 字节魔数核验 |
+| **AMR 语音音频** | `amr` | `null` | **Supported (Codegen)** | `#!AMR\n` 6 字节魔数核验 |
+| **Dolby AC-3 音频** | `ac3` | `null` | **Supported (Codegen)** | `\x0B\x77` 16 位同步字魔数核验 |
+| **Sun/NeXT 音频** | `au` | `null` | **Supported (Codegen)** | `.snd` 4 字节魔数核验 |
+| **Apple Core Audio (CAF)** | `caf` | `null` | **Supported (Codegen)** | `caff` 4 字节魔数核验 |
+| **Dirac 视频流** | `drc` | `null` | **Supported (Codegen)** | `BBCD` 4 字节魔数核验 |
+| **MNG 动画图像** | `mng` | `null` | **Supported (Codegen)** | `\x8aMNG\r\n\x1a\n` 8 字节魔数核验 |
+| **GIMP XCF 图像** | `xcf` | `null` | **Supported (Codegen)** | `gimp xcf ` 9 字节魔数核验 |
+| **OpenEXR 高动态图像** | `exr` | `null` | **Supported (Codegen)** | `\x76\x2F\x31\x01` 4 字节魔数核验 |
+| **FITS 天文图像数据** | `fits` | `null` | **Supported (Codegen)** | `SIMPLE  =` 9 字节头部特征核验 |
+| **Apple 图标 (ICNS)** | `icns` | `null` | **Supported (Codegen)** | `icns` 4 字节魔数核验 |
+| **JPEG 2000 图像** | `jp2` | `null` | **Supported (Codegen)** | 12 字节标准魔数签名核验 |
+| **BPG 图像格式** | `bpg` | `null` | **Supported (Codegen)** | `BPG\xFB` 4 字节魔数核验 |
+| **Netpbm 图形格式** | `pbm`/`pgm`/`ppm` | `null` | **Supported (Codegen)** | `P4\n` (PBM), `P5\n` (PGM), `P6\n` (PPM) 魔数核验 |
+| **DICOM 医学影像** | `dicom` | `null` | **Supported (Codegen)** | 偏移 128 处 `DICM` 4 字节魔数签名核验 |
+| **PostScript 文档** | `postscript` | `null` | **Supported (Codegen)** | `%!PS-Adobe-` 头部签名核验 |
+| **RTF 富文本格式** | `rtf` | `null` | **Supported (Codegen)** | `{\\rtf` 5 字节魔数核验 |
+| **AutoCAD DWG 图纸** | `dwg` | `null` | **Supported (Codegen)** | `AC10` 4 字节版本头部魔数核验 |
+| **CPIO 系统归档** | `cpio` | `null` | **Supported (Codegen)** | `070707` 6 字节魔数核验 |
+| **Lzip 压缩格式** | `lz` | `null` | **Supported (Codegen)** | `LZIP` 4 字节魔数核验 |
+| **ARJ 压缩归档** | `arj` | `null` | **Supported (Codegen)** | `\x60\xEA` 魔数核验 |
+| **Zoo 归档格式** | `zoo` | `null` | **Supported (Codegen)** | 偏移 20 处 `\xDC\xA7\xC4\xFD` 4 字节魔数核验 |
+| **Microsoft Cabinet 柜文件** | `cab` | `null` | **Supported (Codegen)** | `MSCF` 4 字节魔数签名核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**
@@ -244,9 +267,17 @@ CLI 错误输出信封（退出码 4 或 1，使用 `--json` 时输出）：
 | `serde_json` | 1.0.154 | MIT / Apache-2.0 | CLI JSON v1 输出格式 |
 
 第三方数据源与调研工具：
+- **Apache Tika**: Apache-2.0，官方 `tika-mimetypes.xml` 作为权威特征与扩展名数据库来源（见 `tools/data/`）。
 - **PRONOM / DROID**: Open Government Licence 2.0 (OGL-v2.0)，仅作为离线对照基准，不直接打包未审查规则。
 - **Siegfried**: Apache-2.0，仅作为测试期间独立复测对照工具。
 - **Microsoft MS-DOC / MS-CFB**: 依据 Microsoft Open Specifications 技术公开规范查证实现。
+
+### 5.1 离线代码生成管线 (Offline Codegen Pipeline)
+
+项目内置零依赖的离线代码生成工具 `tools/codegen.py`，支持直接从权威数据库（如 Apache Tika `tika-mimetypes.xml`）自动提取静态声明式规则和规范扩展名注册表：
+- **纯固定偏移与预算控制**：严格提取固定偏移且 `offset + len <= 4096` 的二进制魔数规则，完美适配 `BudgetReader` 读取窗口；
+- **分卷模块化**：生成的声明式规则按大类输出至 `src/detectors/rules/generated/`（`media.rs`、`images.rs`、`documents.rs`、`archives.rs`），单文件保持在 35~70 行，零运行时堆分配（`&'static [SignatureRule]`）；
+- **单一真实信源（SSOT）扩展名检索**：提取权威扩展名映射并在 `src/extension/registry.rs` 中按 ASCII 字典序严格升序排列，支持零哈希开销的 $O(\log N)$ 二分查找，并通过编译期与单元测试（`test_registry_is_strictly_sorted_without_duplicates`）守护排序严格性。
 
 ---
 

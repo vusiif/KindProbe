@@ -22,7 +22,7 @@ pub fn probe_png(header: &[u8]) -> PngProbeResult {
         }
         PngProbeResult::Confirmed { has_ihdr: false }
     } else if (header.len() >= 4 && header.starts_with(b"\x89PNG"))
-        || (header.len() >= 1 && header[0] == 0x89 && header.len() < 8)
+        || (!header.is_empty() && header[0] == 0x89 && header.len() < 8)
     {
         PngProbeResult::Truncated
     } else {

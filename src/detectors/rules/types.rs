@@ -5,11 +5,24 @@ use crate::model::Verification;
 pub struct MagicPattern {
     pub offset: usize,
     pub bytes: &'static [u8],
+    pub mask: Option<&'static [u8]>,
 }
 
 impl MagicPattern {
     pub const fn new(offset: usize, bytes: &'static [u8]) -> Self {
-        Self { offset, bytes }
+        Self {
+            offset,
+            bytes,
+            mask: None,
+        }
+    }
+
+    pub const fn with_mask(offset: usize, bytes: &'static [u8], mask: &'static [u8]) -> Self {
+        Self {
+            offset,
+            bytes,
+            mask: Some(mask),
+        }
     }
 }
 

@@ -25,14 +25,30 @@ pub fn evaluate_rules(header: &[u8], rules: &[SignatureRule]) -> RuleMatch {
 
             let available = &header[pat.offset..];
             if available.len() < pat.bytes.len() {
-                if !available.is_empty() && pat.bytes.starts_with(available) {
-                    pattern_truncated = true;
+                if !available.is_empty() {
+                    let is_trunc = match pat.mask {
+                        Some(m) => available.iter().zip(m).zip(pat.bytes).all(|((&b, &mk), &p)| (b & mk) == p),
+                        None => pat.bytes.starts_with(available),
+                    };
+                    if is_trunc {
+                        pattern_truncated = true;
+                    }
                 }
                 patterns_matched = false;
                 break;
-            } else if &available[..pat.bytes.len()] != pat.bytes {
-                patterns_matched = false;
-                break;
+            } else {
+                let is_match = match pat.mask {
+                    Some(m) => available[..pat.bytes.len()]
+                        .iter()
+                        .zip(m)
+                        .zip(pat.bytes)
+                        .all(|((&b, &mk), &p)| (b & mk) == p),
+                    None => &available[..pat.bytes.len()] == pat.bytes,
+                };
+                if !is_match {
+                    patterns_matched = false;
+                    break;
+                }
             }
         }
 

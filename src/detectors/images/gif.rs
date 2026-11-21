@@ -20,7 +20,7 @@ pub fn probe_gif(header: &[u8]) -> GifProbeResult {
         }
         GifProbeResult::Confirmed { has_screen_desc }
     } else if (header.len() >= 3 && header.starts_with(b"GIF") && header.len() < 6)
-        || (header.len() >= 1 && header[0] == b'G' && header.len() < 3)
+        || (!header.is_empty() && header[0] == b'G' && header.len() < 3)
     {
         GifProbeResult::Truncated
     } else {

@@ -54,7 +54,12 @@ pub fn make_jpeg_report(has_segment: bool) -> DetectionReport {
         },
         inspection: Inspection::Complete,
         recommended_extension: Some("jpg".to_string()),
-        accepted_extensions: vec!["jpg".to_string(), "jpeg".to_string()],
+        accepted_extensions: vec![
+            "jpg".to_string(),
+            "jpeg".to_string(),
+            "jfif".to_string(),
+            "jpe".to_string(),
+        ],
         extension_status: ExtensionStatus::Undetermined,
         evidence: if has_segment {
             vec![

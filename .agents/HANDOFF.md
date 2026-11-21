@@ -2,29 +2,36 @@
 
 > **单一真实信源 (Single Source of Truth - SSOT)**  
 > **更新时间**：2026-11-21  
-> **当前版本**：v0.1.0 (后缀架构治理完成)  
+> **当前版本**：v0.1.0 (离线 Codegen 管线与 Tika 权威规则生成完成)  
 > **远端分支**：`origin/main` (当前提交待推送)
 
 ---
 
 ## 1. [已完成] (Completed)
 
-### 1.1 后缀独立诊断系统重构 (`src/extension/`)
-彻底治理了“后缀数量爆炸”与“两处重复维护”的架构隐患：
-- **拆分与瘦身**：将原 177 行扁平单文件 `src/extension.rs` 重构为模块化子系统：
-  - `src/extension/mod.rs` (~50 行)：实现轻量核心诊断逻辑与 Fast-Path 机制。
-  - `src/extension/registry.rs` (~160 行)：维护严格按 ASCII 升序排列的扩展名二分索引表 `SORTED_EXTENSION_REGISTRY`，提供 $O(\log N)$ 的 `find_registered_format` 检索函数。
-- **Fast-Path 性能优化**：优先与当前报告中的 `report.accepted_extensions`（通常仅 1~3 个元素）进行本地匹配，命中即返回 `Match`，彻底绕过全局大表检索。
-- **二分查找防退化**：发生后缀不一致时，采用原生 `binary_search_by` 执行 $O(\log N)$ 检索，彻底杜绝线性遍历开销。
-- **防乱序自校验测试**：新增内置单元测试 `test_registry_is_strictly_sorted_without_duplicates`，在编译构建期自动化保障表内元素的单调严格递增，杜绝未来手误破坏二分特性。
+### 1.1 离线代码生成管线 (`tools/codegen.py`)
+- **权威信源直驱**：建立零依赖离线生成工具 `tools/codegen.py`，直接解析 Apache Tika 官方 `tika-mimetypes.xml`（275 KB，1598 个 MIME 类型定义与 1274 个 glob 扩展名规则）。
+- **固定偏移与预算约束控制**：严格提取纯固定偏移（fixed offset）且 `max(offset + len) <= 4096` 的二进制魔数规则，天然与 `BudgetReader` 的 4 KiB 初始读取窗口契约保持完全一致。
+- **位掩码 (Bitmask) 与截断适配**：在 `src/detectors/rules/types.rs` 与 `src/detectors/rules/engine.rs` 中完整实现并优化带有 `mask` 掩码的切片比对与截断探测。
+- **极简分卷模块化**：针对规则库膨胀问题，Codegen 将声明式规则按大类输出至 `src/detectors/rules/generated/`：
+  - `media.rs` (56 行)：包含 `flv`, `amr`, `ac3`, `au`, `caf`, `drc`, `mng` 等。
+  - `images.rs` (70 行)：包含 `xcf`, `exr`, `fits`, `icns`, `jp2`, `bpg`, `pbm`, `pgm`, `ppm` 等。
+  - `documents.rs` (35 行)：包含 `dicom`, `postscript`, `rtf`, `dwg` 等。
+  - `archives.rs` (42 行)：包含 `cpio`, `lz`, `arj`, `zoo`, `cab` 等。
+  - `mod.rs` (22 行)：导出汇总 `GENERATED_RULES: &[&[SignatureRule]]` 切片。
+  所有文件严格控制在 35~70 行区间，实现零运行时堆分配（`&'static [SignatureRule]`）。
 
-### 1.2 全品类格式能力矩阵 (已突破 60+ 种格式)
+### 1.2 扩展名单一真实信源 (SSOT) 索引库
+- 自动提取全部新老扩展名映射生成 `src/extension/registry.rs`（收录 161 个标准扩展名），严格按 ASCII 升序排列并去重，提供零哈希分配的 $O(\log N)$ 二分查找。
+- 通过单元测试 `test_registry_is_strictly_sorted_without_duplicates` 自动化守护排序单调递增性。
+
+### 1.3 全品类格式能力矩阵 (已拓展至 85+ 种格式)
 | 类别 | 已支持的具体格式与深度验证逻辑 |
 |---|---|
-| **办公文档** | **OOXML 家族** (`docx`, `xlsx`, `pptx`, `docm`, `xlsm`, `pptm`)；**CFB 家族** (`doc`, `xls`, `ppt`)；**ODF 家族** (`odt`, `ods`, `odp`)；`pdf`；`chm` |
-| **图像设计** | `png`, `jpeg`, `gif`, `bmp`, `webp`, `psd`, `tiff` (II*/MM*), `ico`, `cur` |
-| **音视频媒体** | `mp4`, `mov`, `webm`, `mkv`, `wav`, `mp3`, `flac`, `ogg`, `aac`, `aiff`, `mid` |
-| **压缩归档** | `zip`, `7z`, `rar`, `tar`, `gzip`, `bzip2`, `xz`, `zstd` |
+| **办公文档** | **OOXML 家族** (`docx`, `xlsx`, `pptx`, `docm`, `xlsm`, `pptm`)；**CFB 家族** (`doc`, `xls`, `ppt`)；**ODF 家族** (`odt`, `ods`, `odp`)；`pdf`；`chm`；`dicom`；`postscript`；`rtf`；`dwg` |
+| **图像设计** | `png`, `jpeg`, `gif`, `bmp`, `webp`, `psd`, `tiff` (II*/MM*), `ico`, `cur`, `xcf`, `exr`, `fits`, `icns`, `jp2`, `bpg`, `pbm`, `pgm`, `ppm` |
+| **音视频媒体** | `mp4`, `mov`, `webm`, `mkv`, `wav`, `mp3`, `flac`, `ogg`, `aac`, `aiff`, `mid`, `flv`, `amr`, `ac3`, `au`, `caf`, `drc`, `mng` |
+| **压缩归档** | `zip`, `7z`, `rar`, `tar`, `gzip`, `bzip2`, `xz`, `zstd`, `cpio`, `lz`, `arj`, `zoo`, `cab` |
 | **二进制执行** | `elf`, `pe`, `wasm`, `macho`, `class` |
 | **字体电子书** | `epub`, `mobi`, `ttf`, `otf`, `woff`, `woff2` |
 | **数据库转储** | `sqlite3`, `pcap`, `pcapng`, `parquet`, `avro` |
@@ -37,8 +44,8 @@
 ## 2. [当前状态] (Current State)
 
 - **编译构建**：`cargo build` 成功。
-- **代码质量与静态检查**：`cargo clippy --all-targets` **0 Error**。
-- **集成测试基线**：全量 `cargo test` **110 / 110 全部通过 (PASS)**（覆盖 20 个集成测试套件 + 扩展名排序自检单元测试，耗时 ~1.1 秒）。
+- **代码质量与静态检查**：`cargo clippy --all-targets` 0 Error（且无多余警告）。
+- **集成测试基线**：全量 `cargo test` **114 / 114 全部通过 (PASS)**（新增 `test_codegen_generated_rules` 套件，全绿，耗时 ~1.1 秒）。
 - **Git 仓库状态**：准备提交并推送。
 
 ---
@@ -47,5 +54,5 @@
 
 - **阻碍 (Blockers)**：无 (None)。
 - **后续优化建议**：
-  1. 引入 Criterion 基准测试评估各格式微秒级开销与二分查找时延；
-  2. 既有旧模块逐步迁移入声明式表。
+  1. 可进一步通过 Codegen 支持多段复合偏移模式（如带有兄弟分支的多级 match）；
+  2. 既有旧专有探测器在必要时逐步向 `SignatureRule` 归一化。

@@ -9,7 +9,7 @@ use super::executables::{probe_executable_signatures, ExecutableMatch};
 use super::fonts::{probe_font_signatures, FontMatch};
 use super::images::{probe_image_signatures, ImageMatch};
 use super::media::{probe_media_signatures, MediaMatch};
-use super::rules::{evaluate_rules, DECLARATIVE_RULES, RuleMatch};
+use super::rules::{evaluate_rules, DECLARATIVE_RULES, GENERATED_RULES, RuleMatch};
 
 pub const PDF_SIGNATURE: &[u8] = b"%PDF-";
 
@@ -83,7 +83,16 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         RuleMatch::None => (),
     }
 
-    // 10. Probe PDF signature within first 1024 bytes
+    // 10. Probe generated declarative rules from authoritative Tika library
+    for group in GENERATED_RULES {
+        match evaluate_rules(header, group) {
+            RuleMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+            RuleMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+            RuleMatch::None => (),
+        }
+    }
+
+    // 11. Probe PDF signature within first 1024 bytes
     let scan_limit = header.len().min(1024);
     if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));

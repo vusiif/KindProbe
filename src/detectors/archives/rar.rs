@@ -32,7 +32,7 @@ pub fn probe_rar(header: &[u8]) -> RarProbeResult {
 
     // Truncated detection
     if (header.len() >= 4 && header.starts_with(b"Rar!") && header.len() < 7)
-        || (header.len() >= 1 && header.starts_with(b"Rar") && header.len() < 4)
+        || (!header.is_empty() && header.starts_with(b"Rar") && header.len() < 4)
     {
         RarProbeResult::Truncated
     } else {
