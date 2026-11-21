@@ -88,7 +88,19 @@ const KNOWN_REGISTRY_EXTENSIONS: &[(&str, &str)] = &[
     ("zst", "zstd"),
     ("zstd", "zstd"),
     ("tzst", "zstd"),
+    ("json", "json"),
+    ("xml", "xml"),
+    ("html", "html"),
+    ("htm", "html"),
+    ("yaml", "yaml"),
+    ("yml", "yaml"),
+    ("toml", "toml"),
+    ("csv", "csv"),
+    ("tsv", "tsv"),
+    ("tab", "tsv"),
     ("txt", "txt"),
+    ("text", "txt"),
+    ("log", "txt"),
 ];
 
 /// Pure function for independent extension diagnosis according to specification §6.3.

@@ -7,7 +7,9 @@ pub mod executables;
 pub mod fonts;
 pub mod images;
 pub mod media;
+pub mod rules;
 pub mod signatures;
+pub mod text;
 pub mod zip_ooxml;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -185,7 +187,12 @@ pub fn detect_stream<R: Read + Seek>(
         return Ok(rep);
     }
 
-    // Step 5: Unknown format
+    // Step 5: Check structured and plain text formats (JSON, XML, HTML, YAML, TOML, CSV, TXT)
+    if let Some(rep) = text::probe_text(&header) {
+        return Ok(rep);
+    }
+
+    // Step 6: Unknown format
     Ok(DetectionReport {
         schema_version: 1,
         format_id: None,

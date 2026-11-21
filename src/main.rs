@@ -479,6 +479,14 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.xz.magic" => "XZ 压缩魔数签名有效",
         "sig.xz.crc" => "XZ Stream Flags CRC32 校验有效",
         "sig.zstd.magic" => "Zstandard 压缩魔数签名有效",
+        "sig.text.json" => "JSON 文档语法结构有效",
+        "sig.text.xml" => "XML 处理指令或文档根标记有效",
+        "sig.text.html" => "HTML DOCTYPE 或核心标签结构有效",
+        "sig.text.yaml" => "YAML 文档分隔符或键值结构有效",
+        "sig.text.toml" => "TOML 表头段落或键值赋值结构有效",
+        "sig.text.csv" => "CSV 逗号分隔表格结构与字段一致性有效",
+        "sig.text.tsv" => "TSV 制表符分隔表格结构与字段一致性有效",
+        "sig.text.plain" => "UTF-8 纯文本编码及控制字符过滤有效",
         _ => default_msg,
     }
 }

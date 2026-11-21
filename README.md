@@ -76,6 +76,14 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **Bzip2 压缩格式** | `bzip2` | `bzip2` | **Supported** | `BZh` 魔数 + 块大小 (`'1'`..`'9'`) 与 Pi 常数块特征 (`0x314159265359`) 核验 |
 | **XZ 压缩格式** | `xz` | `xz` | **Supported** | `\xFD7zXZ\x00` 魔数 + Stream Flags 的 IEEE CRC32 完整性核验 |
 | **Zstandard 压缩格式** | `zstd` | `zstd` | **Supported** | `0x28 0xB5 0x2F 0xFD` 头部魔数核验 |
+| **JSON 文档** | `json` | `null` | **Supported** | 前置网关 BOM 剥离与控制字符过滤 + `{...}` / `[...]` 根语法结构核验 |
+| **XML 标记语言** | `xml` | `null` | **Supported** | `<?xml` 处理指令或标准 XML 根标签与命名空间核验 |
+| **HTML 网页文档** | `html` | `null` | **Supported** | `<!DOCTYPE html`、`<html`、`<head`、`<body` 核心标记结构核验 |
+| **YAML 数据序列化** | `yaml` | `null` | **Supported** | `---` 文档起始标记或多行合规键值/列表结构模式核验 |
+| **TOML 配置文件** | `toml` | `null` | **Supported** | `[section]` 标准表头或结构化赋值语句核验 |
+| **CSV 逗号分隔表格** | `csv` | `null` | **Supported** | 多行逗号分隔列数完全一致性与行结构特征核验（>= 2 列） |
+| **TSV 制表符分隔表格** | `tsv` | `null` | **Supported** | 多行制表符分隔列数一致性与行结构特征核验（>= 2 列） |
+| **纯文本文件** | `txt` | `null` | **Supported** | 严格网关校验：UTF-8 编码合法性 + 零 `\0` 空字节 + 控制字符率严格低于 1% |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**
