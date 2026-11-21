@@ -1,3 +1,4 @@
+pub mod archives;
 pub mod cfb_doc;
 pub mod images;
 pub mod signatures;

@@ -18,6 +18,8 @@ const KNOWN_REGISTRY_EXTENSIONS: &[(&str, &str)] = &[
     ("jpeg", "jpeg"),
     ("gif", "gif"),
     ("bmp", "bmp"),
+    ("7z", "7z"),
+    ("rar", "rar"),
     ("txt", "txt"),
 ];
 

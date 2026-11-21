@@ -405,6 +405,11 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.jpeg.segment" => "JPEG 标记段（APP/DQT/SOF）结构有效",
         "sig.gif.header" => "GIF 87a/89a 文件头签名有效",
         "sig.gif.logical_screen" => "GIF 逻辑屏幕描述符有效",
+        "sig.7z.header" => "7-Zip 魔数签名有效",
+        "sig.7z.start_header" => "7-Zip 起始头 CRC32 校验有效",
+        "sig.rar.header" => "RAR 归档签名有效",
+        "sig.rar.main_header" => "RAR4 主档案头有效",
+        "sig.rar5.signature" => "RAR5 扩展归档签名有效",
         _ => default_msg,
     }
 }

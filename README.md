@@ -38,7 +38,8 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **疑似 OOXML 未确认** | `null` | `zip` | **Container Only** | 存在 OOXML 特征但缺少关系或主部件时，降级为 `container_only`，不假报也不退为普通 ZIP |
 | **Compound File Binary** | `null` | `cfb` | **Container Only** | OLE2 复合文件结构；扇区链循环保护；无 WordDocument 流时确认为纯容器 |
 | **Microsoft Word 97-2003** | `doc` | `cfb` | **Supported** | 验证 CFB 容器 + 根目录 `WordDocument` 流 + MS-DOC FIB 头（`wIdent == 0xA5EC`, `nFib >= 0x00C1`）+ 表流验证；检测加密标志；虚假流/嵌套流降级为 `container_only` |
-| **归档格式 (7z / RAR)** | - | - | **Not Supported (P1-B)** | 7z/RAR 内嵌 DOCX 不得误判为外层 DOCX |
+| **7-Zip 归档格式** | `7z` | `7z` | **Supported** | 6 字节魔数签名 + 32 字节起始头 (StartHeader) CRC32 完整性校验 |
+| **RAR 归档格式** | `rar` | `rar` | **Supported** | 严格区分并核验 RAR4（主档案头 `0x73`）与 RAR5（8 字节扩展签名）结构 |
 | **音视频媒体 (MP4 / MP3 / WAV / WebM)** | - | - | **Not Supported (P1-B)** | 音视频识别属于 P1-B 阶段 |
 
 **支持平台验证状态**：

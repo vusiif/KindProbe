@@ -1,6 +1,7 @@
 use crate::model::{
     DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
 };
+use super::archives::{probe_archive_signatures, ArchiveMatch};
 use super::images::{probe_image_signatures, ImageMatch};
 
 pub const PDF_SIGNATURE: &[u8] = b"%PDF-";
@@ -19,7 +20,14 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         ImageMatch::None => (),
     }
 
-    // 2. Probe PDF signature within first 1024 bytes
+    // 2. Probe archive formats (7z, RAR)
+    match probe_archive_signatures(header) {
+        ArchiveMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+        ArchiveMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+        ArchiveMatch::None => (),
+    }
+
+    // 3. Probe PDF signature within first 1024 bytes
     let scan_limit = header.len().min(1024);
     if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));
