@@ -46,10 +46,10 @@ pub static MODELS_RULES: &[SignatureRule] = &[
         verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "nes", category: "rom", container_id: None,
-        recommended_ext: "nes", accepted_exts: &["nes"],
-        patterns: &[MagicPattern::new(0, b"NES\x1a")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.nes.magic",
+        format_id: "lwo", category: "model", container_id: None,
+        recommended_ext: "lwo", accepted_exts: &["lwo"],
+        patterns: &[MagicPattern::new(0, b"FORM"), MagicPattern::new(8, b"LWO2")],
+        min_header_len: 12, priority: 50, evidence_code: "rule.lwo.magic",
         verification: Verification::Signature, validator: None,
     },
 ];

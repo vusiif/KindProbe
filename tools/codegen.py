@@ -84,6 +84,16 @@ SELECTED_FORMATS = {
             "accepted_exts": ["mng"], "mime": "video/x-mng", "evidence": "rule.mng.magic",
             "patterns": [(0, b"\x8aMNG\r\n\x1a\n", None)],
         },
+        {
+            "format_id": "ape", "category": "audio", "recommended_ext": "ape",
+            "accepted_exts": ["ape"], "mime": "audio/x-ape", "evidence": "rule.ape.magic",
+            "patterns": [(0, b"MAC ", None)],
+        },
+        {
+            "format_id": "wv", "category": "audio", "recommended_ext": "wv",
+            "accepted_exts": ["wv"], "mime": "audio/x-wavpack", "evidence": "rule.wv.magic",
+            "patterns": [(0, b"wvpk", None)],
+        },
     ],
     "audio_chips": [
         {
@@ -105,6 +115,26 @@ SELECTED_FORMATS = {
             "format_id": "torrent", "category": "media", "recommended_ext": "torrent",
             "accepted_exts": ["torrent"], "mime": "application/x-bittorrent", "evidence": "rule.torrent.magic",
             "patterns": [(0, b"d8:announce", None)],
+        },
+        {
+            "format_id": "s3m", "category": "audio", "recommended_ext": "s3m",
+            "accepted_exts": ["s3m"], "mime": "audio/x-s3m", "evidence": "rule.s3m.magic",
+            "patterns": [(44, b"SCRM", None)],
+        },
+        {
+            "format_id": "xm", "category": "audio", "recommended_ext": "xm",
+            "accepted_exts": ["xm"], "mime": "audio/x-xm", "evidence": "rule.xm.magic",
+            "patterns": [(0, b"Extended Module: ", None)],
+        },
+        {
+            "format_id": "it", "category": "audio", "recommended_ext": "it",
+            "accepted_exts": ["it"], "mime": "audio/x-it", "evidence": "rule.it.magic",
+            "patterns": [(0, b"IMPM", None)],
+        },
+        {
+            "format_id": "mod", "category": "audio", "recommended_ext": "mod",
+            "accepted_exts": ["mod"], "mime": "audio/x-mod", "evidence": "rule.mod.magic",
+            "patterns": [(1080, b"M.K.", None)],
         },
     ],
     "images": [
@@ -169,6 +199,26 @@ SELECTED_FORMATS = {
             "format_id": "ppm", "category": "image", "recommended_ext": "ppm",
             "accepted_exts": ["ppm"], "mime": "image/x-portable-pixmap", "evidence": "rule.ppm.magic",
             "patterns": [(0, b"P6\n", None)],
+        },
+        {
+            "format_id": "pam", "category": "image", "recommended_ext": "pam",
+            "accepted_exts": ["pam"], "mime": "image/x-portable-arbitrarymap", "evidence": "rule.pam.magic",
+            "patterns": [(0, b"P7\n", None)],
+        },
+        {
+            "format_id": "xbm", "category": "image", "recommended_ext": "xbm",
+            "accepted_exts": ["xbm"], "mime": "image/x-xbitmap", "evidence": "rule.xbm.magic",
+            "patterns": [(0, b"#define ", None)],
+        },
+        {
+            "format_id": "xpm", "category": "image", "recommended_ext": "xpm",
+            "accepted_exts": ["xpm"], "mime": "image/x-xpixmap", "evidence": "rule.xpm.magic",
+            "patterns": [(0, b"/* XPM */", None)],
+        },
+        {
+            "format_id": "sgi", "category": "image", "recommended_ext": "sgi",
+            "accepted_exts": ["sgi", "rgb", "bw"], "mime": "image/x-sgi", "evidence": "rule.sgi.magic",
+            "patterns": [(0, b"\x01\xda", None)],
         },
     ],
     "documents": [
@@ -287,9 +337,9 @@ SELECTED_FORMATS = {
             "patterns": [(0, b"ISO-10303-21;", None)],
         },
         {
-            "format_id": "nes", "category": "rom", "recommended_ext": "nes",
-            "accepted_exts": ["nes"], "mime": "application/x-nes-rom", "evidence": "rule.nes.magic",
-            "patterns": [(0, b"NES\x1a", None)],
+            "format_id": "lwo", "category": "model", "recommended_ext": "lwo",
+            "accepted_exts": ["lwo"], "mime": "image/x-lwo", "evidence": "rule.lwo.magic",
+            "patterns": [(0, b"FORM", None), (8, b"LWO2", None)],
         },
     ],
     "scientific": [
@@ -334,6 +384,87 @@ SELECTED_FORMATS = {
             "patterns": [(208, b"MAP ", None)],
         },
     ],
+    "roms": [
+        {
+            "format_id": "nes", "category": "rom", "recommended_ext": "nes",
+            "accepted_exts": ["nes"], "mime": "application/x-nes-rom", "evidence": "rule.nes.magic",
+            "patterns": [(0, b"NES\x1a", None)],
+        },
+        {
+            "format_id": "z64", "category": "rom", "recommended_ext": "z64",
+            "accepted_exts": ["z64"], "mime": "application/x-n64-rom", "evidence": "rule.z64.magic",
+            "patterns": [(0, b"\x80\x37\x12\x40", None)],
+        },
+        {
+            "format_id": "n64", "category": "rom", "recommended_ext": "n64",
+            "accepted_exts": ["n64"], "mime": "application/x-n64-rom", "evidence": "rule.n64.magic",
+            "patterns": [(0, b"\x40\x12\x37\x80", None)],
+        },
+        {
+            "format_id": "v64", "category": "rom", "recommended_ext": "v64",
+            "accepted_exts": ["v64"], "mime": "application/x-n64-rom", "evidence": "rule.v64.magic",
+            "patterns": [(0, b"\x37\x80\x40\x12", None)],
+        },
+        {
+            "format_id": "gba", "category": "rom", "recommended_ext": "gba",
+            "accepted_exts": ["gba"], "mime": "application/x-gba-rom", "evidence": "rule.gba.magic",
+            "patterns": [(4, b"\x24\xff\xae\x51", None)],
+        },
+        {
+            "format_id": "gb", "category": "rom", "recommended_ext": "gb",
+            "accepted_exts": ["gb", "gbc"], "mime": "application/x-gameboy-rom", "evidence": "rule.gb.magic",
+            "patterns": [(260, b"\xce\xed\x66\x66\xcc\x0d\x00\x0b", None)],
+        },
+        {
+            "format_id": "nds", "category": "rom", "recommended_ext": "nds",
+            "accepted_exts": ["nds"], "mime": "application/x-nintendo-ds-rom", "evidence": "rule.nds.magic",
+            "patterns": [(12, b"\x24\xff\xae\x51", None)],
+        },
+    ],
+    "packages": [
+        {
+            "format_id": "snappy", "category": "archive", "recommended_ext": "sz",
+            "accepted_exts": ["sz", "snappy"], "mime": "application/x-snappy-framed", "evidence": "rule.snappy.magic",
+            "patterns": [(0, b"\xff\x06\x00\x00sNaPpY", None)],
+        },
+        {
+            "format_id": "z", "category": "archive", "recommended_ext": "z",
+            "accepted_exts": ["z"], "mime": "application/x-compress", "evidence": "rule.z.magic",
+            "patterns": [(0, b"\x1f\x9d", None)],
+        },
+        {
+            "format_id": "lha", "category": "archive", "recommended_ext": "lha",
+            "accepted_exts": ["lha", "lzh"], "mime": "application/x-lzh", "evidence": "rule.lha.magic",
+            "patterns": [(2, b"-lh", None)],
+        },
+        {
+            "format_id": "ace", "category": "archive", "recommended_ext": "ace",
+            "accepted_exts": ["ace"], "mime": "application/x-ace-compressed", "evidence": "rule.ace.magic",
+            "patterns": [(7, b"**ACE**", None)],
+        },
+    ],
+    "database": [
+        {
+            "format_id": "arrow", "category": "database", "recommended_ext": "arrow",
+            "accepted_exts": ["arrow", "feather"], "mime": "application/vnd.apache.arrow.file", "evidence": "rule.arrow.magic",
+            "patterns": [(0, b"ARROW1", None)],
+        },
+        {
+            "format_id": "kdbx", "category": "database", "recommended_ext": "kdbx",
+            "accepted_exts": ["kdbx"], "mime": "application/x-keepass", "evidence": "rule.kdbx.magic",
+            "patterns": [(0, b"\x03\xd9\xa2\x9a\x67\xfb\x4b\xb5", None)],
+        },
+        {
+            "format_id": "kdb", "category": "database", "recommended_ext": "kdb",
+            "accepted_exts": ["kdb"], "mime": "application/x-keepass", "evidence": "rule.kdb.magic",
+            "patterns": [(0, b"\x03\xd9\xa2\x9a\x65\xfb\x4b\xb5", None)],
+        },
+        {
+            "format_id": "realm", "category": "database", "recommended_ext": "realm",
+            "accepted_exts": ["realm"], "mime": "application/x-realm", "evidence": "rule.realm.magic",
+            "patterns": [(0, b"T-D-B!", None)],
+        },
+    ],
 }
 
 def generate_category_file(category: str, rules_list: list, out_path: str):
@@ -372,42 +503,25 @@ def generate_category_file(category: str, rules_list: list, out_path: str):
     print(f"Generated {out_path} ({len(lines)} lines)")
 
 def generate_mod_file(out_path: str):
-    content = """// Auto-generated by tools/codegen.py. DO NOT EDIT MANUALLY.
-pub mod archives;
-pub mod audio_chips;
-pub mod documents;
-pub mod images;
-pub mod media;
-pub mod models;
-pub mod netpbm;
-pub mod scientific;
+    mods = sorted(SELECTED_FORMATS.keys())
+    mod_decls = "\n".join([f"pub mod {m};" for m in mods])
+    use_decls = "\n".join([f"pub use {m}::{m.upper()}_RULES;" for m in mods])
+    rules_slices = "\n".join([f"    {m.upper()}_RULES," for m in mods])
+    content = f"""// Auto-generated by tools/codegen.py. DO NOT EDIT MANUALLY.
+{mod_decls}
 
-pub use archives::ARCHIVES_RULES;
-pub use audio_chips::AUDIO_CHIPS_RULES;
-pub use documents::DOCUMENTS_RULES;
-pub use images::IMAGES_RULES;
-pub use media::MEDIA_RULES;
-pub use models::MODELS_RULES;
-pub use netpbm::NETPBM_RULES;
-pub use scientific::SCIENTIFIC_RULES;
+{use_decls}
 
 use crate::detectors::rules::types::SignatureRule;
 
-/// Combined view of all auto-generated declarative signature rules across 8 partitions.
+/// Combined view of all auto-generated declarative signature rules across {len(mods)} partitions.
 pub static GENERATED_RULES: &[&[SignatureRule]] = &[
-    MEDIA_RULES,
-    AUDIO_CHIPS_RULES,
-    IMAGES_RULES,
-    NETPBM_RULES,
-    DOCUMENTS_RULES,
-    ARCHIVES_RULES,
-    MODELS_RULES,
-    SCIENTIFIC_RULES,
+{rules_slices}
 ];
 """
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"Generated {out_path}")
+    print(f"Generated {out_path} ({len(mods)} partitions)")
 
 def generate_extension_registry(root: ET.Element, out_path: str):
     # Base registry items to guarantee zero breakage with existing fixtures

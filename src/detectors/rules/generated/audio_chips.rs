@@ -31,4 +31,32 @@ pub static AUDIO_CHIPS_RULES: &[SignatureRule] = &[
         min_header_len: 11, priority: 50, evidence_code: "rule.torrent.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "s3m", category: "audio", container_id: None,
+        recommended_ext: "s3m", accepted_exts: &["s3m"],
+        patterns: &[MagicPattern::new(44, b"SCRM")],
+        min_header_len: 48, priority: 50, evidence_code: "rule.s3m.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "xm", category: "audio", container_id: None,
+        recommended_ext: "xm", accepted_exts: &["xm"],
+        patterns: &[MagicPattern::new(0, b"Extended Module: ")],
+        min_header_len: 17, priority: 50, evidence_code: "rule.xm.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "it", category: "audio", container_id: None,
+        recommended_ext: "it", accepted_exts: &["it"],
+        patterns: &[MagicPattern::new(0, b"IMPM")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.it.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mod", category: "audio", container_id: None,
+        recommended_ext: "mod", accepted_exts: &["mod"],
+        patterns: &[MagicPattern::new(1080, b"M.K.")],
+        min_header_len: 1084, priority: 50, evidence_code: "rule.mod.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

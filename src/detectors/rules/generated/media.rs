@@ -52,4 +52,18 @@ pub static MEDIA_RULES: &[SignatureRule] = &[
         min_header_len: 8, priority: 50, evidence_code: "rule.mng.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "ape", category: "audio", container_id: None,
+        recommended_ext: "ape", accepted_exts: &["ape"],
+        patterns: &[MagicPattern::new(0, b"MAC ")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.ape.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "wv", category: "audio", container_id: None,
+        recommended_ext: "wv", accepted_exts: &["wv"],
+        patterns: &[MagicPattern::new(0, b"wvpk")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.wv.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

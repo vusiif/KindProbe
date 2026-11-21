@@ -24,4 +24,32 @@ pub static NETPBM_RULES: &[SignatureRule] = &[
         min_header_len: 3, priority: 50, evidence_code: "rule.ppm.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "pam", category: "image", container_id: None,
+        recommended_ext: "pam", accepted_exts: &["pam"],
+        patterns: &[MagicPattern::new(0, b"P7\x0a")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.pam.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "xbm", category: "image", container_id: None,
+        recommended_ext: "xbm", accepted_exts: &["xbm"],
+        patterns: &[MagicPattern::new(0, b"#define ")],
+        min_header_len: 8, priority: 50, evidence_code: "rule.xbm.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "xpm", category: "image", container_id: None,
+        recommended_ext: "xpm", accepted_exts: &["xpm"],
+        patterns: &[MagicPattern::new(0, b"/* XPM */")],
+        min_header_len: 9, priority: 50, evidence_code: "rule.xpm.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sgi", category: "image", container_id: None,
+        recommended_ext: "sgi", accepted_exts: &["sgi", "rgb", "bw"],
+        patterns: &[MagicPattern::new(0, b"\x01\xda")],
+        min_header_len: 2, priority: 50, evidence_code: "rule.sgi.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

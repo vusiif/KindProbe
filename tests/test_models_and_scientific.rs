@@ -46,11 +46,12 @@ fn test_detect_3d_models_and_cad() {
     assert_eq!(compare_extension(&rep_step, Some(OsStr::new("stp"))), ExtensionStatus::Match);
     assert_eq!(compare_extension(&rep_step, Some(OsStr::new("step"))), ExtensionStatus::Match);
 
-    // 7. NES Game ROM
-    let nes_bytes = b"NES\x1a\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00";
-    let rep_nes = detect_bytes(nes_bytes, &opts).expect("detect nes");
-    assert_eq!(rep_nes.format_id.as_deref(), Some("nes"));
-    assert_eq!(rep_nes.category, "rom");
+    // 7. LightWave 3D Object (LWO)
+    let lwo_bytes = b"FORM\x00\x00\x00\x20LWO2TAGS\x00\x00\x00\x04";
+    let rep_lwo = detect_bytes(lwo_bytes, &opts).expect("detect lwo");
+    assert_eq!(rep_lwo.format_id.as_deref(), Some("lwo"));
+    assert_eq!(rep_lwo.category, "model");
+    assert_eq!(compare_extension(&rep_lwo, Some(OsStr::new("lwo"))), ExtensionStatus::Match);
 }
 
 #[test]
