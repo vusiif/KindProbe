@@ -93,6 +93,13 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **Debian 软件包** | `deb` | `ar` | **Supported** | 多段魔数联合校验：`!<arch>\n` + `debian-binary` 首条目签名 |
 | **Red Hat 软件包** | `rpm` | `null` | **Supported** | `\xED\xAB\xEE\xDB` 魔数 + 主版本号校验 |
 | **Chrome 扩展包** | `crx` | `null` | **Supported** | `Cr24` 魔数 + 版本号校验 |
+| **Android 安装包** | `apk` | `zip` | **Supported** | 验证 ZIP 容器内部 `AndroidManifest.xml` 与 `classes.dex` 核心部件 |
+| **iOS 安装包** | `ipa` | `zip` | **Supported** | 验证 ZIP 容器内部 `Payload/*.app/Info.plist` 应用清单结构 |
+| **Java 归档包** | `jar` | `zip` | **Supported** | 验证 ZIP 容器内部 `META-INF/MANIFEST.MF` 清单文件 |
+| **AAC 高级音频编码** | `aac` | `null` | **Supported** | ADTS 同步字魔数（`0xFF 0xF1` / `0xFF 0xF9`）结构核验 |
+| **AIFF 音频格式** | `aiff` | `null` | **Supported** | 多段魔数联合校验：`FORM` 块 + `AIFF` / `AIFC` 标志 |
+| **MIDI 音乐格式** | `mid` | `null` | **Supported** | `MThd` 4 字节魔数 + 头块长度 6 字节结构核验 |
+| **已编译 HTML 帮助文档** | `chm` | `null` | **Supported** | `ITSF` 4 字节魔数 + 格式版本号核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**

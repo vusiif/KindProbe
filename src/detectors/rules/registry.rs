@@ -95,6 +95,30 @@ fn validate_crx(header: &[u8]) -> ValidationStatus {
     }
 }
 
+fn validate_mid(header: &[u8]) -> ValidationStatus {
+    if header.len() < 8 {
+        return ValidationStatus::Truncated;
+    }
+    let length = u32::from_be_bytes([header[4], header[5], header[6], header[7]]);
+    if length == 6 {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+fn validate_chm(header: &[u8]) -> ValidationStatus {
+    if header.len() < 8 {
+        return ValidationStatus::Truncated;
+    }
+    let ver = u32::from_le_bytes([header[4], header[5], header[6], header[7]]);
+    if ver == 3 || ver == 4 {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
 pub static DECLARATIVE_RULES: &[SignatureRule] = &[
     // 1. Debian Package (Multi-pattern magic)
     SignatureRule {
@@ -238,5 +262,93 @@ pub static DECLARATIVE_RULES: &[SignatureRule] = &[
         evidence_code: "sig.cur.magic",
         verification: Verification::Structure,
         validator: Some(validate_ico_or_cur),
+    },
+    // 11. Advanced Audio Coding (AAC - ADTS syncword)
+    SignatureRule {
+        format_id: "aac",
+        category: "audio",
+        container_id: None,
+        recommended_ext: "aac",
+        accepted_exts: &["aac"],
+        patterns: &[MagicPattern::new(0, &[0xFF, 0xF1])],
+        min_header_len: 4,
+        priority: 80,
+        evidence_code: "sig.aac.magic",
+        verification: Verification::Structure,
+        validator: None,
+    },
+    SignatureRule {
+        format_id: "aac",
+        category: "audio",
+        container_id: None,
+        recommended_ext: "aac",
+        accepted_exts: &["aac"],
+        patterns: &[MagicPattern::new(0, &[0xFF, 0xF9])],
+        min_header_len: 4,
+        priority: 80,
+        evidence_code: "sig.aac.magic",
+        verification: Verification::Structure,
+        validator: None,
+    },
+    // 12. Audio Interchange File Format (AIFF)
+    SignatureRule {
+        format_id: "aiff",
+        category: "audio",
+        container_id: None,
+        recommended_ext: "aif",
+        accepted_exts: &["aif", "aiff", "aifc"],
+        patterns: &[
+            MagicPattern::new(0, b"FORM"),
+            MagicPattern::new(8, b"AIFF"),
+        ],
+        min_header_len: 12,
+        priority: 85,
+        evidence_code: "sig.aiff.magic",
+        verification: Verification::Structure,
+        validator: None,
+    },
+    SignatureRule {
+        format_id: "aiff",
+        category: "audio",
+        container_id: None,
+        recommended_ext: "aif",
+        accepted_exts: &["aif", "aiff", "aifc"],
+        patterns: &[
+            MagicPattern::new(0, b"FORM"),
+            MagicPattern::new(8, b"AIFC"),
+        ],
+        min_header_len: 12,
+        priority: 85,
+        evidence_code: "sig.aiff.magic",
+        verification: Verification::Structure,
+        validator: None,
+    },
+    // 13. MIDI Audio (MID)
+    SignatureRule {
+        format_id: "mid",
+        category: "audio",
+        container_id: None,
+        recommended_ext: "mid",
+        accepted_exts: &["mid", "midi"],
+        patterns: &[MagicPattern::new(0, b"MThd")],
+        min_header_len: 8,
+        priority: 90,
+        evidence_code: "sig.mid.magic",
+        verification: Verification::Structure,
+        validator: Some(validate_mid),
+    },
+    // 14. Compiled HTML Help (CHM)
+    SignatureRule {
+        format_id: "chm",
+        category: "document",
+        container_id: None,
+        recommended_ext: "chm",
+        accepted_exts: &["chm"],
+        patterns: &[MagicPattern::new(0, b"ITSF")],
+        min_header_len: 8,
+        priority: 90,
+        evidence_code: "sig.chm.magic",
+        verification: Verification::Structure,
+        validator: Some(validate_chm),
     },
 ];

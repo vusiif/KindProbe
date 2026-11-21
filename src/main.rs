@@ -496,6 +496,14 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.tiff.magic" => "TIFF 图像字节序魔数与 IFD 偏移有效",
         "sig.ico.magic" => "Windows 图标 (ICO) 头部签名有效",
         "sig.cur.magic" => "Windows 光标 (CUR) 头部签名有效",
+        "zip.apk.manifest" => "Android 安装包 (APK) 清单文件 (AndroidManifest.xml) 有效",
+        "zip.apk.dex" => "Android 安装包 (APK) 字节码文件 (classes.dex) 有效",
+        "zip.ipa.payload" => "iOS 安装包 (IPA) Payload 应用程序清单有效",
+        "zip.jar.manifest" => "Java 归档包 (JAR) 清单文件 (META-INF/MANIFEST.MF) 有效",
+        "sig.aac.magic" => "AAC 音频 ADTS 帧同步魔数有效",
+        "sig.aiff.magic" => "AIFF 音频 FORM 容器与 AIFF/AIFC 标识有效",
+        "sig.mid.magic" => "MIDI 音频 MThd 头部魔数与长度有效",
+        "sig.chm.magic" => "微软已编译 HTML 帮助 (CHM) 头部签名有效",
         _ => default_msg,
     }
 }
