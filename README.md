@@ -309,3 +309,12 @@ python3 scripts/run_52_fixtures_regression.py
 # 3. 运行仓库自带的 Codex 18 项全量验收测试
 python3 scripts/run_acceptance.py
 ```
+
+### 6.3 本地全量回归与对抗模糊测试 (In-Repo Native Suite)
+无需 Docker 环境，在任何受支持平台（Linux/Windows/macOS）直接运行：
+```bash
+# 运行全量 118 个集成与单元测试（覆盖 85+ 格式、真实样本句柄矩阵、全量对抗变异模糊）
+cargo test
+```
+- **真实文件样本矩阵 (`fixtures/real/`)**：包含 25 个干净真实的跨领域格式切片（FLV, AMR, AC3, CAF, DRC, MNG, XCF, EXR, FITS, ICNS, JP2, BPG, Netpbm, DICOM, PostScript, RTF, DWG, CPIO, Lzip, Cabinet, SQLite3, PCAP, Parquet 等），通过 `test_real_fixtures_matrix` 执行端到端真实 OS 句柄与扩展名正反校验；
+- **确定性对抗模糊套件 (`test_adversarial_fuzzing`)**：零外部依赖，使用确定性伪随机变异引擎执行数千次混沌随机流注入、魔数任意边界截断与随机位翻转，自动化守护 No-Panic、预算严格锁定与幂等不变量。

@@ -21,9 +21,7 @@ pub fn probe_png(header: &[u8]) -> PngProbeResult {
             }
         }
         PngProbeResult::Confirmed { has_ihdr: false }
-    } else if (header.len() >= 4 && header.starts_with(b"\x89PNG"))
-        || (!header.is_empty() && header[0] == 0x89 && header.len() < 8)
-    {
+    } else if !header.is_empty() && header.len() < 8 && PNG_SIGNATURE.starts_with(header) {
         PngProbeResult::Truncated
     } else {
         PngProbeResult::None

@@ -13,7 +13,7 @@ pub enum SqliteMatch {
 /// Probes SQLite 3 database header and page size configuration.
 pub fn probe_sqlite(header: &[u8]) -> SqliteMatch {
     if header.len() < 16 {
-        if !header.is_empty() && header.starts_with(b"SQLite") {
+        if !header.is_empty() && SQLITE3_MAGIC.starts_with(header) {
             return SqliteMatch::Truncated("sqlite3".to_string());
         }
         return SqliteMatch::None;
