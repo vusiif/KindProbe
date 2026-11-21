@@ -84,6 +84,15 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **CSV 逗号分隔表格** | `csv` | `null` | **Supported** | 多行逗号分隔列数完全一致性与行结构特征核验（>= 2 列） |
 | **TSV 制表符分隔表格** | `tsv` | `null` | **Supported** | 多行制表符分隔列数一致性与行结构特征核验（>= 2 列） |
 | **纯文本文件** | `txt` | `null` | **Supported** | 严格网关校验：UTF-8 编码合法性 + 零 `\0` 空字节 + 控制字符率严格低于 1% |
+| **FLAC 无损音频** | `flac` | `null` | **Supported** | `fLaC` 魔数 + STREAMINFO 元数据块头校验 |
+| **Ogg 多媒体容器** | `ogg` | `ogg` | **Supported** | `OggS` 容器魔数 + 头部版本及逻辑流校验（支持 Vorbis / Opus 等） |
+| **Photoshop 图像文档** | `psd` | `null` | **Supported** | `8BPS` 魔数 + 版本 1 及保留字节校验 |
+| **TIFF 图像格式** | `tiff` | `null` | **Supported** | 支持大端 `MM\0*` 与小端 `II*\0` 双变体魔数 + IFD 偏移校验 |
+| **Windows 图标格式** | `ico` | `null` | **Supported** | `\0\0\x01\0` 魔数 + 图标目录项数量校验 |
+| **Windows 光标格式** | `cur` | `null` | **Supported** | `\0\0\x02\0` 魔数 + 光标目录项数量校验 |
+| **Debian 软件包** | `deb` | `ar` | **Supported** | 多段魔数联合校验：`!<arch>\n` + `debian-binary` 首条目签名 |
+| **Red Hat 软件包** | `rpm` | `null` | **Supported** | `\xED\xAB\xEE\xDB` 魔数 + 主版本号校验 |
+| **Chrome 扩展包** | `crx` | `null` | **Supported** | `Cr24` 魔数 + 版本号校验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**

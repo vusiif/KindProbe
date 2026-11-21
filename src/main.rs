@@ -487,6 +487,15 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.text.csv" => "CSV 逗号分隔表格结构与字段一致性有效",
         "sig.text.tsv" => "TSV 制表符分隔表格结构与字段一致性有效",
         "sig.text.plain" => "UTF-8 纯文本编码及控制字符过滤有效",
+        "sig.deb.magic" => "Debian 软件包 (deb) ar 头部与 debian-binary 签名有效",
+        "sig.rpm.magic" => "Red Hat 软件包 (rpm) 头部魔数与主版本有效",
+        "sig.crx.magic" => "Chrome 扩展包 (crx) 头部魔数与版本有效",
+        "sig.flac.magic" => "FLAC 无损音频魔数与 STREAMINFO 头部有效",
+        "sig.ogg.magic" => "Ogg 多媒体容器头部签名有效",
+        "sig.psd.magic" => "Adobe Photoshop (PSD) 头部魔数与版本有效",
+        "sig.tiff.magic" => "TIFF 图像字节序魔数与 IFD 偏移有效",
+        "sig.ico.magic" => "Windows 图标 (ICO) 头部签名有效",
+        "sig.cur.magic" => "Windows 光标 (CUR) 头部签名有效",
         _ => default_msg,
     }
 }

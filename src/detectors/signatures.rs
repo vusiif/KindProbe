@@ -9,6 +9,7 @@ use super::executables::{probe_executable_signatures, ExecutableMatch};
 use super::fonts::{probe_font_signatures, FontMatch};
 use super::images::{probe_image_signatures, ImageMatch};
 use super::media::{probe_media_signatures, MediaMatch};
+use super::rules::{evaluate_rules, DECLARATIVE_RULES, RuleMatch};
 
 pub const PDF_SIGNATURE: &[u8] = b"%PDF-";
 
@@ -75,7 +76,14 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         DiskMatch::None => (),
     }
 
-    // 9. Probe PDF signature within first 1024 bytes
+    // 9. Probe declarative rules (DEB, RPM, CRX, FLAC, OGG, PSD, TIFF, ICO, CUR)
+    match evaluate_rules(header, DECLARATIVE_RULES) {
+        RuleMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+        RuleMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+        RuleMatch::None => (),
+    }
+
+    // 10. Probe PDF signature within first 1024 bytes
     let scan_limit = header.len().min(1024);
     if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));
