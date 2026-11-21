@@ -3,6 +3,7 @@ use crate::model::{
 };
 use super::archives::{probe_archive_signatures, ArchiveMatch};
 use super::images::{probe_image_signatures, ImageMatch};
+use super::media::{probe_media_signatures, MediaMatch};
 
 pub const PDF_SIGNATURE: &[u8] = b"%PDF-";
 
@@ -27,7 +28,14 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         ArchiveMatch::None => (),
     }
 
-    // 3. Probe PDF signature within first 1024 bytes
+    // 3. Probe media formats (MP4, MOV, WebM, MKV, WAV, WebP, AVI, MP3)
+    match probe_media_signatures(header) {
+        MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+        MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+        MediaMatch::None => (),
+    }
+
+    // 4. Probe PDF signature within first 1024 bytes
     let scan_limit = header.len().min(1024);
     if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));

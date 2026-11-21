@@ -42,7 +42,13 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **Microsoft PowerPoint 97-2003** | `ppt` | `cfb` | **Supported** | 验证 CFB 容器 + 根目录 `PowerPoint Document` 流 + 32 字节结构头 + `Current User` 流联动 |
 | **7-Zip 归档格式** | `7z` | `7z` | **Supported** | 6 字节魔数签名 + 32 字节起始头 (StartHeader) CRC32 完整性校验 |
 | **RAR 归档格式** | `rar` | `rar` | **Supported** | 严格区分并核验 RAR4（主档案头 `0x73`）与 RAR5（8 字节扩展签名）结构 |
-| **音视频媒体 (MP4 / MP3 / WAV / WebM)** | - | - | **Not Supported (P1-B)** | 音视频识别属于 P1-B 阶段 |
+| **MP4 视频格式** | `mp4` | `isobmff` | **Supported** | ISO-BMFF box 结构解析：验证 `ftyp` box 长度与主要品牌（`isom`/`mp41`/`mp42`/`m4v` 等）|
+| **QuickTime MOV 视频** | `mov` | `isobmff` | **Supported** | 验证 `ftyp` 中的 `qt  ` 品牌或经典 `moov`/`wide`/`free` 文件头结构 |
+| **WebM 开放视频格式** | `webm` | `matroska` | **Supported** | EBML 头部签名 (`1A 45 DF A3`) + 深度解析 `DocType` 为 `"webm"` |
+| **Matroska MKV 视频** | `mkv` | `matroska` | **Supported** | EBML 头部签名 (`1A 45 DF A3`) + 解析 `DocType` 为 `"matroska"` |
+| **WAV 音频格式** | `wav` | `riff` | **Supported** | RIFF 容器头部 + `WAVE` 格式标志 + `fmt ` 核心音频格式块结构核验 |
+| **MP3 音频格式** | `mp3` | `null` | **Supported** | 支持 ID3v2 容器标签与 synchsafe 尺寸校验，或直接核验 MPEG-1/2 Audio Layer III 帧同步字 (`0xFF 0xFB/0xF3`) |
+| **WebP 图像格式** | `webp` | `riff` | **Supported** | RIFF 容器头部 + `WEBP` 格式标志 + `VP8 `/`VP8L`/`VP8X` 图像数据块核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**
