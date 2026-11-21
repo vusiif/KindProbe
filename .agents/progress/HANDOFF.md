@@ -2,27 +2,23 @@
 
 ## 1. 已完成 (Completed)
 - **源码文件瘦身与模块化重构 (Source Thinning)**：
-  - 将原 910 行的单文件 `src/detectors/zip_ooxml.rs` 彻底拆分为内聚的子模块包 `src/detectors/zip_ooxml/`：
-    - `mod.rs` (~380 行)：驱动主流程
-    - `cd_check.rs` (~168 行)：ZIP 中央目录、EOCD 与条目冲突安全预检
-    - `opc.rs` (~180 行)：OPC 路径规范化、包关系与内容类型解析
-    - `schemas.rs` (~115 行)：OOXML 各格式定义与契约
-    - `xml.rs` (~120 行)：主部件 XML 流式验证与嵌套深度预算拦截
-  - 彻底消除了超长臃肿文件，各子文件代码量均控制在 100~380 行以内。
-- **扩展支持 Office OOXML 全家族及宏变体 (P1-B 第一批)**：
-  - 新增支持 `xlsx` (Excel 工作簿)、`pptx` (PowerPoint 演示文稿)。
-  - 新增支持宏变体 `docm`、`xlsm`、`pptm`。
-  - 严格保持零误判约束：核验对应主部件 content-type 及合法命名空间根元素（`<workbook>` / `<presentation>` / `<w:document>`）；伪造命名空间或根元素错位者安全降级为 `container_only`。
-- **扩展名注册与多语言诊断同步**：
-  - `src/extension.rs` 同步登记新格式扩展名映射。
-  - `src/main.rs` 补齐对应证据代码的本地化说明。
-  - `README.md` 格式支持矩阵与平台状态同步更新为 Windows Verified。
-- **全量测试套件扩充**：
-  - 新增专门的精炼测试文件 `tests/test_ooxml_extended.rs`，覆盖 XLSX/PPTX/宏变体正向检测与根元素/命名空间错位对抗性测试。
+  - `src/detectors/zip_ooxml/`：将原 910 行超长文件拆分为 5 个独立子模块（`cd_check.rs`, `opc.rs`, `schemas.rs`, `xml.rs`, `mod.rs`），单文件保持在 100~380 行。
+  - `src/detectors/images/`：新建图像探测子模块包（`png.rs`, `jpeg.rs`, `gif.rs`, `mod.rs`），每个文件仅 50~100 行，内聚度极高。
+  - `src/detectors/signatures.rs`：精简至约 50 行，优化大 enum 变体为 `Box<DetectionReport>`，消除大值拷贝开销与 Clippy 警告。
+- **扩展支持高频独立图像格式 (P1-B 第二批)**：
+  - 新增 `jpeg`：验证 SOI `\xFF\xD8\xFF`，并深度核验 APP0 (JFIF)、APP1 (Exif) 等标记段长度与结构有效性（提供 `sig.jpeg.soi` 与 `sig.jpeg.segment` 证据）；区分签名级与结构级证据。
+  - 新增 `gif`：验证 `GIF87a` / `GIF89a` 魔数头，并深度解析逻辑屏幕描述符 (Logical Screen Descriptor) 宽高的非零有效性（提供 `sig.gif.header` 与 `sig.gif.logical_screen` 证据）；异常尺寸诚实降级为 `signature` 验证。
+  - 完善截断检测：针对未完整写入的 JPEG / GIF 产生 `input.truncated` 警告并精准推断候选。
+- **扩展名诊断与多语言支持**：
+  - `src/extension.rs`：完整注册 `jpg`, `jpeg`, `gif` 等格式互斥映射与独立诊断。
+  - `src/main.rs`：补齐 JPEG 与 GIF 证据代码的中文本地化说明。
+  - `README.md`：能力矩阵同步更新。
+- **独立精炼测试套件**：
+  - 新增 `tests/test_images_extended.rs`（6 个测试用例，覆盖完整段、签名级降级、异常尺寸与截断）。
 
 ## 2. 当前状态 (Current State)
 - **编译与全量测试**：
-  - 全量 `cargo test` **43 / 43 全部通过 (PASS)**：
+  - 全量 `cargo test` **49 / 49 全部通过 (PASS)**：
     - `src/main.rs` 单元测试: 2 passed
     - `test_api_consistency`: 1 passed
     - `test_budget_adversarial`: 8 passed
@@ -30,12 +26,13 @@
     - `test_cli_contract`: 12 passed
     - `test_codex_acceptance_regression`: 9 passed
     - `test_extension`: 2 passed
-    - `test_ooxml_extended`: 4 passed (新增)
+    - `test_images_extended`: 6 passed (新增)
+    - `test_ooxml_extended`: 4 passed
     - `test_zip_ooxml`: 3 passed
   - `cargo clippy --all-targets` 0 Error。
-  - `cargo build` 成功，无任何破坏性变动。
+  - `cargo build` 成功。
 
 ## 3. 待办与阻塞 (Blockers & Next Steps)
-- **下一步候选 (P1-B 第二批)**：
-  - 扩展高频主流独立图像格式：`jpeg` (SOI/EOI/JFIF/Exif 深度解析) 与 `gif` (87a/89a 逻辑屏幕描述符校验)。
-  - 或继续扩展 CFB 旧版 Office 二进制：`xls` / `ppt`。
+- **后续规划 (P1-B 第三批)**：
+  - 扩展主流归档格式：`7z` (7-Zip) 与 `rar` (严格区分 RAR4 / RAR5，防内嵌外层混淆)。
+  - 扩展旧版 Office 复合文档：`xls` / `ppt`。

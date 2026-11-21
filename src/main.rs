@@ -401,6 +401,10 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "ooxml.spreadsheet_macro_main_part" => "Excel 宏工作簿主部件及命名空间验证有效",
         "ooxml.presentation_main_part" => "PowerPoint 演示文稿主部件及命名空间验证有效",
         "ooxml.presentation_macro_main_part" => "PowerPoint 宏演示文稿主部件及命名空间验证有效",
+        "sig.jpeg.soi" => "JPEG SOI 起始签名有效",
+        "sig.jpeg.segment" => "JPEG 标记段（APP/DQT/SOF）结构有效",
+        "sig.gif.header" => "GIF 87a/89a 文件头签名有效",
+        "sig.gif.logical_screen" => "GIF 逻辑屏幕描述符有效",
         _ => default_msg,
     }
 }

@@ -1,4 +1,5 @@
 pub mod cfb_doc;
+pub mod images;
 pub mod signatures;
 pub mod zip_ooxml;
 
@@ -8,7 +9,7 @@ use crate::model::{
     DetectError, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
     WarningItem,
 };
-use signatures::{make_pdf_report, make_png_report, probe_signatures, SignatureMatch};
+use signatures::{probe_signatures, SignatureMatch};
 use zip_ooxml::detect_zip_ooxml;
 use cfb_doc::{detect_cfb_doc, CFB_MAGIC};
 
@@ -95,11 +96,9 @@ pub fn detect_stream<R: Read + Seek>(
         });
     }
 
-    // Step 1: Check PNG and PDF signatures
+    // Step 1: Check signatures (PNG, JPEG, GIF, PDF)
     match probe_signatures(&header) {
-        SignatureMatch::PngStructure => return Ok(make_png_report(true)),
-        SignatureMatch::PngSignatureOnly => return Ok(make_png_report(false)),
-        SignatureMatch::Pdf => return Ok(make_pdf_report()),
+        SignatureMatch::Confirmed(rep) => return Ok(*rep),
         SignatureMatch::Truncated(fmt) => {
             return Ok(DetectionReport {
                 schema_version: 1,

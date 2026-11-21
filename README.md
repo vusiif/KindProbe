@@ -25,6 +25,8 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | 格式名称 | 格式 ID (`format_id`) | 容器 ID (`container_id`) | 状态 | 验证手段与结构检查限制 |
 |---|---|---|---|---|
 | **Portable Network Graphics** | `png` | `null` | **Supported** | 8 字节头部签名 + IHDR 块有效性验证；仅有 8 字节头时仅给出 `signature` 证据，不虚报 `IHDR`；不完整签名降级为 unknown |
+| **JPEG 图像格式** | `jpeg` | `null` | **Supported** | `\xFF\xD8\xFF` (SOI) + 标记段（APP0/APP1/DQT/SOF）结构验证；仅有 SOI 时给出 `signature` 证据，段结构完整给出 `structure` 证据 |
+| **GIF 图像格式** | `gif` | `null` | **Supported** | `GIF87a` / `GIF89a` 魔数 + 逻辑屏幕描述符宽高非 0 校验；异常尺寸降级为 `signature` 证据 |
 | **Portable Document Format** | `pdf` | `null` | **Supported** | `%PDF-` BOF 前缀与签名验证；不执行全量交叉引用表校验与流解码 |
 | **ZIP 归档格式** | `zip` | `zip` | **Supported** | EOCD 尾部搜索 + 中央目录完整性校验；在无任何 OOXML 部件时确认为纯 ZIP |
 | **Microsoft Word Open XML** | `docx` | `zip` | **Supported** | ECMA-376 OPC 完整验证：`[Content_Types].xml` 内容类型 + `_rels/.rels` 包关系正规化解析 + 主部件实际存在 + `<w:document>` 命名空间根元素；支持 Transitional 与 Strict |
