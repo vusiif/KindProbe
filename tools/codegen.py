@@ -442,6 +442,11 @@ SELECTED_FORMATS = {
             "accepted_exts": ["ace"], "mime": "application/x-ace-compressed", "evidence": "rule.ace.magic",
             "patterns": [(7, b"**ACE**", None)],
         },
+        {
+            "format_id": "zpaq", "category": "archive", "recommended_ext": "zpaq",
+            "accepted_exts": ["zpaq"], "mime": "application/x-zpaq", "evidence": "rule.zpaq.magic",
+            "patterns": [(0, b"zPAQ", None)],
+        },
     ],
     "database": [
         {
@@ -463,6 +468,82 @@ SELECTED_FORMATS = {
             "format_id": "realm", "category": "database", "recommended_ext": "realm",
             "accepted_exts": ["realm"], "mime": "application/x-realm", "evidence": "rule.realm.magic",
             "patterns": [(0, b"T-D-B!", None)],
+        },
+        {
+            "format_id": "las", "category": "scientific", "recommended_ext": "las",
+            "accepted_exts": ["las", "laz"], "mime": "application/vnd.las", "evidence": "rule.las.magic",
+            "patterns": [(0, b"LASF", None)],
+        },
+    ],
+    "fonts": [
+        {
+            "format_id": "pcf", "category": "font", "recommended_ext": "pcf",
+            "accepted_exts": ["pcf"], "mime": "application/x-font-pcf", "evidence": "rule.pcf.magic",
+            "patterns": [(0, b"\x01fcp", None)],
+        },
+        {
+            "format_id": "bdf", "category": "font", "recommended_ext": "bdf",
+            "accepted_exts": ["bdf"], "mime": "application/x-font-bdf", "evidence": "rule.bdf.magic",
+            "patterns": [(0, b"STARTFONT ", None)],
+        },
+        {
+            "format_id": "afm", "category": "font", "recommended_ext": "afm",
+            "accepted_exts": ["afm", "acfm", "amfm"], "mime": "application/x-font-afm", "evidence": "rule.afm.magic",
+            "patterns": [(0, b"StartFontMetrics", None)],
+        },
+        {
+            "format_id": "pfb", "category": "font", "recommended_ext": "pfb",
+            "accepted_exts": ["pfb"], "mime": "application/x-font-type1", "evidence": "rule.pfb.magic",
+            "patterns": [(0, b"\x80\x01", None)],
+        },
+        {
+            "format_id": "eot", "category": "font", "recommended_ext": "eot",
+            "accepted_exts": ["eot"], "mime": "application/vnd.ms-fontobject", "evidence": "rule.eot.magic",
+            "patterns": [(8, b"\x4c\x50", None)],
+        },
+    ],
+    "crypto": [
+        {
+            "format_id": "jks", "category": "security", "recommended_ext": "jks",
+            "accepted_exts": ["jks", "keystore", "ks"], "mime": "application/x-java-keystore", "evidence": "rule.jks.magic",
+            "patterns": [(0, b"\xfe\xed\xfe\xed", None)],
+        },
+        {
+            "format_id": "pem", "category": "security", "recommended_ext": "pem",
+            "accepted_exts": ["pem", "crt", "cer"], "mime": "application/x-pem-file", "evidence": "rule.pem.magic",
+            "patterns": [(0, b"-----BEGIN ", None)],
+        },
+        {
+            "format_id": "der", "category": "security", "recommended_ext": "der",
+            "accepted_exts": ["der"], "mime": "application/x-x509-ca-cert", "evidence": "rule.der.magic",
+            "patterns": [(0, b"\x30\x82", None)],
+        },
+        {
+            "format_id": "pgp", "category": "security", "recommended_ext": "pgp",
+            "accepted_exts": ["pgp", "gpg", "asc"], "mime": "application/pgp-keys", "evidence": "rule.pgp.magic",
+            "patterns": [(0, b"-----BEGIN PGP ", None)],
+        },
+    ],
+    "disk_images": [
+        {
+            "format_id": "vdi", "category": "disk", "recommended_ext": "vdi",
+            "accepted_exts": ["vdi"], "mime": "application/x-virtualbox-vdi", "evidence": "rule.vdi.magic",
+            "patterns": [(0, b"<<< ", None), (10, b"VirtualBox Disk Image >>>", None)],
+        },
+        {
+            "format_id": "chd", "category": "disk", "recommended_ext": "chd",
+            "accepted_exts": ["chd"], "mime": "application/x-chd", "evidence": "rule.chd.magic",
+            "patterns": [(0, b"MComprHD", None)],
+        },
+        {
+            "format_id": "cso", "category": "disk", "recommended_ext": "cso",
+            "accepted_exts": ["cso"], "mime": "application/x-compressed-iso", "evidence": "rule.cso.magic",
+            "patterns": [(0, b"CISO", None)],
+        },
+        {
+            "format_id": "nrg", "category": "disk", "recommended_ext": "nrg",
+            "accepted_exts": ["nrg"], "mime": "application/x-nrg", "evidence": "rule.nrg.magic",
+            "patterns": [(0, b"NER5", None)],
         },
     ],
 }

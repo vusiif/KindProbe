@@ -31,4 +31,11 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         min_header_len: 6, priority: 50, evidence_code: "rule.realm.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "las", category: "scientific", container_id: None,
+        recommended_ext: "las", accepted_exts: &["las", "laz"],
+        patterns: &[MagicPattern::new(0, b"LASF")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.las.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

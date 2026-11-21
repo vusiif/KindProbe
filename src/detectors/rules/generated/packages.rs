@@ -31,4 +31,11 @@ pub static PACKAGES_RULES: &[SignatureRule] = &[
         min_header_len: 14, priority: 50, evidence_code: "rule.ace.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "zpaq", category: "archive", container_id: None,
+        recommended_ext: "zpaq", accepted_exts: &["zpaq"],
+        patterns: &[MagicPattern::new(0, b"zPAQ")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.zpaq.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

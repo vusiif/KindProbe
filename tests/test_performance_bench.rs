@@ -30,7 +30,7 @@ fn test_micro_benchmark_performance() {
     let dur_ext = start_ext.elapsed();
     let ns_per_lookup = dur_ext.as_nanos() as f64 / ext_iterations as f64;
     let qps_ext = ext_iterations as f64 / dur_ext.as_secs_f64();
-    println!("[1] Extension Binary Search (258 entries):");
+    println!("[1] Extension Binary Search (282 entries):");
     println!("    Total Lookups: {}", ext_iterations);
     println!("    Latency:       {:.2} ns / op", ns_per_lookup);
     println!("    Throughput:    {:.2} million ops / sec", qps_ext / 1_000_000.0);
@@ -45,6 +45,8 @@ fn test_micro_benchmark_performance() {
         ("Blender 3D", b"BLENDER_v293\x00\x00\x00\x00"),
         ("HDF5 Scientific", b"\x89HDF\r\n\x1a\n\x00\x00\x00\x00"),
         ("FLV Video", b"FLV\x01\x05\x00\x00\x00\x09\x00\x00\x00\x00"),
+        ("Java KeyStore", b"\xfe\xed\xfe\xed\x00\x00\x00\x02"),
+        ("LIDAR LAS Point Cloud", b"LASF\x00\x00\x00\x00\x01\x04"),
         ("Python Shebang", b"#!/usr/bin/env python3\nimport sys\nprint('hello')\n"),
         ("C Source Code", b"#include <stdio.h>\nint main() { printf(\"hello\\n\"); return 0; }\n"),
         ("Verilog HDL Source", b"module counter(input clk, output reg [3:0] q);\nalways @(posedge clk) q <= q + 1;\nendmodule\n"),
