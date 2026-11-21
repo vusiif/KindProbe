@@ -442,6 +442,18 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.macho.magic" => "Mach-O 单架构魔数签名有效",
         "sig.macho.fat_magic" => "Mach-O 通用二进制 (FAT) 魔数有效",
         "sig.java.class" => "Java Class 字节码结构签名有效",
+        "sig.font.ttf_magic" => "TrueType 字体魔数有效",
+        "sig.font.otf_magic" => "OpenType 字体魔数有效",
+        "sig.font.num_tables" => "字体表目录表数量结构有效",
+        "sig.font.woff_magic" => "WOFF 1.0 魔数有效",
+        "sig.font.woff_header" => "WOFF 1.0 头部表结构有效",
+        "sig.font.woff2_magic" => "WOFF 2.0 魔数有效",
+        "sig.font.woff2_header" => "WOFF 2.0 头部表结构有效",
+        "sig.mobi.header" => "Mobipocket / Kindle BOOKMOBI 头部有效",
+        "sig.palmdoc.header" => "PalmDOC BOOKTEXt 头部有效",
+        "epub.mimetype" => "EPUB mimetype 未压缩首条目校验有效",
+        "epub.container" => "EPUB META-INF/container.xml 结构有效",
+        "odf.mimetype" => "OpenDocument mimetype 校验有效",
         _ => default_msg,
     }
 }

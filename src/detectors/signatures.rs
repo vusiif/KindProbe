@@ -2,7 +2,9 @@ use crate::model::{
     DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
 };
 use super::archives::{probe_archive_signatures, ArchiveMatch};
+use super::ebooks::{probe_ebook_signatures, EbookMatch};
 use super::executables::{probe_executable_signatures, ExecutableMatch};
+use super::fonts::{probe_font_signatures, FontMatch};
 use super::images::{probe_image_signatures, ImageMatch};
 use super::media::{probe_media_signatures, MediaMatch};
 
@@ -43,7 +45,21 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         ExecutableMatch::None => (),
     }
 
-    // 5. Probe PDF signature within first 1024 bytes
+    // 5. Probe font formats (TTF, OTF, WOFF, WOFF2)
+    match probe_font_signatures(header) {
+        FontMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+        FontMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+        FontMatch::None => (),
+    }
+
+    // 6. Probe standalone e-book formats (MOBI, PalmDOC)
+    match probe_ebook_signatures(header) {
+        EbookMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+        EbookMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+        EbookMatch::None => (),
+    }
+
+    // 7. Probe PDF signature within first 1024 bytes
     let scan_limit = header.len().min(1024);
     if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));

@@ -54,6 +54,13 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **WebAssembly 二进制格式** | `wasm` | `null` | **Supported** | `\0asm` 魔数 + 4 字节版本号 (`0x01\0\0\0`) 结构校验 |
 | **macOS Mach-O 二进制** | `macho` | `null` | **Supported** | 32/64 位单架构及通用 FAT 二进制魔数；严格与 Java `.class` 字节码消歧 |
 | **Java Class 字节码** | `class` | `null` | **Supported** | `0xCAFEBABE` 魔数 + 主次版本号结构核验 |
+| **EPUB 电子书** | `epub` | `zip` | **Supported** | 验证 ZIP 容器未压缩 `mimetype` 条目 (`application/epub+zip`) 与 `META-INF/container.xml` 结构 |
+| **Mobipocket / Kindle 电子书** | `mobi` | `palmdoc` | **Supported** | Palm Database 头部结构 + `BOOKMOBI` / `BOOKTEXt` 标识核验 |
+| **OpenDocument 格式** | `odt`/`ods`/`odp` | `zip` | **Supported** | 验证 ZIP 容器 `mimetype` 条目（`opendocument.text` / `spreadsheet` / `presentation`）|
+| **TrueType 字体** | `ttf` | `null` | **Supported** | `\0\x01\0\0` 魔数 + 字体表目录数量结构核验 |
+| **OpenType 字体** | `otf` | `null` | **Supported** | `OTTO` 魔数 + 字体表目录数量结构核验 |
+| **WOFF 1.0 网页字体** | `woff` | `null` | **Supported** | `wOFF` 魔数 + 头部表长度与目录数量结构核验 |
+| **WOFF 2.0 网页字体** | `woff2` | `null` | **Supported** | `wOF2` 魔数 + 头部表结构核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**

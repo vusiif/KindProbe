@@ -1,4 +1,5 @@
 pub mod cd_check;
+pub mod epub;
 pub mod opc;
 pub mod schemas;
 pub mod xml;
@@ -13,6 +14,7 @@ use crate::model::{
 };
 
 use cd_check::precheck_zip_central_directory;
+use epub::check_epub_or_odf;
 use opc::{parse_content_types, parse_package_relationships, resolve_target_path};
 use schemas::classify_ooxml_content_type;
 use xml::{verify_main_part_xml, MainPartXmlOutcome};
@@ -137,6 +139,10 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
 
     // Pure ZIP confirmation: no OOXML characteristics
     if !has_content_types && !has_rels && !has_ooxml_subdirs {
+        if check_epub_or_odf(&mut archive, &mut report) {
+            return Ok(report);
+        }
+
         report.identification = Identification::Format;
         report.format_id = Some("zip".to_string());
         report.category = "archive".to_string();

@@ -48,6 +48,17 @@ const KNOWN_REGISTRY_EXTENSIONS: &[(&str, &str)] = &[
     ("wasm", "wasm"),
     ("dylib", "macho"),
     ("class", "class"),
+    ("epub", "epub"),
+    ("mobi", "mobi"),
+    ("azw", "mobi"),
+    ("prc", "mobi"),
+    ("ttf", "ttf"),
+    ("otf", "otf"),
+    ("woff", "woff"),
+    ("woff2", "woff2"),
+    ("odt", "odt"),
+    ("ods", "ods"),
+    ("odp", "odp"),
     ("txt", "txt"),
 ];
 
