@@ -1,5 +1,5 @@
 pub mod archives;
-pub mod cfb_doc;
+pub mod cfb;
 pub mod images;
 pub mod signatures;
 pub mod zip_ooxml;
@@ -12,7 +12,7 @@ use crate::model::{
 };
 use signatures::{probe_signatures, SignatureMatch};
 use zip_ooxml::detect_zip_ooxml;
-use cfb_doc::{detect_cfb_doc, CFB_MAGIC};
+use cfb::{detect_cfb, CFB_MAGIC};
 
 pub fn detect_stream<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
@@ -151,7 +151,7 @@ pub fn detect_stream<R: Read + Seek>(
 
     // Step 3: Check CFB signature (\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1)
     if header.len() >= 8 && header.starts_with(CFB_MAGIC) {
-        return detect_cfb_doc(reader, options);
+        return detect_cfb(reader, options);
     } else if header.len() >= 2 && header.starts_with(&[0xD0, 0xCF]) && header.len() < 8 {
         return Ok(DetectionReport {
             schema_version: 1,
