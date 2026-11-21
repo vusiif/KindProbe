@@ -66,6 +66,11 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **PCAPNG 下一代抓包格式** | `pcapng` | `null` | **Supported** | Section Header Block (`0x0A0D0D0A`) + 字节序魔数 (BOM) 核验 |
 | **Apache Parquet 列式存储** | `parquet` | `null` | **Supported** | `PAR1` 头部魔数核验 |
 | **Apache Avro 数据容器** | `avro` | `null` | **Supported** | `Obj\x01` 头部魔数核验 |
+| **QEMU Copy-On-Write 镜像** | `qcow2` | `null` | **Supported** | `QFI\xFB` 魔数 + 版本 2/3 及聚簇位 (cluster_bits 9..21) 结构核验 |
+| **VMware 虚拟磁盘** | `vmdk` | `null` | **Supported** | `KDMV` Sparse 二进制魔数与版本核验，或 `# Disk DescriptorFile` 文本描述符核验 |
+| **微软虚拟硬盘 (VHDX)** | `vhdx` | `null` | **Supported** | `vhdxfile` 头部签名核验 |
+| **微软虚拟硬盘 (VHD)** | `vhd` | `null` | **Supported** | `conectix` 头部签名核验 |
+| **ISO 9660 光盘镜像** | `iso` | `null` | **Supported** | 扇区 16 (offset 0x8000) 主卷描述符 `\x01CD001` / `\x02CD001` 流探测核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**

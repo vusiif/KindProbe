@@ -462,6 +462,14 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.pcapng.bom" => "PCAPNG 字节序魔数 (BOM) 有效",
         "sig.parquet.magic" => "Apache Parquet 列式数据魔数有效",
         "sig.avro.magic" => "Apache Avro 容器魔数有效",
+        "sig.qcow.magic" => "QEMU Copy-On-Write (QCOW) 魔数有效",
+        "sig.qcow.header" => "QCOW2/QCOW3 版本与聚簇位有效",
+        "sig.vmdk.sparse_magic" => "VMware 虚拟磁盘 (Sparse VMDK) 魔数有效",
+        "sig.vmdk.version" => "VMware VMDK 版本有效",
+        "sig.vmdk.desc_magic" => "VMware 文本描述符 (Descriptor VMDK) 头部有效",
+        "sig.vhdx.magic" => "微软虚拟硬盘 (VHDX) 签名有效",
+        "sig.vhd.magic" => "微软虚拟硬盘 (VHD) 签名有效",
+        "sig.iso.volume_descriptor" => "ISO 9660 主卷描述符 (PVD) 签名有效",
         _ => default_msg,
     }
 }

@@ -3,6 +3,7 @@ use crate::model::{
 };
 use super::archives::{probe_archive_signatures, ArchiveMatch};
 use super::databases::{probe_database_signatures, DatabaseMatch};
+use super::disks::{probe_disk_signatures, DiskMatch};
 use super::ebooks::{probe_ebook_signatures, EbookMatch};
 use super::executables::{probe_executable_signatures, ExecutableMatch};
 use super::fonts::{probe_font_signatures, FontMatch};
@@ -67,7 +68,14 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         DatabaseMatch::None => (),
     }
 
-    // 8. Probe PDF signature within first 1024 bytes
+    // 8. Probe virtual disk formats (QCOW2, VMDK, VHD, VHDX, ISO buffer)
+    match probe_disk_signatures(header) {
+        DiskMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+        DiskMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+        DiskMatch::None => (),
+    }
+
+    // 9. Probe PDF signature within first 1024 bytes
     let scan_limit = header.len().min(1024);
     if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));

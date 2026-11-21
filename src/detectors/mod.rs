@@ -1,6 +1,7 @@
 pub mod archives;
 pub mod cfb;
 pub mod databases;
+pub mod disks;
 pub mod ebooks;
 pub mod executables;
 pub mod fonts;
@@ -179,7 +180,12 @@ pub fn detect_stream<R: Read + Seek>(
         });
     }
 
-    // Step 4: Unknown format
+    // Step 4: Check ISO 9660 volume descriptor at offset 32768
+    if let Some(rep) = disks::probe_iso_stream(reader) {
+        return Ok(rep);
+    }
+
+    // Step 5: Unknown format
     Ok(DetectionReport {
         schema_version: 1,
         format_id: None,

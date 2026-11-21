@@ -68,6 +68,13 @@ const KNOWN_REGISTRY_EXTENSIONS: &[(&str, &str)] = &[
     ("pcapng", "pcapng"),
     ("parquet", "parquet"),
     ("avro", "avro"),
+    ("qcow2", "qcow2"),
+    ("qcow", "qcow2"),
+    ("vmdk", "vmdk"),
+    ("vhdx", "vhdx"),
+    ("vhd", "vhd"),
+    ("iso", "iso"),
+    ("img", "iso"),
     ("txt", "txt"),
 ];
 

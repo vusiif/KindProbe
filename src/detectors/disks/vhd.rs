@@ -1,0 +1,68 @@
+use crate::model::{
+    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+};
+
+pub const VHDX_MAGIC: &[u8] = b"vhdxfile";
+pub const VHD_MAGIC: &[u8] = b"conectix";
+
+pub enum VhdMatch {
+    Confirmed(Box<DetectionReport>),
+    Truncated(String),
+    None,
+}
+
+/// Probes Microsoft Virtual Hard Disk (VHD & VHDX) formats.
+pub fn probe_vhd(header: &[u8]) -> VhdMatch {
+    if header.len() < 8 {
+        if !header.is_empty() && (header.starts_with(b"vhdx") || header.starts_with(b"cone")) {
+            return VhdMatch::Truncated(if header.starts_with(b"vhdx") {
+                "vhdx".to_string()
+            } else {
+                "vhd".to_string()
+            });
+        }
+        return VhdMatch::None;
+    }
+
+    // 1. VHDX format
+    if header.starts_with(VHDX_MAGIC) {
+        return VhdMatch::Confirmed(Box::new(DetectionReport {
+            schema_version: 1,
+            format_id: Some("vhdx".to_string()),
+            category: "disk".to_string(),
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("vhdx".to_string()),
+            accepted_extensions: vec!["vhdx".to_string()],
+            extension_status: ExtensionStatus::Undetermined,
+            evidence: vec![EvidenceItem::new("sig.vhdx.magic")],
+            warnings: Vec::new(),
+            stats: Default::default(),
+            candidates: None,
+        }));
+    }
+
+    // 2. VHD format
+    if header.starts_with(VHD_MAGIC) {
+        return VhdMatch::Confirmed(Box::new(DetectionReport {
+            schema_version: 1,
+            format_id: Some("vhd".to_string()),
+            category: "disk".to_string(),
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("vhd".to_string()),
+            accepted_extensions: vec!["vhd".to_string()],
+            extension_status: ExtensionStatus::Undetermined,
+            evidence: vec![EvidenceItem::new("sig.vhd.magic")],
+            warnings: Vec::new(),
+            stats: Default::default(),
+            candidates: None,
+        }));
+    }
+
+    VhdMatch::None
+}
