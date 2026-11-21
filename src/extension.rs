@@ -6,6 +6,11 @@ const KNOWN_REGISTRY_EXTENSIONS: &[(&str, &str)] = &[
     ("png", "png"),
     ("pdf", "pdf"),
     ("docx", "docx"),
+    ("docm", "docm"),
+    ("xlsx", "xlsx"),
+    ("xlsm", "xlsm"),
+    ("pptx", "pptx"),
+    ("pptm", "pptm"),
     ("doc", "doc"),
     ("dot", "doc"),
     ("zip", "zip"),
@@ -13,8 +18,6 @@ const KNOWN_REGISTRY_EXTENSIONS: &[(&str, &str)] = &[
     ("jpeg", "jpeg"),
     ("gif", "gif"),
     ("bmp", "bmp"),
-    ("xlsx", "xlsx"),
-    ("pptx", "pptx"),
     ("txt", "txt"),
 ];
 

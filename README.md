@@ -25,20 +25,24 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | 格式名称 | 格式 ID (`format_id`) | 容器 ID (`container_id`) | 状态 | 验证手段与结构检查限制 |
 |---|---|---|---|---|
 | **Portable Network Graphics** | `png` | `null` | **Supported** | 8 字节头部签名 + IHDR 块有效性验证；仅有 8 字节头时仅给出 `signature` 证据，不虚报 `IHDR`；不完整签名降级为 unknown |
-| **Portable Document Format** | `pdf` | `null` | **Supported** | `%PDF-` BOF 前缀与版本号解析；不执行全量交叉引用表校验与流解码 |
+| **Portable Document Format** | `pdf` | `null` | **Supported** | `%PDF-` BOF 前缀与签名验证；不执行全量交叉引用表校验与流解码 |
 | **ZIP 归档格式** | `zip` | `zip` | **Supported** | EOCD 尾部搜索 + 中央目录完整性校验；在无任何 OOXML 部件时确认为纯 ZIP |
 | **Microsoft Word Open XML** | `docx` | `zip` | **Supported** | ECMA-376 OPC 完整验证：`[Content_Types].xml` 内容类型 + `_rels/.rels` 包关系正规化解析 + 主部件实际存在 + `<w:document>` 命名空间根元素；支持 Transitional 与 Strict |
-| **疑似 OOXML 未确认** | `null` | `zip` | **Container Only** | 存在 OOXML 特征但缺少关系或主部件时，降级为 `container_only`，不假报 DOCX 也不退为普通 ZIP |
+| **Microsoft Excel Open XML** | `xlsx` | `zip` | **Supported** | ECMA-376 OPC 完整验证：`spreadsheetml.sheet` 内容类型 + `<workbook>` 命名空间根元素；支持 Transitional 与 Strict |
+| **Microsoft PowerPoint Open XML** | `pptx` | `zip` | **Supported** | ECMA-376 OPC 完整验证：`presentationml.presentation` 内容类型 + `<presentation>` 命名空间根元素；支持 Transitional 与 Strict |
+| **Word 启用宏文档** | `docm` | `zip` | **Supported** | ECMA-376 OPC 验证：`ms-word.document.macroEnabled` 内容类型 + `<w:document>` 命名空间根元素 |
+| **Excel 启用宏工作簿** | `xlsm` | `zip` | **Supported** | ECMA-376 OPC 验证：`ms-excel.sheet.macroEnabled` 内容类型 + `<workbook>` 命名空间根元素 |
+| **PowerPoint 启用宏演示文稿** | `pptm` | `zip` | **Supported** | ECMA-376 OPC 验证：`ms-powerpoint.presentation.macroEnabled` 内容类型 + `<presentation>` 命名空间根元素 |
+| **疑似 OOXML 未确认** | `null` | `zip` | **Container Only** | 存在 OOXML 特征但缺少关系或主部件时，降级为 `container_only`，不假报也不退为普通 ZIP |
 | **Compound File Binary** | `null` | `cfb` | **Container Only** | OLE2 复合文件结构；扇区链循环保护；无 WordDocument 流时确认为纯容器 |
 | **Microsoft Word 97-2003** | `doc` | `cfb` | **Supported** | 验证 CFB 容器 + 根目录 `WordDocument` 流 + MS-DOC FIB 头（`wIdent == 0xA5EC`, `nFib >= 0x00C1`）+ 表流验证；检测加密标志；虚假流/嵌套流降级为 `container_only` |
-| **Office 宏变体 (DOCM / XLSM / PPTM)** | - | - | **Not Supported (P1-B)** | 宏结构识别保留至 P1-B；遇到时不误判为纯 DOCX |
-| **Spreadsheets / Presentations (XLSX / PPTX / XLS / PPT)** | - | - | **Not Supported (P1-B)** | 在 P1-A 遇到时安全报告对应容器（`zip` 或 `cfb`），不误判为 Word |
 | **归档格式 (7z / RAR)** | - | - | **Not Supported (P1-B)** | 7z/RAR 内嵌 DOCX 不得误判为外层 DOCX |
 | **音视频媒体 (MP4 / MP3 / WAV / WebM)** | - | - | **Not Supported (P1-B)** | 音视频识别属于 P1-B 阶段 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**
-- Windows / macOS: **Not Verified (未验证)**
+- Windows x86_64 (`Windows 10/11`): **Verified (PASS)**
+- macOS: **Not Verified (未验证)**
 
 ---
 

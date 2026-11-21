@@ -394,7 +394,13 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "ooxml.rels_read_error" => "读取关系部件失败",
         "ooxml.rels_xml_error" => "解析关系部件 XML 结构错误",
         "ooxml.required_relationship_missing" => "缺少 officeDocument 核心包关系",
-        "ooxml.word_main_part" => "根元素不是 w:document 或命名空间无效",
+        "ooxml.unsupported_content_type" => "OOXML 主部件内容类型不受支持或无法确认为目标格式",
+        "ooxml.word_main_part" => "Word 主文档部件及命名空间验证有效",
+        "ooxml.word_macro_main_part" => "Word 宏文档主部件及命名空间验证有效",
+        "ooxml.spreadsheet_main_part" => "Excel 工作簿主部件及命名空间验证有效",
+        "ooxml.spreadsheet_macro_main_part" => "Excel 宏工作簿主部件及命名空间验证有效",
+        "ooxml.presentation_main_part" => "PowerPoint 演示文稿主部件及命名空间验证有效",
+        "ooxml.presentation_macro_main_part" => "PowerPoint 宏演示文稿主部件及命名空间验证有效",
         _ => default_msg,
     }
 }
