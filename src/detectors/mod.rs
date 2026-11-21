@@ -1,5 +1,6 @@
 pub mod archives;
 pub mod cfb;
+pub mod databases;
 pub mod ebooks;
 pub mod executables;
 pub mod fonts;

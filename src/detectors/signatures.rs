@@ -2,6 +2,7 @@ use crate::model::{
     DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
 };
 use super::archives::{probe_archive_signatures, ArchiveMatch};
+use super::databases::{probe_database_signatures, DatabaseMatch};
 use super::ebooks::{probe_ebook_signatures, EbookMatch};
 use super::executables::{probe_executable_signatures, ExecutableMatch};
 use super::fonts::{probe_font_signatures, FontMatch};
@@ -59,7 +60,14 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         EbookMatch::None => (),
     }
 
-    // 7. Probe PDF signature within first 1024 bytes
+    // 7. Probe database, columnar and capture formats (SQLite3, PCAP, PCAPNG, Parquet, Avro)
+    match probe_database_signatures(header) {
+        DatabaseMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+        DatabaseMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+        DatabaseMatch::None => (),
+    }
+
+    // 8. Probe PDF signature within first 1024 bytes
     let scan_limit = header.len().min(1024);
     if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));

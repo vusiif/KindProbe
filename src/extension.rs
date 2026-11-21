@@ -59,6 +59,15 @@ const KNOWN_REGISTRY_EXTENSIONS: &[(&str, &str)] = &[
     ("odt", "odt"),
     ("ods", "ods"),
     ("odp", "odp"),
+    ("sqlite3", "sqlite3"),
+    ("sqlite", "sqlite3"),
+    ("db", "sqlite3"),
+    ("db3", "sqlite3"),
+    ("pcap", "pcap"),
+    ("cap", "pcap"),
+    ("pcapng", "pcapng"),
+    ("parquet", "parquet"),
+    ("avro", "avro"),
     ("txt", "txt"),
 ];
 

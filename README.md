@@ -61,6 +61,11 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **OpenType 字体** | `otf` | `null` | **Supported** | `OTTO` 魔数 + 字体表目录数量结构核验 |
 | **WOFF 1.0 网页字体** | `woff` | `null` | **Supported** | `wOFF` 魔数 + 头部表长度与目录数量结构核验 |
 | **WOFF 2.0 网页字体** | `woff2` | `null` | **Supported** | `wOF2` 魔数 + 头部表结构核验 |
+| **SQLite 3 数据库** | `sqlite3` | `null` | **Supported** | `SQLite format 3\0` 16 字节头部魔数 + 页大小及读写格式版本结构核验 |
+| **PCAP 网络抓包转储** | `pcap` | `null` | **Supported** | 纳秒/微秒时间戳魔数（大小端序）+ 2.4 主次版本号结构核验 |
+| **PCAPNG 下一代抓包格式** | `pcapng` | `null` | **Supported** | Section Header Block (`0x0A0D0D0A`) + 字节序魔数 (BOM) 核验 |
+| **Apache Parquet 列式存储** | `parquet` | `null` | **Supported** | `PAR1` 头部魔数核验 |
+| **Apache Avro 数据容器** | `avro` | `null` | **Supported** | `Obj\x01` 头部魔数核验 |
 
 **支持平台验证状态**：
 - Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**

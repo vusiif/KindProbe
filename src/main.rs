@@ -454,6 +454,14 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "epub.mimetype" => "EPUB mimetype 未压缩首条目校验有效",
         "epub.container" => "EPUB META-INF/container.xml 结构有效",
         "odf.mimetype" => "OpenDocument mimetype 校验有效",
+        "sig.sqlite.header" => "SQLite 3 数据库文件头魔数有效",
+        "sig.sqlite.page_size" => "SQLite 3 页大小与读写格式版本有效",
+        "sig.pcap.magic" => "PCAP 数据包转储魔数有效",
+        "sig.pcap.version" => "PCAP 2.4 主次版本号有效",
+        "sig.pcapng.shb" => "PCAPNG 分段头部块 (SHB) 结构有效",
+        "sig.pcapng.bom" => "PCAPNG 字节序魔数 (BOM) 有效",
+        "sig.parquet.magic" => "Apache Parquet 列式数据魔数有效",
+        "sig.avro.magic" => "Apache Avro 容器魔数有效",
         _ => default_msg,
     }
 }
