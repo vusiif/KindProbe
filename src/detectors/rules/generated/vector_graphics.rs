@@ -44,4 +44,11 @@ pub static VECTOR_GRAPHICS_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.flif.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "fig", category: "image", container_id: None,
+        recommended_ext: "fig", accepted_exts: &["fig"],
+        patterns: &[MagicPattern::new(0, b"#FIG ")],
+        min_header_len: 5, priority: 50, evidence_code: "rule.fig.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

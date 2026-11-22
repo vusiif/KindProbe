@@ -58,25 +58,4 @@ pub static ARCHIVES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.sqx.magic",
         verification: Verification::Signature, validator: None,
     },
-    SignatureRule {
-        format_id: "wad", category: "archive", container_id: None,
-        recommended_ext: "wad", accepted_exts: &["wad"],
-        patterns: &[MagicPattern::new(0, b"IWAD")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.wad.magic",
-        verification: Verification::Signature, validator: None,
-    },
-    SignatureRule {
-        format_id: "wad", category: "archive", container_id: None,
-        recommended_ext: "wad", accepted_exts: &["wad"],
-        patterns: &[MagicPattern::new(0, b"PWAD")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.wad.magic",
-        verification: Verification::Signature, validator: None,
-    },
-    SignatureRule {
-        format_id: "pak", category: "archive", container_id: None,
-        recommended_ext: "pak", accepted_exts: &["pak"],
-        patterns: &[MagicPattern::new(0, b"PACK")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.pak.magic",
-        verification: Verification::Signature, validator: None,
-    },
 ];

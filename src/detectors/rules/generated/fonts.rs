@@ -38,4 +38,18 @@ pub static FONTS_RULES: &[SignatureRule] = &[
         min_header_len: 10, priority: 50, evidence_code: "rule.eot.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "cff", category: "font", container_id: None,
+        recommended_ext: "cff", accepted_exts: &["cff"],
+        patterns: &[MagicPattern::new(0, b"\x01\x00\x04\x01")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.cff.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "fnt", category: "font", container_id: None,
+        recommended_ext: "fnt", accepted_exts: &["fnt", "fon"],
+        patterns: &[MagicPattern::new(0, b"\x00\x03\x00\x00")],
+        min_header_len: 4, priority: 40, evidence_code: "rule.fnt.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];
