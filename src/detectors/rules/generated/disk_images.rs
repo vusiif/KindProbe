@@ -62,4 +62,11 @@ pub static DISK_IMAGES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.sparseimage.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "dmp", category: "system", container_id: None,
+        recommended_ext: "dmp", accepted_exts: &["dmp", "mdmp"],
+        patterns: &[MagicPattern::new(0, b"MDMP\x93\xa7")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.dmp.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

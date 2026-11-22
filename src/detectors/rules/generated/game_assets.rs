@@ -58,4 +58,18 @@ pub static GAME_ASSETS_RULES: &[SignatureRule] = &[
         min_header_len: 12, priority: 50, evidence_code: "rule.grp.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "gen", category: "rom", container_id: None,
+        recommended_ext: "gen", accepted_exts: &["gen", "smd", "md"],
+        patterns: &[MagicPattern::new(256, b"SEGA")],
+        min_header_len: 260, priority: 50, evidence_code: "rule.gen.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "voc", category: "audio", container_id: None,
+        recommended_ext: "voc", accepted_exts: &["voc"],
+        patterns: &[MagicPattern::new(0, b"Creative Voice File\x1a")],
+        min_header_len: 20, priority: 50, evidence_code: "rule.voc.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

@@ -52,4 +52,11 @@ pub static CRYPTO_RULES: &[SignatureRule] = &[
         min_header_len: 8, priority: 40, evidence_code: "rule.bcfks.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "kbx", category: "security", container_id: None,
+        recommended_ext: "kbx", accepted_exts: &["kbx"],
+        patterns: &[MagicPattern::new(8, b"KBXf")],
+        min_header_len: 12, priority: 50, evidence_code: "rule.kbx.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

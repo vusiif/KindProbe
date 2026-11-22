@@ -51,4 +51,11 @@ pub static VECTOR_GRAPHICS_RULES: &[SignatureRule] = &[
         min_header_len: 5, priority: 50, evidence_code: "rule.fig.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "flc", category: "video", container_id: None,
+        recommended_ext: "flc", accepted_exts: &["flc", "fli"],
+        patterns: &[MagicPattern::new(4, b"\x12\xaf")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.flc.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

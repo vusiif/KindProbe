@@ -51,4 +51,18 @@ pub static ROBOTICS_FIRMWARE_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.bcf.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "blf", category: "system", container_id: None,
+        recommended_ext: "blf", accepted_exts: &["blf"],
+        patterns: &[MagicPattern::new(0, b"LOGG")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.blf.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gbr", category: "model", container_id: None,
+        recommended_ext: "gbr", accepted_exts: &["gbr", "ger"],
+        patterns: &[MagicPattern::new(0, b"%FS")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.gbr.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

@@ -51,4 +51,18 @@ pub static TEXTURES_RULES: &[SignatureRule] = &[
         min_header_len: 6, priority: 50, evidence_code: "rule.pkm.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "tm2", category: "image", container_id: None,
+        recommended_ext: "tm2", accepted_exts: &["tm2"],
+        patterns: &[MagicPattern::new(0, b"TIM2")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.tm2.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "tpl", category: "image", container_id: None,
+        recommended_ext: "tpl", accepted_exts: &["tpl"],
+        patterns: &[MagicPattern::new(0, b"\x00\x20\xaf\x30")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.tpl.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

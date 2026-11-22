@@ -65,4 +65,11 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         min_header_len: 12, priority: 50, evidence_code: "rule.duckdb.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "cbor", category: "database", container_id: None,
+        recommended_ext: "cbor", accepted_exts: &["cbor"],
+        patterns: &[MagicPattern::new(0, b"\xd9\xd9\xf7")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.cbor.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

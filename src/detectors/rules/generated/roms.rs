@@ -66,4 +66,11 @@ pub static ROMS_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.bps.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "t64", category: "rom", container_id: None,
+        recommended_ext: "t64", accepted_exts: &["t64"],
+        patterns: &[MagicPattern::new(0, b"C64 tape image file")],
+        min_header_len: 19, priority: 50, evidence_code: "rule.t64.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

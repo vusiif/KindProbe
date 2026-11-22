@@ -66,4 +66,11 @@ pub static PACKAGES_RULES: &[SignatureRule] = &[
         min_header_len: 3, priority: 50, evidence_code: "rule.pea.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "lzo", category: "archive", container_id: None,
+        recommended_ext: "lzo", accepted_exts: &["lzo"],
+        patterns: &[MagicPattern::new(0, b"\x89LZO\x00\r\n\x1a\n")],
+        min_header_len: 9, priority: 50, evidence_code: "rule.lzo.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];
