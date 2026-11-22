@@ -65,4 +65,11 @@ pub static TEXTURES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.tpl.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "pvrt", category: "image", container_id: None,
+        recommended_ext: "pvr", accepted_exts: &["pvr", "pvrt"],
+        patterns: &[MagicPattern::new(0, b"PVRT")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.pvrt.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

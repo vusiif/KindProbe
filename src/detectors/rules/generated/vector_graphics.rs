@@ -58,4 +58,18 @@ pub static VECTOR_GRAPHICS_RULES: &[SignatureRule] = &[
         min_header_len: 6, priority: 50, evidence_code: "rule.flc.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "fli", category: "video", container_id: None,
+        recommended_ext: "fli", accepted_exts: &["fli", "flc"],
+        patterns: &[MagicPattern::new(4, b"\x11\xaf")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.fli.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "eps_bin", category: "image", container_id: None,
+        recommended_ext: "eps", accepted_exts: &["eps"],
+        patterns: &[MagicPattern::new(0, b"\xc5\xd0\xd3\xc6")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.eps_bin.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

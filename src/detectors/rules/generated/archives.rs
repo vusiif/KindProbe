@@ -58,4 +58,18 @@ pub static ARCHIVES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.sqx.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "pack200", category: "archive", container_id: None,
+        recommended_ext: "pack", accepted_exts: &["pack"],
+        patterns: &[MagicPattern::new(0, b"\xca\xfe\xd0\x0d")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.pack200.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "isc", category: "archive", container_id: None,
+        recommended_ext: "isc", accepted_exts: &["isc", "hdr"],
+        patterns: &[MagicPattern::new(0, b"ISc(")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.isc.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

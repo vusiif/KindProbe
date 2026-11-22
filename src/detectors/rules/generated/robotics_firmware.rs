@@ -65,4 +65,11 @@ pub static ROBOTICS_FIRMWARE_RULES: &[SignatureRule] = &[
         min_header_len: 3, priority: 50, evidence_code: "rule.gbr.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "dfu", category: "system", container_id: None,
+        recommended_ext: "dfu", accepted_exts: &["dfu"],
+        patterns: &[MagicPattern::new(0, b"DfuSe\x01")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.dfu.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

@@ -52,4 +52,18 @@ pub static FONTS_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 40, evidence_code: "rule.fnt.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "pk", category: "font", container_id: None,
+        recommended_ext: "pk", accepted_exts: &["pk"],
+        patterns: &[MagicPattern::new(0, b"\xf7\x59")],
+        min_header_len: 2, priority: 50, evidence_code: "rule.pk.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "dvi", category: "document", container_id: None,
+        recommended_ext: "dvi", accepted_exts: &["dvi"],
+        patterns: &[MagicPattern::new(0, b"\xf7\x02")],
+        min_header_len: 2, priority: 50, evidence_code: "rule.dvi.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

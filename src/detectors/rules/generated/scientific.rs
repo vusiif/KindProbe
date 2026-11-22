@@ -66,4 +66,11 @@ pub static SCIENTIFIC_RULES: &[SignatureRule] = &[
         min_header_len: 10, priority: 50, evidence_code: "rule.pdb.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "rdata", category: "scientific", container_id: None,
+        recommended_ext: "rdata", accepted_exts: &["rdata", "rds", "rda"],
+        patterns: &[MagicPattern::new(0, b"RDX2\x0a")],
+        min_header_len: 5, priority: 50, evidence_code: "rule.rdata.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

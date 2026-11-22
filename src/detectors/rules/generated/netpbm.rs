@@ -59,4 +59,18 @@ pub static NETPBM_RULES: &[SignatureRule] = &[
         min_header_len: 3, priority: 50, evidence_code: "rule.pcx.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "ras", category: "image", container_id: None,
+        recommended_ext: "ras", accepted_exts: &["ras", "sun"],
+        patterns: &[MagicPattern::new(0, b"\x59\xa6\x6a\x95")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.ras.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "hdr", category: "image", container_id: None,
+        recommended_ext: "hdr", accepted_exts: &["hdr"],
+        patterns: &[MagicPattern::new(0, b"#?RADIANCE\x0a")],
+        min_header_len: 11, priority: 50, evidence_code: "rule.hdr.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

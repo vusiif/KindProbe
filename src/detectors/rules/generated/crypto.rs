@@ -59,4 +59,18 @@ pub static CRYPTO_RULES: &[SignatureRule] = &[
         min_header_len: 12, priority: 50, evidence_code: "rule.kbx.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "age", category: "security", container_id: None,
+        recommended_ext: "age", accepted_exts: &["age"],
+        patterns: &[MagicPattern::new(0, b"age-encryption.org/v1\x0a")],
+        min_header_len: 22, priority: 50, evidence_code: "rule.age.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ppk", category: "security", container_id: None,
+        recommended_ext: "ppk", accepted_exts: &["ppk"],
+        patterns: &[MagicPattern::new(0, b"PuTTY-User-Key-File-")],
+        min_header_len: 20, priority: 50, evidence_code: "rule.ppk.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

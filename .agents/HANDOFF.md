@@ -2,31 +2,31 @@
 
 > **单一真实信源 (Single Source of Truth - SSOT)**  
 > **更新时间**：2026-11-22  
-> **当前版本**：v0.1.0 (扩展支持车载BLF/PCB Gerber/CBOR/LZO/MiniDump/Keybox/世嘉Genesis/C64/TIM2/TPL/FLIC，全局扩展名达 386 项，35 大测试套件 156 用例全绿)  
+> **当前版本**：v0.1.0 (全局扩展名突破 400 项大关！扩展支持 TeX/DVI/Age/PPK/Pack200/InstallShield/SunRaster/HDR/FLI/BinaryEPS/PVRT/DfuSe/RData，36 大测试套件 159 用例全绿)  
 > **远端分支**：`origin/main`
 
 ---
 
 ## 1. [已完成] (Completed)
 
-### 1.1 垂直领域与专有格式全景扩展
-全部分卷与实现文件严格保持在 50~80 行黄金规范区间（55~76 行）：
-- **车载遥测与电子工程** (`robotics_firmware.rs`, 68 行)：支持 Vector CAN/LIN/FlexRay 二进制日志 (`.blf`, `LOGG`) 与 RS-274X Extended Gerber PCB 印刷电路制程格式 (`.gbr`/`.ger`, `%FS`)；
-- **物联网与二进制序列化** (`database.rs`, 75 行)：支持 RFC 8949 自描述二进制结构化对象 (`.cbor`, `\xd9\xd9\xf7`)；
-- **实时高吞吐压缩归档** (`packages.rs`, 76 行)：支持 lzop 归档包 (`.lzo`, `\x89LZO\x00\r\n\x1a\n`)；
-- **系统崩溃转储与诊断** (`disk_images.rs`, 72 行)：支持 Windows MiniDump 崩溃转储 (`.dmp`/`.mdmp`, `MDMP\x93\xa7`)；
-- **密码学凭据与安全密钥库** (`crypto.rs`, 62 行)：支持 GnuPG Keybox 密钥环格式 (`.kbx`, 偏移 8 `KBXf`)；
-- **经典动画与视频** (`vector_graphics.rs`, 61 行)：支持 Autodesk Animator FLIC 序列动画 (`.flc`/`.fli`, 偏移 4 `\x12\xaf`)；
-- **经典主机 ROM 与数字资产** (`game_assets.rs`, 75 行 & `roms.rs`, 76 行)：支持世嘉五代 Sega Genesis / Mega Drive (`.gen`/`.smd`, 偏移 256 `SEGA`)、Commodore 64 磁带镜像 (`.t64`, `C64 tape image file`) 与 Creative Voice 游戏音频 (`.voc`, `Creative Voice File\x1a`)；
-- **主机平台专有硬件纹理** (`textures.rs`, 68 行)：支持 PlayStation 2 TIM2 纹理 (`.tm2`, `TIM2`) 与 Nintendo GameCube / Wii TPL 调色板纹理 (`.tpl`, `\x00\x20\xaf\x30`)。
+### 1.1 格式矩阵扩展并突破 400 项里程碑
+全部分卷与实现文件严格保持在 50~80 行黄金规范区间（67~76 行）：
+- **排版系统与学术文档** (`fonts.rs`, 69 行)：支持 TeX Packed 栅格字体 (`.pk`, `\xf7\x59`) 与 TeX 设备无关文档 (`.dvi`, `\xf7\x02`)；
+- **现代安全加密与远程凭据** (`crypto.rs`, 76 行)：支持 Filippo 现代 Age 加密容器 (`.age`, `age-encryption.org/v1\n`) 与 PuTTY SSH 专用私钥 (`.ppk`, `PuTTY-User-Key-File-`)；
+- **企业分发与嵌入式归档** (`archives.rs`, 75 行)：支持 Java Pack200 压缩 JAR 包 (`.pack`, `\xca\xfe\xd0\x0d`) 与 InstallShield CAB 封包 (`.isc`/`.hdr`, `ISc(`)；
+- **经典工作站与高动态渲染** (`netpbm.rs`, 76 行)：支持 Sun Raster 图元 (`.ras`/`.sun`, `\x59\xa6\x6a\x95`) 与 Radiance 高动态范围图像 (`.hdr`, `#?RADIANCE\n`)；
+- **矢量图形与序列流式动画** (`vector_graphics.rs`, 75 行)：支持 Autodesk Animator FLI 动画 (`.fli`, 偏移 4 `\x11\xaf`) 与 DOS 二进制封装 PostScript (`.eps`, `\xc5\xd0\xd3\xc6`)；
+- **主机专有硬件纹理** (`textures.rs`, 75 行)：扩展支持 Sega Dreamcast PowerVR 纹理容器 (`.pvr`/`.pvrt`, `PVRT`)；
+- **微控制器芯片固件** (`robotics_firmware.rs`, 75 行)：支持 STMicroelectronics DfuSe 芯片固件升级包 (`.dfu`, `DfuSe\x01`)；
+- **数据科学与统计计算** (`scientific.rs`, 76 行)：支持 R 语言工作区与 RDS 序列化数据 (`.rdata`/`.rds`/`.rda`, `RDX2\n`)。
 
-### 1.2 扩展名索引表扩至 386 项 (`src/extension/registry.rs`)
-- 严格按 ASCII 字典单调升序排序，新增 `blf`, `cbor`, `dmp`, `flc`, `fli`, `gbr`, `gen`, `ger`, `kbx`, `lzo`, `mdmp`, `smd`, `t64`, `tm2`, `tpl`, `voc`；
-- 通过 `test_registry_is_strictly_sorted_without_duplicates` 守卫测试，二分查找保持零堆分配与 ~36 ns / op。
+### 1.2 扩展名索引表突破 400 项 (`src/extension/registry.rs`)
+- 扩展名总数由 386 项跃升至 **400 项**；
+- 严格按 ASCII 字典升序单调排列，通过 `test_registry_is_strictly_sorted_without_duplicates` 单调性与无重复硬性断言测试。
 
-### 1.3 集成测试与全量验证 (`tests/test_telemetry_and_consoles.rs`)
-- 新增 `test_telemetry_and_consoles.rs` 专项测试套件，全面覆盖车载遥测、PCB制程、崩溃转储、CBOR、LZO、主机ROM与硬件纹理；
-- 累计 35 个测试套件，**156 个测试用例全部通过 (156/156 PASS)**；
+### 1.3 集成测试与质量保障 (`tests/test_publishing_and_security.rs`)
+- 新增 `test_publishing_and_security.rs` 专项测试套件，全面覆盖 TeX/DVI、Pack200、InstallShield、Age、PuTTY Key、Sun Raster、HDR、Binary EPS、DfuSe 与 RData；
+- 累计 36 个测试套件，**159 个测试用例全部通过 (159/159 PASS)**；
 - `cargo clippy --all-targets -- -D warnings` 零警告。
 
 ---
@@ -35,9 +35,9 @@
 
 - **编译构建**：`cargo build` 成功。
 - **代码质量与静态检查**：`cargo clippy --all-targets -- -D warnings` 严格零警告 (0 Errors, 0 Warnings)。
-- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (156/156 PASS)。
-- **文件行数规范**：全部 20 大规则分卷严格保持在 55~76 行黄金区间。
-- **Git 仓库状态**：已准备原子提交并推送远程仓库。
+- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (159/159 PASS)。
+- **规范契约**：所有 20 个垂直分卷行数严密收敛于 67~76 行，零单文件臃肿。
+- **Git 仓库状态**：代码与交接文档准备就绪，等待原子提交与推送验证。
 
 ---
 
