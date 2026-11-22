@@ -369,6 +369,9 @@ fn format_evidence_explanation_cn(code: &str) -> Option<&'static str> {
         "sig.macho.arch.arm" => Some("目标架构: ARM (32位)"),
         "sig.macho.arch.arm64" => Some("目标架构: ARM64 (Apple Silicon)"),
         "sig.macho.universal" => Some("通用二进制 (多架构 Universal Binary)"),
+        "sig.tar.embedded" => Some("在压缩数据流中检测到内嵌 POSIX ustar 归档"),
+        "sig.tar.ustar" => Some("POSIX tar (ustar) 头部签名有效"),
+        "sig.tar.checksum" => Some("POSIX tar 头部校验和验证有效"),
         _ => None,
     }
 }
@@ -544,6 +547,7 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "sig.iso.volume_descriptor" => "ISO 9660 主卷描述符 (PVD) 签名有效",
         "sig.tar.ustar" => "POSIX tar (ustar) 头部签名有效",
         "sig.tar.checksum" => "POSIX tar 头部校验和 (Checksum) 验证有效",
+        "sig.tar.embedded" => "在压缩数据流中检测到内嵌 POSIX ustar 归档",
         "sig.gzip.magic" => "Gzip 压缩魔数签名有效",
         "sig.gzip.header" => "Gzip 头部（DEFLATE 压缩方法与保留标志）有效",
         "sig.bzip2.magic" => "Bzip2 压缩魔数签名有效",

@@ -156,6 +156,7 @@ name = "kindprobe"
 version = "0.1.0"
 dependencies = [
  "cfb",
+ "flate2",
  "quick-xml",
  "serde",
  "serde_json",

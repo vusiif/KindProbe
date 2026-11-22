@@ -8,6 +8,35 @@ pub enum TarMatch {
     None,
 }
 
+/// Checks if a 512-byte block is a valid POSIX ustar tar header.
+pub fn check_tar_header(header: &[u8]) -> Option<Verification> {
+    if header.len() < 512 {
+        return None;
+    }
+    let magic = &header[257..263];
+    if magic != b"ustar\0" && magic != b"ustar " {
+        return None;
+    }
+
+    let chk_str = std::str::from_utf8(&header[148..156])
+        .unwrap_or("")
+        .trim()
+        .trim_matches('\0')
+        .trim();
+    let expected_chk = u32::from_str_radix(chk_str, 8).unwrap_or(u32::MAX);
+
+    let mut sum: u32 = 0;
+    for (i, &b) in header[..512].iter().enumerate() {
+        sum += if (148..156).contains(&i) { 0x20 } else { b as u32 };
+    }
+
+    if sum == expected_chk {
+        Some(Verification::Structure)
+    } else {
+        Some(Verification::Signature)
+    }
+}
+
 /// Probes POSIX tar (ustar) archive format.
 pub fn probe_tar(header: &[u8]) -> TarMatch {
     if header.len() < 512 {
@@ -19,40 +48,15 @@ pub fn probe_tar(header: &[u8]) -> TarMatch {
         return TarMatch::None;
     }
 
-    // Check ustar magic at offset 257 (6 bytes)
-    let magic = &header[257..263];
-    let is_ustar = magic == b"ustar\0" || magic == b"ustar ";
-
-    if !is_ustar {
-        return TarMatch::None;
-    }
-
-    // Parse checksum at offset 148..156 (8 bytes octal ASCII string)
-    let chk_slice = &header[148..156];
-    let chk_str = std::str::from_utf8(chk_slice)
-        .unwrap_or("")
-        .trim()
-        .trim_matches('\0')
-        .trim();
-    let expected_chk = u32::from_str_radix(chk_str, 8).unwrap_or(u32::MAX);
-
-    // Compute checksum treating the 8 checksum bytes as spaces (0x20)
-    let mut sum: u32 = 0;
-    for (i, &b) in header[..512].iter().enumerate() {
-        if (148..156).contains(&i) {
-            sum += 0x20;
-        } else {
-            sum += b as u32;
-        }
-    }
+    let verification = match check_tar_header(header) {
+        Some(v) => v,
+        None => return TarMatch::None,
+    };
 
     let mut evidence = vec![EvidenceItem::new("sig.tar.ustar")];
-    let verification = if sum == expected_chk {
+    if verification == Verification::Structure {
         evidence.push(EvidenceItem::new("sig.tar.checksum"));
-        Verification::Structure
-    } else {
-        Verification::Signature
-    };
+    }
 
     TarMatch::Confirmed(Box::new(DetectionReport {
         schema_version: 1,

@@ -1,6 +1,7 @@
 pub mod bzip2;
 pub mod crc32;
 pub mod gzip;
+pub mod nested;
 pub mod rar;
 pub mod sevenz;
 pub mod tar;
@@ -8,6 +9,7 @@ pub mod xz_zstd;
 
 use bzip2::{probe_bzip2, Bzip2Match};
 use gzip::{probe_gzip, GzipMatch};
+use nested::probe_nested_gzip;
 use rar::{make_rar4_report, make_rar5_report, probe_rar, RarProbeResult};
 use sevenz::{make_sevenz_report, probe_sevenz, SevenZProbeResult};
 use tar::{probe_tar, TarMatch};
@@ -43,7 +45,10 @@ pub fn probe_archive_signatures(header: &[u8]) -> ArchiveMatch {
         RarProbeResult::None => (),
     }
 
-    // 3. Gzip
+    // 3. Nested tar.gz or standalone Gzip
+    if let Some(nested_rep) = probe_nested_gzip(header) {
+        return ArchiveMatch::Confirmed(Box::new(nested_rep));
+    }
     match probe_gzip(header) {
         GzipMatch::Confirmed(rep) => return ArchiveMatch::Confirmed(rep),
         GzipMatch::Truncated(fmt) => return ArchiveMatch::Truncated(fmt),

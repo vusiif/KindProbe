@@ -3,6 +3,7 @@ pub mod detectors;
 pub mod extension;
 pub mod model;
 
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek};
 use std::path::Path;
@@ -14,6 +15,22 @@ pub use model::{
     DetectError, DetectionReport, DetectionStats, ErrorDetails, ErrorEnvelope, EvidenceItem,
     ExtensionStatus, Identification, Inspection, Verification, WarningItem,
 };
+
+fn resolve_path_extension(path: &Path) -> Option<&OsStr> {
+    if let Some(file_name) = path.file_name().and_then(|s| s.to_str()) {
+        let lower = file_name.to_ascii_lowercase();
+        if lower.ends_with(".tar.gz") {
+            return Some(OsStr::new("tar.gz"));
+        } else if lower.ends_with(".tar.bz2") {
+            return Some(OsStr::new("tar.bz2"));
+        } else if lower.ends_with(".tar.xz") {
+            return Some(OsStr::new("tar.xz"));
+        } else if lower.ends_with(".tar.zst") {
+            return Some(OsStr::new("tar.zst"));
+        }
+    }
+    path.extension()
+}
 
 /// Detects the format of a file at the given path.
 ///
@@ -51,7 +68,7 @@ pub fn detect_path(
     let mut report = detect_reader(&mut file, options)?;
 
     // Perform independent extension diagnosis
-    report.extension_status = compare_extension(&report, path.extension());
+    report.extension_status = compare_extension(&report, resolve_path_extension(path));
     report.stats.duration_micros = start.elapsed().as_micros() as u64;
 
     Ok(report)

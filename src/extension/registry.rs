@@ -231,6 +231,8 @@ pub static SORTED_EXTENSION_REGISTRY: &[(&str, &str)] = &[
     ("swm", "wim"),
     ("sz", "snappy"),
     ("tar", "tar"),
+    ("tar.gz", "tar.gz"),
+    ("tgz", "tar.gz"),
     ("tif", "tiff"),
     ("tiff", "tiff"),
     ("toml", "toml"),
