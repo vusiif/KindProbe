@@ -48,4 +48,18 @@ pub static DISK_IMAGES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.ecm.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "qcow", category: "disk", container_id: None,
+        recommended_ext: "qcow", accepted_exts: &["qcow"],
+        patterns: &[MagicPattern::new(0, b"QFI\xeb")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.qcow.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sparseimage", category: "disk", container_id: None,
+        recommended_ext: "sparseimage", accepted_exts: &["sparseimage"],
+        patterns: &[MagicPattern::new(0, b"sprs")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.sparseimage.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

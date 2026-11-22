@@ -132,21 +132,6 @@ pub fn probe_riff(header: &[u8]) -> RiffMatch {
         }));
     }
 
-    // General RIFF ContainerOnly
-    RiffMatch::Confirmed(Box::new(DetectionReport {
-        schema_version: 1,
-        format_id: None,
-        category: "container".to_string(),
-        container_id: Some("riff".to_string()),
-        identification: Identification::ContainerOnly,
-        verification: Verification::Structure,
-        inspection: Inspection::Complete,
-        recommended_extension: None,
-        accepted_extensions: Vec::new(),
-        extension_status: ExtensionStatus::Undetermined,
-        evidence,
-        warnings: Vec::new(),
-        stats: Default::default(),
-        candidates: None,
-    }))
+    // Unknown RIFF form_type: let downstream specialized rules evaluate
+    RiffMatch::None
 }

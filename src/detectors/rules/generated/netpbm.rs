@@ -52,4 +52,11 @@ pub static NETPBM_RULES: &[SignatureRule] = &[
         min_header_len: 2, priority: 50, evidence_code: "rule.sgi.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "pcx", category: "image", container_id: None,
+        recommended_ext: "pcx", accepted_exts: &["pcx"],
+        patterns: &[MagicPattern::new(0, b"\x0a\x05\x01")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.pcx.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

@@ -58,4 +58,11 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         min_header_len: 8, priority: 50, evidence_code: "rule.snoop.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "duckdb", category: "database", container_id: None,
+        recommended_ext: "duckdb", accepted_exts: &["duckdb", "ddb"],
+        patterns: &[MagicPattern::new(8, b"DUCK")],
+        min_header_len: 12, priority: 50, evidence_code: "rule.duckdb.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

@@ -59,4 +59,18 @@ pub static AUDIO_CHIPS_RULES: &[SignatureRule] = &[
         min_header_len: 1084, priority: 50, evidence_code: "rule.mod.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "sf2", category: "audio", container_id: None,
+        recommended_ext: "sf2", accepted_exts: &["sf2", "sf3", "sfbk"],
+        patterns: &[MagicPattern::new(0, b"RIFF"), MagicPattern::new(8, b"sfbk")],
+        min_header_len: 12, priority: 50, evidence_code: "rule.sf2.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "dls", category: "audio", container_id: None,
+        recommended_ext: "dls", accepted_exts: &["dls"],
+        patterns: &[MagicPattern::new(0, b"RIFF"), MagicPattern::new(8, b"DLS ")],
+        min_header_len: 12, priority: 50, evidence_code: "rule.dls.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

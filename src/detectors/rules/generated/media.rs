@@ -66,4 +66,11 @@ pub static MEDIA_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.wv.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "tta", category: "audio", container_id: None,
+        recommended_ext: "tta", accepted_exts: &["tta"],
+        patterns: &[MagicPattern::new(0, b"TTA1")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.tta.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

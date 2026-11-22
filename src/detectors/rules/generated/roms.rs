@@ -52,4 +52,18 @@ pub static ROMS_RULES: &[SignatureRule] = &[
         min_header_len: 16, priority: 50, evidence_code: "rule.nds.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "ips", category: "rom", container_id: None,
+        recommended_ext: "ips", accepted_exts: &["ips"],
+        patterns: &[MagicPattern::new(0, b"PATCH")],
+        min_header_len: 5, priority: 50, evidence_code: "rule.ips.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bps", category: "rom", container_id: None,
+        recommended_ext: "bps", accepted_exts: &["bps"],
+        patterns: &[MagicPattern::new(0, b"BPS1")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.bps.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

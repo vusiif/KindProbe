@@ -104,7 +104,31 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         return SignatureMatch::Truncated("pdf".to_string());
     }
 
+    // 12. Fallback for generic RIFF container when no subtype matched
+    if header.len() >= 12 && header.starts_with(b"RIFF") {
+        return SignatureMatch::Confirmed(Box::new(make_riff_container_report()));
+    }
+
     SignatureMatch::None
+}
+
+fn make_riff_container_report() -> DetectionReport {
+    DetectionReport {
+        schema_version: 1,
+        format_id: None,
+        category: "container".to_string(),
+        container_id: Some("riff".to_string()),
+        identification: Identification::ContainerOnly,
+        verification: Verification::Structure,
+        inspection: Inspection::Complete,
+        recommended_extension: None,
+        accepted_extensions: Vec::new(),
+        extension_status: ExtensionStatus::Undetermined,
+        evidence: vec![EvidenceItem::new("sig.riff.header")],
+        warnings: Vec::new(),
+        stats: Default::default(),
+        candidates: None,
+    }
 }
 
 pub fn make_pdf_report() -> DetectionReport {

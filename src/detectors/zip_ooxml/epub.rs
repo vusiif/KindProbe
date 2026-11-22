@@ -43,43 +43,26 @@ pub fn check_epub_or_odf<R: Read + std::io::Seek>(
         return true;
     }
 
-    if mime == "application/vnd.oasis.opendocument.text" {
-        report.identification = Identification::Format;
-        report.format_id = Some("odt".to_string());
-        report.category = "document".to_string();
-        report.container_id = Some("zip".to_string());
-        report.verification = Verification::Structure;
-        report.inspection = Inspection::Complete;
-        report.recommended_extension = Some("odt".to_string());
-        report.accepted_extensions = vec!["odt".to_string(), "ott".to_string()];
-        report.evidence.push(EvidenceItem::new("odf.mimetype"));
-        return true;
-    }
+    const ODF_TYPES: &[(&str, &str, &[&str])] = &[
+        ("application/vnd.oasis.opendocument.text", "odt", &["odt", "ott"]),
+        ("application/vnd.oasis.opendocument.spreadsheet", "ods", &["ods", "ots"]),
+        ("application/vnd.oasis.opendocument.presentation", "odp", &["odp", "otp"]),
+        ("application/vnd.oasis.opendocument.graphics", "odg", &["odg", "otg"]),
+    ];
 
-    if mime == "application/vnd.oasis.opendocument.spreadsheet" {
-        report.identification = Identification::Format;
-        report.format_id = Some("ods".to_string());
-        report.category = "document".to_string();
-        report.container_id = Some("zip".to_string());
-        report.verification = Verification::Structure;
-        report.inspection = Inspection::Complete;
-        report.recommended_extension = Some("ods".to_string());
-        report.accepted_extensions = vec!["ods".to_string(), "ots".to_string()];
-        report.evidence.push(EvidenceItem::new("odf.mimetype"));
-        return true;
-    }
-
-    if mime == "application/vnd.oasis.opendocument.presentation" {
-        report.identification = Identification::Format;
-        report.format_id = Some("odp".to_string());
-        report.category = "document".to_string();
-        report.container_id = Some("zip".to_string());
-        report.verification = Verification::Structure;
-        report.inspection = Inspection::Complete;
-        report.recommended_extension = Some("odp".to_string());
-        report.accepted_extensions = vec!["odp".to_string(), "otp".to_string()];
-        report.evidence.push(EvidenceItem::new("odf.mimetype"));
-        return true;
+    for &(m, fid, exts) in ODF_TYPES {
+        if mime == m {
+            report.identification = Identification::Format;
+            report.format_id = Some(fid.to_string());
+            report.category = "document".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some(fid.to_string());
+            report.accepted_extensions = exts.iter().map(|s| s.to_string()).collect();
+            report.evidence.push(EvidenceItem::new("odf.mimetype"));
+            return true;
+        }
     }
 
     false
