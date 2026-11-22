@@ -1,5 +1,16 @@
-use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::detectors::rules::types::{MagicPattern, SignatureRule, ValidationStatus};
 use crate::model::Verification;
+
+fn validate_pyc(header: &[u8]) -> ValidationStatus {
+    if header.len() < 16 {
+        return ValidationStatus::Truncated;
+    }
+    if header[2] == 0x0d && header[3] == 0x0a && (header[1] == 0x0d || header[1] == 0xf3) {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
 
 pub static BYTECODE_RULES: &[SignatureRule] = &[
     SignatureRule {
@@ -43,5 +54,19 @@ pub static BYTECODE_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"!<arch>\x0a")],
         min_header_len: 8, priority: 40, evidence_code: "rule.ar.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "beam", category: "executable", container_id: None,
+        recommended_ext: "beam", accepted_exts: &["beam"],
+        patterns: &[MagicPattern::new(0, b"FOR1"), MagicPattern::new(8, b"BEAM")],
+        min_header_len: 12, priority: 50, evidence_code: "rule.beam.magic",
+        verification: Verification::Structure, validator: None,
+    },
+    SignatureRule {
+        format_id: "pyc", category: "executable", container_id: None,
+        recommended_ext: "pyc", accepted_exts: &["pyc", "pyo"],
+        patterns: &[MagicPattern::new(2, b"\x0d\x0a")],
+        min_header_len: 16, priority: 45, evidence_code: "rule.pyc.magic",
+        verification: Verification::Structure, validator: Some(validate_pyc),
     },
 ];

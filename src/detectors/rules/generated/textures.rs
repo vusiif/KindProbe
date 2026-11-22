@@ -37,4 +37,18 @@ pub static TEXTURES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.pvr.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "vtf", category: "image", container_id: None,
+        recommended_ext: "vtf", accepted_exts: &["vtf"],
+        patterns: &[MagicPattern::new(0, b"VTF\x00")],
+        min_header_len: 16, priority: 50, evidence_code: "rule.vtf.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "pkm", category: "image", container_id: None,
+        recommended_ext: "pkm", accepted_exts: &["pkm"],
+        patterns: &[MagicPattern::new(0, b"PKM ")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.pkm.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

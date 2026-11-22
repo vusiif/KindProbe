@@ -41,18 +41,27 @@ pub fn probe_json(text: &str) -> Option<DetectionReport> {
         return None;
     }
 
+    let (fmt, cat, cont, rec, exts, ev) = if text.contains("\"FeatureCollection\"")
+        || text.contains("\"GeometryCollection\"")
+        || (text.contains("\"Feature\"") && text.contains("\"geometry\""))
+    {
+        ("geojson", "geospatial", Some("json".to_string()), "geojson", vec!["geojson".to_string(), "json".to_string()], "sig.text.geojson")
+    } else {
+        ("json", "text", None, "json", vec!["json".to_string()], "sig.text.json")
+    };
+
     Some(DetectionReport {
         schema_version: 1,
-        format_id: Some("json".to_string()),
-        category: "text".to_string(),
-        container_id: None,
+        format_id: Some(fmt.to_string()),
+        category: cat.to_string(),
+        container_id: cont,
         identification: Identification::Format,
         verification: Verification::Structure,
         inspection: Inspection::Complete,
-        recommended_extension: Some("json".to_string()),
-        accepted_extensions: vec!["json".to_string()],
+        recommended_extension: Some(rec.to_string()),
+        accepted_extensions: exts,
         extension_status: ExtensionStatus::Undetermined,
-        evidence: vec![EvidenceItem::new("sig.text.json")],
+        evidence: vec![EvidenceItem::new(ev)],
         warnings: Vec::new(),
         stats: Default::default(),
         candidates: None,

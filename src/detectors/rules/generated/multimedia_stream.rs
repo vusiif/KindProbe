@@ -44,4 +44,28 @@ pub static MULTIMEDIA_STREAM_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.dts.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "ts", category: "video", container_id: None,
+        recommended_ext: "ts", accepted_exts: &["ts", "m2ts", "mts"],
+        patterns: &[
+            MagicPattern::new(0, b"\x47"),
+            MagicPattern::new(188, b"\x47"),
+            MagicPattern::new(376, b"\x47"),
+            MagicPattern::new(564, b"\x47"),
+        ],
+        min_header_len: 565, priority: 50, evidence_code: "rule.ts.magic",
+        verification: Verification::Structure, validator: None,
+    },
+    SignatureRule {
+        format_id: "m2ts", category: "video", container_id: None,
+        recommended_ext: "m2ts", accepted_exts: &["m2ts", "mts"],
+        patterns: &[
+            MagicPattern::new(4, b"\x47"),
+            MagicPattern::new(196, b"\x47"),
+            MagicPattern::new(388, b"\x47"),
+            MagicPattern::new(580, b"\x47"),
+        ],
+        min_header_len: 581, priority: 50, evidence_code: "rule.m2ts.magic",
+        verification: Verification::Structure, validator: None,
+    },
 ];

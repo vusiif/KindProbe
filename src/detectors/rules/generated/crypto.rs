@@ -11,13 +11,6 @@ pub static CRYPTO_RULES: &[SignatureRule] = &[
         verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "pem", category: "security", container_id: None,
-        recommended_ext: "pem", accepted_exts: &["pem", "crt", "cer"],
-        patterns: &[MagicPattern::new(0, b"-----BEGIN ")],
-        min_header_len: 11, priority: 50, evidence_code: "rule.pem.magic",
-        verification: Verification::Signature, validator: None,
-    },
-    SignatureRule {
         format_id: "der", category: "security", container_id: None,
         recommended_ext: "der", accepted_exts: &["der"],
         patterns: &[MagicPattern::new(0, b"0\x82")],
@@ -29,6 +22,34 @@ pub static CRYPTO_RULES: &[SignatureRule] = &[
         recommended_ext: "pgp", accepted_exts: &["pgp", "gpg", "asc"],
         patterns: &[MagicPattern::new(0, b"-----BEGIN PGP ")],
         min_header_len: 15, priority: 50, evidence_code: "rule.pgp.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sshkey", category: "security", container_id: None,
+        recommended_ext: "key", accepted_exts: &["key", "priv"],
+        patterns: &[MagicPattern::new(0, b"-----BEGIN OPENSSH PRIVATE KEY-----")],
+        min_header_len: 35, priority: 50, evidence_code: "rule.sshkey.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "csr", category: "security", container_id: None,
+        recommended_ext: "csr", accepted_exts: &["csr"],
+        patterns: &[MagicPattern::new(0, b"-----BEGIN CERTIFICATE REQUEST-----")],
+        min_header_len: 36, priority: 50, evidence_code: "rule.csr.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "pem", category: "security", container_id: None,
+        recommended_ext: "pem", accepted_exts: &["pem", "crt", "cer"],
+        patterns: &[MagicPattern::new(0, b"-----BEGIN ")],
+        min_header_len: 11, priority: 40, evidence_code: "rule.pem.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bcfks", category: "security", container_id: None,
+        recommended_ext: "bcfks", accepted_exts: &["bcfks"],
+        patterns: &[MagicPattern::new(0, b"\x00\x00\x00\x01\x00\x00\x00\x00")],
+        min_header_len: 8, priority: 40, evidence_code: "rule.bcfks.magic",
         verification: Verification::Signature, validator: None,
     },
 ];

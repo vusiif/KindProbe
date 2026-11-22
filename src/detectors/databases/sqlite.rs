@@ -43,21 +43,25 @@ pub fn probe_sqlite(header: &[u8]) -> SqliteMatch {
         Verification::Signature
     };
 
+    let (fmt_id, cat, container, rec_ext, accepted) = if header.len() >= 72
+        && (&header[68..72] == b"GPKG" || &header[68..72] == b"GP10")
+    {
+        evidence.push(EvidenceItem::with_desc("sig.sqlite.geopackage", "OGC GeoPackage container"));
+        ("gpkg", "database", Some("sqlite3".to_string()), "gpkg", vec!["gpkg".to_string(), "sqlite3".to_string(), "db".to_string()])
+    } else {
+        ("sqlite3", "database", None, "sqlite3", vec!["sqlite3".to_string(), "sqlite".to_string(), "db".to_string(), "db3".to_string()])
+    };
+
     SqliteMatch::Confirmed(Box::new(DetectionReport {
         schema_version: 1,
-        format_id: Some("sqlite3".to_string()),
-        category: "database".to_string(),
-        container_id: None,
+        format_id: Some(fmt_id.to_string()),
+        category: cat.to_string(),
+        container_id: container,
         identification: Identification::Format,
         verification,
         inspection: Inspection::Complete,
-        recommended_extension: Some("sqlite3".to_string()),
-        accepted_extensions: vec![
-            "sqlite3".to_string(),
-            "sqlite".to_string(),
-            "db".to_string(),
-            "db3".to_string(),
-        ],
+        recommended_extension: Some(rec_ext.to_string()),
+        accepted_extensions: accepted,
         extension_status: ExtensionStatus::Undetermined,
         evidence,
         warnings: Vec::new(),

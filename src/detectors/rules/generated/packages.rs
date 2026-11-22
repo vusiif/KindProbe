@@ -38,4 +38,18 @@ pub static PACKAGES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.zpaq.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "arc", category: "archive", container_id: None,
+        recommended_ext: "arc", accepted_exts: &["arc"],
+        patterns: &[MagicPattern::new(0, b"ArC\x01")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.arc.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "alz", category: "archive", container_id: None,
+        recommended_ext: "alz", accepted_exts: &["alz"],
+        patterns: &[MagicPattern::new(0, b"ALZ\x01")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.alz.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

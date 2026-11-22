@@ -2,28 +2,37 @@
 
 > **单一真实信源 (Single Source of Truth - SSOT)**  
 > **更新时间**：2026-11-22  
-> **当前版本**：v0.1.0 (18 大垂直领域规则分卷定型，全局扩展名索引表扩至 314 项，31 大测试套件 142 用例全绿)  
+> **当前版本**：v0.1.0 (扩展名索引跃升至 338 项，地理/流媒体/现代资产全面就绪，32 大测试套件 146 用例全绿)  
 > **远端分支**：`origin/main`
 
 ---
 
 ## 1. [已完成] (Completed)
 
-### 1.1 规则分卷架构扩展至 18 大垂直领域 (`src/detectors/rules/generated/`)
-彻底保持模块化，所有 18 个规则分卷严格控制在 35~80 行黄金规范区间：
-- **`bytecode.rs` (新分卷 17，49 行)**：现代运行时与底层字节码（`dex` Android Dalvik 字节码全版本, `luac` Lua 预编译字节码, `ar` Unix 静态链接库与归档 `.a`/`.lib`）；
-- **`vector_graphics.rs` (新分卷 18，49 行)**：图元与现代图像格式（`wmf` Windows 元文件, `emf` 增强型元文件, `qoi` Quite OK Image, `jxl` JPEG XL 裸流与容器, `flif` 自由无损图像）；
-- **`models.rs` (扩充，62 行)**：新增骨骼动作捕捉数据（`bvh` Biovision Hierarchy）；
-- **`database.rs` (扩充，62 行)**：新增电信抓包归档（`snoop` RFC 1761 Snoop 数据包）；
-- **`mod.rs` (62 行)**：全动态聚合 18 大分卷为 `GENERATED_RULES` 零拷贝静态切片。
+### 1.1 扩展支持 24+ 类核心格式与结构化文本方言（全局覆盖 338 项）
+- **地理与标记结构化文本**：
+  - `gpkg` (OGC GeoPackage)：在 SQLite 探测器中识别偏移量 68 处 application_id (`GPKG`/`GP10`)，推荐扩展名直出 `.gpkg`，标记 `sqlite3` 容器关系；
+  - `svg` / `kml` / `gpx` / `dae` / `plist`：在 XML 网关中快速消歧，识别矢量图、地理标记、GPS 航迹、COLLADA 3D 与苹果属性列表；
+  - `geojson`：在 JSON 网关中基于 Feature/Geometry 结构识别，输出推荐 `.geojson`；
+- **流式解压复合嵌套**：
+  - `svgz`：在 Gzip 流式就地解压前 512 字节中精准识别内嵌 `<svg`，输出证据链并推荐 `.svgz`；
+- **广播流媒体与工业现代资产**：
+  - `ts` / `m2ts`：基于 188 / 192 字节固定步长的 0x47 同步字节精确识别 MPEG 传输流与 BDAV 流；
+  - `usdc` / `u3d`：覆盖 Pixar USD 二进制 Crate 格式与 Universal 3D 场景；
+  - `vtf` / `pkm`：支持 Valve Source 引擎纹理与移动端 ETC 纹理；
+- **现代字节码、专用归档与磁盘**：
+  - `beam` / `pyc`：支持 Erlang/Elixir BEAM 虚拟机字节码与 Python 预编译字节码；
+  - `arc` / `alz`：支持 FreeArc 与 ALZip 压缩归档；
+  - `daa` / `ecm`：支持 Direct-Access-Archive 与 Error Code Modeler 镜像；
+  - `sshkey` / `csr` / `bcfks`：精准消歧 OpenSSH 私钥、CSR 证书签名请求，PEM 作为低优先级兜底。
 
-### 1.2 扩展名索引表突破 314 项 (`src/extension/registry.rs`)
-- 严格按 ASCII 升序排列并维护单元测试单调性断言；
-- 扩展名总数由 304 项跃升至 **314 项**，二分查找耗时稳定在 36 ns / op（吞吐量突破 2700 万 QPS）。
+### 1.2 全局扩展名索引表扩充至 338 项 (`src/extension/registry.rs`)
+- 严格按 ASCII 升序排列，通过 `test_registry_is_strictly_sorted_without_duplicates` 守卫测试；
+- 所有源文件严格控制在 **50~80 行**黄金规范区间内。
 
-### 1.3 专项集成测试与微基准验证 (`tests/test_bytecode_and_vector.rs`)
-- 新增 `test_bytecode_and_vector.rs` 专项套件，覆盖 Dalvik 字节码、Lua 预编译、Unix 静态库、WMF/EMF 图元与 QOI/JXL 图像；
-- 累计 31 个测试套件，**142 个测试用例全部通过**。
+### 1.3 专项集成测试 (`tests/test_geospatial_and_multimedia.rs`)
+- 新增 4 大测试组，累计 32 个测试套件，**146 个测试用例全部 PASS**；
+- `cargo clippy --all-targets -- -D warnings` 保持绝对 0 告警。
 
 ---
 
@@ -31,7 +40,7 @@
 
 - **编译构建**：`cargo build` 成功。
 - **代码质量与静态检查**：`cargo clippy --all-targets -- -D warnings` 严格零警告 (0 Errors, 0 Warnings)。
-- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (142/142 PASS)。
+- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (146/146 PASS)。
 - **Git 仓库状态**：准备提交并推送验证 CI。
 
 ---

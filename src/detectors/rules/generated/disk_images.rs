@@ -6,7 +6,10 @@ pub static DISK_IMAGES_RULES: &[SignatureRule] = &[
     SignatureRule {
         format_id: "vdi", category: "disk", container_id: None,
         recommended_ext: "vdi", accepted_exts: &["vdi"],
-        patterns: &[MagicPattern::new(0, b"<<< "), MagicPattern::new(10, b"VirtualBox Disk Image >>>")],
+        patterns: &[
+            MagicPattern::new(0, b"<<< "),
+            MagicPattern::new(10, b"VirtualBox Disk Image >>>"),
+        ],
         min_header_len: 35, priority: 50, evidence_code: "rule.vdi.magic",
         verification: Verification::Signature, validator: None,
     },
@@ -29,6 +32,20 @@ pub static DISK_IMAGES_RULES: &[SignatureRule] = &[
         recommended_ext: "nrg", accepted_exts: &["nrg"],
         patterns: &[MagicPattern::new(0, b"NER5")],
         min_header_len: 4, priority: 50, evidence_code: "rule.nrg.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "daa", category: "disk", container_id: None,
+        recommended_ext: "daa", accepted_exts: &["daa"],
+        patterns: &[MagicPattern::new(0, b"DAA\x00")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.daa.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ecm", category: "disk", container_id: None,
+        recommended_ext: "ecm", accepted_exts: &["ecm"],
+        patterns: &[MagicPattern::new(0, b"ECM\x00")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.ecm.magic",
         verification: Verification::Signature, validator: None,
     },
 ];

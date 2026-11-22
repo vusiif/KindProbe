@@ -58,4 +58,18 @@ pub static MODELS_RULES: &[SignatureRule] = &[
         min_header_len: 9, priority: 50, evidence_code: "rule.bvh.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "usdc", category: "model", container_id: None,
+        recommended_ext: "usdc", accepted_exts: &["usdc", "usd"],
+        patterns: &[MagicPattern::new(0, b"PXR-USDC")],
+        min_header_len: 8, priority: 50, evidence_code: "rule.usdc.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "u3d", category: "model", container_id: None,
+        recommended_ext: "u3d", accepted_exts: &["u3d"],
+        patterns: &[MagicPattern::new(0, b"U3D\x00")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.u3d.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];
