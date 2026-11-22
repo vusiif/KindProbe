@@ -51,4 +51,11 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         min_header_len: 19, priority: 50, evidence_code: "rule.accdb.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "snoop", category: "network", container_id: None,
+        recommended_ext: "snoop", accepted_exts: &["snoop"],
+        patterns: &[MagicPattern::new(0, b"snoop\x00\x00\x00")],
+        min_header_len: 8, priority: 50, evidence_code: "rule.snoop.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];
