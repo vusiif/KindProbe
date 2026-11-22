@@ -25,6 +25,11 @@ pub fn probe_ttf_otf(header: &[u8]) -> TtfOtfMatch {
         return TtfOtfMatch::None;
     }
 
+    // Disambiguate against Microsoft Access Jet/ACE Database (\x00\x01\x00\x00Standard...)
+    if header.len() >= 19 && is_ttf && (&header[4..19] == b"Standard Jet DB" || &header[4..19] == b"Standard ACE DB") {
+        return TtfOtfMatch::None;
+    }
+
     let (fmt_id, magic_evidence_code) = if is_otf {
         ("otf", "sig.font.otf_magic")
     } else {
@@ -39,7 +44,7 @@ pub fn probe_ttf_otf(header: &[u8]) -> TtfOtfMatch {
             evidence.push(EvidenceItem::new("sig.font.num_tables"));
             Verification::Structure
         } else {
-            Verification::Signature
+            return TtfOtfMatch::None;
         }
     } else {
         Verification::Signature
