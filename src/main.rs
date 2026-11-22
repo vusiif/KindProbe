@@ -322,9 +322,80 @@ fn format_category_cn(cat: &str) -> &'static str {
         "image" => "图像",
         "document" => "文档",
         "container" => "容器",
+        "executable" => "可执行文件",
+        "audio" => "音频",
+        "video" => "视频",
+        "archive" => "归档压缩",
+        "database" => "数据库",
+        "network" => "网络数据包",
+        "font" => "字体",
+        "text" => "文本与源码",
+        "rom" => "ROM固件",
+        "disk_image" => "磁盘镜像",
+        "package" => "安装包",
+        "crypto" => "证书与密钥",
         "unknown" => "未知",
         _ => "未知",
     }
+}
+
+fn format_evidence_explanation_cn(code: &str) -> Option<&'static str> {
+    match code {
+        "sig.pe.arch.x86" => Some("目标架构: x86 (Intel 386 / 32位)"),
+        "sig.pe.arch.x64" => Some("目标架构: x86-64 (AMD64 / 64位)"),
+        "sig.pe.arch.arm" => Some("目标架构: ARM (32位小端)"),
+        "sig.pe.arch.arm_thumb2" => Some("目标架构: ARMv7 Thumb-2 (Windows RT)"),
+        "sig.pe.arch.arm64" => Some("目标架构: ARM64 (AArch64 / 64位)"),
+        "sig.pe.arch.arm64ec" => Some("目标架构: ARM64EC (仿真兼容)"),
+        "sig.pe.arch.ia64" => Some("目标架构: Intel Itanium (IA-64)"),
+        "sig.pe.arch.riscv32" => Some("目标架构: RISC-V 32位"),
+        "sig.pe.arch.riscv64" => Some("目标架构: RISC-V 64位"),
+        "sig.pe.arch.riscv128" => Some("目标架构: RISC-V 128位"),
+        "sig.pe.opt.pe32" => Some("PE32 (32位寻址空间)"),
+        "sig.pe.opt.pe32plus" => Some("PE32+ (64位寻址空间)"),
+        "sig.pe.subsystem.gui" => Some("Windows 图形界面子系统 (GUI)"),
+        "sig.pe.subsystem.console" => Some("Windows 控制台子系统 (CUI)"),
+        "sig.elf.arch.x86" => Some("目标架构: x86 (Intel 386 / 32位)"),
+        "sig.elf.arch.x86_64" => Some("目标架构: x86-64 (AMD64 / 64位)"),
+        "sig.elf.arch.arm" => Some("目标架构: ARM (32位)"),
+        "sig.elf.arch.arm64" => Some("目标架构: ARM64 (AArch64 / 64位)"),
+        "sig.elf.arch.riscv" => Some("目标架构: RISC-V"),
+        "sig.elf.class.32bit" => Some("ELF 32位"),
+        "sig.elf.class.64bit" => Some("ELF 64位"),
+        "sig.elf.type.executable" => Some("ELF 可执行文件 (ET_EXEC)"),
+        "sig.elf.type.shared_object" => Some("ELF 动态共享库 (ET_DYN)"),
+        "sig.macho.arch.x86" => Some("目标架构: x86 (i386)"),
+        "sig.macho.arch.x86_64" => Some("目标架构: x86-64 (AMD64)"),
+        "sig.macho.arch.arm" => Some("目标架构: ARM (32位)"),
+        "sig.macho.arch.arm64" => Some("目标架构: ARM64 (Apple Silicon)"),
+        "sig.macho.universal" => Some("通用二进制 (多架构 Universal Binary)"),
+        _ => None,
+    }
+}
+
+fn extract_arch_display_cn(evidence: &[kindprobe::model::EvidenceItem]) -> Option<String> {
+    for ev in evidence {
+        if ev.code.contains(".arch.") || ev.code == "sig.macho.universal" {
+            if let Some(cn) = format_evidence_explanation_cn(&ev.code) {
+                return Some(cn.trim_start_matches("目标架构: ").to_string());
+            }
+            if let Some(desc) = &ev.description {
+                return Some(desc.trim_start_matches("Target Architecture: ").to_string());
+            }
+        }
+    }
+    None
+}
+
+fn extract_arch_display_en(evidence: &[kindprobe::model::EvidenceItem]) -> Option<String> {
+    for ev in evidence {
+        if ev.code.contains(".arch.") || ev.code == "sig.macho.universal" {
+            if let Some(desc) = &ev.description {
+                return Some(desc.trim_start_matches("Target Architecture: ").to_string());
+            }
+        }
+    }
+    None
 }
 
 fn format_verification_cn(v: kindprobe::model::Verification) -> &'static str {
@@ -623,6 +694,9 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
                             report.format_id.as_deref().unwrap_or("none")
                         );
                         println!("类别: {}", format_category_cn(&report.category));
+                        if let Some(arch) = extract_arch_display_cn(&report.evidence) {
+                            println!("目标架构: {}", arch);
+                        }
                         if let Some(cid) = &report.container_id {
                             println!("容器: {}", cid);
                         }
@@ -638,7 +712,13 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
                         if !report.evidence.is_empty() {
                             println!("证据:");
                             for ev in &report.evidence {
-                                println!("  - {}", ev.code);
+                                if let Some(cn) = format_evidence_explanation_cn(&ev.code) {
+                                    println!("  - {} ({})", ev.code, cn);
+                                } else if let Some(desc) = &ev.description {
+                                    println!("  - {} ({})", ev.code, desc);
+                                } else {
+                                    println!("  - {}", ev.code);
+                                }
                             }
                         }
                         if !report.warnings.is_empty() {
@@ -667,6 +747,9 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
                             report.format_id.as_deref().unwrap_or("none")
                         );
                         println!("Category: {}", report.category);
+                        if let Some(arch) = extract_arch_display_en(&report.evidence) {
+                            println!("Target Architecture: {}", arch);
+                        }
                         if let Some(cid) = &report.container_id {
                             println!("Container: {}", cid);
                         }
@@ -679,7 +762,11 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
                         if !report.evidence.is_empty() {
                             println!("Evidence:");
                             for ev in &report.evidence {
-                                println!("  - {}", ev.code);
+                                if let Some(desc) = &ev.description {
+                                    println!("  - {} ({})", ev.code, desc);
+                                } else {
+                                    println!("  - {}", ev.code);
+                                }
                             }
                         }
                         if !report.warnings.is_empty() {

@@ -2,39 +2,40 @@
 
 > **单一真实信源 (Single Source of Truth - SSOT)**  
 > **更新时间**：2026-11-21  
-> **当前版本**：v0.1.0 (14大垂直领域分卷定型，扩展名索引达 282 项，全量 129 测试全绿)  
+> **当前版本**：v0.1.0 (全平台可执行文件 CPU 架构与子系统深度解析，28 大测试套件 133 用例全绿)  
 > **远端分支**：`origin/main`
 
 ---
 
 ## 1. [已完成] (Completed)
 
-### 1.1 14 大垂直领域声明式规则分卷 (`src/detectors/rules/generated/`)
-彻底解决规则库规模化后的代码膨胀问题，所有 14 个分卷与聚合模块**严格控制在 34~70 行黄金区间**：
-- `media.rs` (69 行)：标准与专业音频（`flv`, `amr`, `ac3`, `au`, `caf`, `drc`, `mng`, `ape`, `wv`）
-- `audio_chips.rs` (62 行)：芯片音乐与 Tracker 模块（`sid`, `spc`, `vgm`, `torrent`, `s3m`, `xm`, `it`, `mod`）
-- `images.rs` (69 行)：专业图像与出版格式（`xcf`, `exr`, `fits`, `icns`, `jp2`, `bpg`, `djvu`, `nitf`, `mdi`）
-- `netpbm.rs` (55 行)：Netpbm 族谱与图形扩展（`pbm`, `pgm`, `ppm`, `pam`, `xbm`, `xpm`, `sgi`）
-- `documents.rs` (62 行)：技术与绘图文档（`dicom`, `postscript`, `rtf`, `dwg`, `dxf_bin`, `dwf`, `wri`, `xar`）
-- `archives.rs` (62 行)：传统系统归档（`cpio`, `lz`, `arj`, `zoo`, `cab`, `wim`, `sit`, `sqx`）
-- `models.rs` (55 行)：3D 几何模型与 CAD（`blend`, `glb`, `fbx`, `3ds`, `ply`, `step`, `lwo`）
-- `scientific.rs` (62 行)：科研工程与地理大科学（`hdf5`, `hdf4`, `netcdf`, `shp`, `grib`, `mat5`, `root`, `mrc`）
-- `roms.rs` (55 行)：经典游戏主机 ROM 与卡带镜像（`nes`, `z64`, `n64`, `v64`, `gba`, `gb`/`gbc`, `nds`）
-- `packages.rs` (41 行)：压缩包与系统打包格式（`snappy`/`sz`, `z`, `lha`/`lzh`, `ace`, 新增 `zpaq`）
-- `database.rs` (41 行)：现代数据库与科学点云（`arrow`/`feather`, `kdbx`, `kdb`, `realm`, 新增 `las`/`laz` 激光雷达点云）
-- `fonts.rs` (41 行，新分卷)：专业排版与矢量点阵字体（`pcf`, `bdf`, `afm`, `pfb`, `eot`）
-- `crypto.rs` (34 行，新分卷)：公钥基础架构与安全证书（`jks` Java KeyStore, `pem`, `der`, `pgp`/`gpg`）
-- `disk_images.rs` (34 行，新分卷)：虚拟化与光盘镜像（`vdi` VirtualBox, `chd` MAME, `cso`, `nrg` Nero）
-- `mod.rs` (50 行)：全动态聚合 14 大分卷为 `GENERATED_RULES` 切片，保持零运行时堆分配（`&'static [&'static [SignatureRule]]`）。
+### 1.1 全平台可执行文件 CPU 目标架构与子系统深度解析
+在保持零额外 I/O 与纳秒级就地读取（In-Place Parsing）的前提下，完整实现了 PE、ELF、Mach-O 三大主流可执行文件二进制 CPU 架构识别与子系统探测：
+- **Windows PE (`src/detectors/executables/pe_meta.rs`, `pe.rs`)**：
+  - COFF `Machine` 字段解析：`x86`, `x64` (AMD64), `arm64` (AArch64), `arm64ec` (仿真兼容), `arm` (32位小端), `arm_thumb2` (Windows RT), `ia64` (Itanium), `riscv32`, `riscv64`, `riscv128`, `powerpc`, `mips`；
+  - Optional Header 与地址寻址空间校验：`sig.pe.opt.pe32` (32位寻址), `sig.pe.opt.pe32plus` (64位寻址)；
+  - Subsystem 子系统判断：`sig.pe.subsystem.gui` (图形界面), `sig.pe.subsystem.console` (控制台 CUI)；
+  - 架构拆分重构：将 PE 解析拆分为 `pe_meta.rs` (59 行) 与 `pe.rs` (63 行)，严格遵循 50~80 行模块化规范。
+- **Linux / BSD ELF (`src/detectors/executables/elf.rs`, 90 行)**：
+  - 字节序自适应解析 `e_machine` 架构：`x86`, `x86_64`, `arm`, `arm64`, `riscv`, `mips`, `powerpc`, `powerpc64`, `sparc`；
+  - `e_type` 文件类型判定：可执行文件 (`ET_EXEC`) vs 动态共享库 (`ET_DYN`)，动态自适应推荐扩展名 `.elf` / `.so`；
+  - 地址长度：`sig.elf.class.32bit` 与 `sig.elf.class.64bit`。
+- **macOS / iOS Mach-O (`src/detectors/executables/macho.rs`, 82 行)**：
+  - `cputype` 架构解析：`x86`, `x86_64`, `arm`, `arm64` (Apple Silicon M系列)；
+  - 通用多架构二进制：FAT / Universal Binary (`sig.macho.universal`)。
 
-### 1.2 扩展名二分查找索引表突破 282 项 (`src/extension/registry.rs`)
-- 扩展名总数由 258 项跃升至 **282 项**；
-- 严格按 ASCII 升序排列，并内建单调递增单元测试守卫；
-- 二分查找在 Release 模式下耗时仅需 **36.81 ns / op**，吞吐量高达 **2717 万次 / 秒**。
+### 1.2 人类友好终端展示与机器 JSON 双模呈现 (`src/main.rs`)
+- 中文模式与英文模式下，当检测到 CPU 架构时，在元数据显著位置输出：
+  - 中文：`目标架构: ARM64 (AArch64 / 64位)` / `目标架构: x86-64 (AMD64 / 64位)`
+  - 英文：`Target Architecture: ARM64 (AArch64 / 64-bit)`
+- 完善证据链多语言释义与描述输出，证据列表直接附带中文说明（例如 `sig.pe.arch.arm64 (目标架构: ARM64 (AArch64 / 64位))`）；
+- `--json` 机器可读模式在不破坏既有 Schema Invariant 的前提下，通过 `EvidenceItem.description` 完整输出目标 CPU 架构描述。
 
-### 1.3 垂直领域集成测试与微基准压测
-- 新增 `tests/test_fonts_crypto_disks.rs` (79 行)：针对字体排版、证书密钥、虚拟光盘的端到端探测校验；
-- 全量 27 个集成测试套件、单元测试全部 100% 通过（**129 / 129 测试全部通过**）。
+### 1.3 专项端到端测试覆盖 (`tests/test_executables_arch.rs`)
+- 覆盖 x86、x64、ARM64、ARM64EC、ARM Thumb-2 等 PE 架构；
+- 覆盖 ELF ARM64、RISC-V 64-bit、Mach-O Apple Silicon ARM64、x86-64；
+- 端到端验证 CLI 中英文输出与 JSON 反序列化断言；
+- 累计 28 个测试套件，**133 个测试用例全部通过**。
 
 ---
 
@@ -42,8 +43,8 @@
 
 - **编译构建**：`cargo build` 成功。
 - **代码质量与静态检查**：`cargo clippy --all-targets -- -D warnings` 严格零警告 (0 Errors, 0 Warnings)。
-- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (129/129 PASS)。
-- **Git 仓库状态**：已暂存，准备提交并推送验证 CI。
+- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (133/133 PASS)。
+- **Git 仓库状态**：准备提交并推送验证 CI。
 
 ---
 
@@ -51,5 +52,5 @@
 
 - **阻碍 (Blockers)**：无。
 - **下一步动作**：
-  1. 提交并推送至 `origin/main`，监控 GitHub Actions 确保三大平台全绿；
-  2. 向用户汇报 14 大分卷体系与 282 项扩展名扩充成果。
+  1. 执行原子提交并推送到 GitHub 远程仓库；
+  2. 监控 GitHub Actions 确认全平台 (Ubuntu, macOS, Windows) 全绿。
