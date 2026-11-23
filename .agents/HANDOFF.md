@@ -2,106 +2,66 @@
 
 > **单一真实信源 (Single Source of Truth - SSOT)**  
 > **更新时间**：2026-11-23  
-> **当前版本**：v0.1.0 (格式支持跨越式突破 672 项大关！全量 35 个规则分卷严密收敛于 59~79 行黄金规范，44 大测试套件 179 用例全绿，Clippy 0 警告)  
-> **远端分支**：`origin/main` (前次提交 `59c7e7b` GitHub Actions CI 全绿通过)
+> **当前版本**：v0.1.0 (格式支持跨越式突破 810 项大关！架构解耦升级为模块注册表+静态切片总装表双层体系，全量 46 个规则文件严密收敛于 52~80 行黄金规范，45 大测试套件 183 用例全绿，Clippy 0 警告)  
+> **远端分支**：`origin/main` (前次提交 `3969d90` 672 项格式已推送)
 
 ---
 
 ## 1. [已完成] (Completed)
 
-### 1.1 扩展架构至 34 个垂直分卷与 672 项格式支持
-全新增加 5 个专业领域分卷（深空天文学、超高清视音频裸流、现代地理空间CAD、专业排版字体、实时嵌入式固件镜像），将格式覆盖推向 **672 项**，`src/detectors/rules/generated/mod.rs` 紧凑维持在 72 行黄金规范区间：
-- **深空天文学与轨道动力学分卷** ([`src/detectors/rules/generated/astronomy_and_space.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/astronomy_and_space.rs), 69 行)：
-  1. `spk`: NASA SPICE 行星与航天器星历二进制 (`DAFT/SPK`, `.spk`, `.bsp`)
-  2. `asdf`: 高级科学数据格式 (JWST 韦伯太空望远镜主格式, `#ASDF 1.0.0`, `.asdf`)
-  3. `votable`: IVOA 国际虚拟天文台 XML (`<VOTABLE `, `.vot`, `.votable`)
-  4. `tle`: NORAD 两行轨道要素星历 (`1 25544U 98067A`, `.tle`)
-  5. `oem`: CCSDS 航天器轨道星历报文 (`CCSDS_OEM_VERS = 2.0`, `.oem`)
-  6. `aem`: CCSDS 航天器姿态星历报文 (`CCSDS_AEM_VERS = 1.0`, `.aem`)
-  7. `qso`: ADIF 业余无线电通联日志 (`<ADIF_VER:`, `.adi`)
-  8. `rinex_obs`: 国际 GNSS 卫星导航观测数据 (`OBSERVATION DATA`, `.rnx`)
-  9. `rinex_nav`: 国际 GNSS 卫星导航广播星历 (`NAVIGATION DATA`, `.nav`)
-  10. `sp3`: IGS 精密卫星星历轨道格式 (`#cP`, `.sp3`)
-  11. `sinex`: IGS 空间测地解决方案独立交换格式 (`%=SNX 2.00`, `.snx`)
-  12. `antex`: 卫星天线相位中心标定格式 (`ANTEX`, `.atx`)
-  13. `clk`: IGS 卫星与测站高精度钟差数据 (`CLOCK DATA`, `.clk`)
-- **视音频裸流与软件无线电分卷** ([`src/detectors/rules/generated/video_streams_and_rf.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/video_streams_and_rf.rs), 69 行)：
-  14. `h265`: H.265 / HEVC 视频裸流 (`\x00\x00\x00\x01\x40\x01`, `.h265`, `.hevc`)
-  15. `h264`: H.264 / AVC 视频裸流 (`\x00\x00\x00\x01\x67`, `.h264`, `.264`)
-  16. `vc1`: SMPTE VC-1 高级视频裸流 (`\x00\x00\x01\x0f`, `.vc1`)
-  17. `ac4`: Dolby AC-4 新一代沉浸式音频裸流 (`\xac\x40`, `.ac4`)
-  18. `eac3`: Dolby Digital Plus 增强音频流 (`\x0b\x77`, `.eac3`)
-  19. `truehd`: Dolby TrueHD 无损环绕声音频流 (`\xf8\x72\x6f\xba`, `.thd`)
-  20. `mlp`: Meridian Lossless Packing DVD-Audio 音频流 (`\xf8\x72\x6f\xbb`, `.mlp`)
-  21. `avs`: AVS / AVS+ 中国国家音视频标准裸流 (`\x00\x00\x01\xb0`, `.avs`)
-  22. `avs2`: AVS2 4K 超高清第二代视频标准裸流 (`\x00\x00\x01\xd0`, `.avs2`)
-  23. `sdp`: 会话描述协议文本 (`v=0\r\no=`, `.sdp`)
-  24. `sigmf`: 软件无线电 Signal Metadata 格式 (`{\n  "global": {`, `.sigmf`)
-  25. `cfile`: GNU Radio 32位单精度复数 I/Q 采样 (`\x00\x00\x80\x3f...`, `.cfile`)
-  26. `w64`: Sony Wave64 64位音频容器 (`riff\x2e\x91...`, `.w64`)
-- **现代地理矢量与三维工程模型分卷** ([`src/detectors/rules/generated/geospatial_vector_cad.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/geospatial_vector_cad.rs), 69 行)：
-  27. `gml`: OGC 地理标记语言 (`<gml:FeatureCollection `, `.gml`)
-  28. `pbf`: OpenStreetMap 协议缓冲区二进制 (`\x00...\x0dOSMHeader\x08`, `.pbf`)
-  29. `wor`: MapInfo 矢量制图工作空间脚本 (`!workspace`, `.wor`)
-  30. `apr`: ESRI ArcView 3 经典 GIS 工程文件 (`/3.0\n(ODB.1`, `.apr`)
-  31. `qgs`: QGIS 现代 XML 地理工程文件 (`<qgis `, `.qgs`)
-  32. `dgn`: Bentley MicroStation V7 CAD 矢量文件 (`\x08\x05\x19\x00`, `.dgn`)
-  33. `landxml`: LandXML 土木水利测绘交换数据 (`<LandXML `, `.landxml`)
-  34. `citygml`: CityGML 城市三维多细节层次模型 (`<CityModel `, `.citygml`)
-  35. `cpg`: ESRI Shapefile 字符编码页定义文件 (`UTF-8`, `.cpg`)
-  36. `prj`: ESRI Shapefile 空间坐标参考系投影文本 (`GEOGCS[\"`, `.prj`)
-  37. `e00_cov`: ESRI Arc/Info 拓扑覆盖数据 (`ARC  2`, `.cov`)
-  38. `gxt`: Geotext 矢量地理数据 (`GXT`, `.gxt`)
-  39. `gpx_trk`: 户外 GPS 航迹日志 (`<gpx `, `.trk`)
-- **排版字形与字表设计分卷** ([`src/detectors/rules/generated/fonts_and_typography.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/fonts_and_typography.rs), 69 行)：
-  40. `sfd`: FontForge 字体设计轮廓源码 (`SplineFontDB: `, `.sfd`)
-  41. `vfb`: FontLab Studio 经典字体数据库 (`VFB `, `.vfb`)
-  42. `ufo`: Unified Font Object 字形设计工程 (`<ufo `, `.ufo`)
-  43. `pfm`: PostScript Type 1 打印机字体公制 (`\x00\x01\x00\x00\x00`, `.pfm`)
-  44. `ttx`: AFDKO XML 格式 OpenType 字体转储 (`<ttFont sfntVersion=`, `.ttx`)
-  45. `gf`: TeX Generic Font 通用点阵字形 (`\xf7\x83`, `.gf`)
-  46. `vf`: TeX Virtual Font 虚拟字体定义 (`\xf7\xf6`, `.vf`)
-  47. `spd`: Bitstream Speedo 矢量字形格式 (`Speedo`, `.spd`)
-  48. `ch8`: CHIP-8 虚拟机字形与字节码程序 (`\x12\x00\x00\x00`, `.ch8`)
-  49. `chr`: Borland BGI 矢量字符集字体 (`PK\x08\x08BGI `, `.chr`)
-  50. `pkf`: TeX Packed Font 压缩光栅字体 (`\xf7\x59`, `.pkf`)
-  51. `vpl`: TeX Virtual Property List 虚拟字体属性 (`(VTITLE `, `.vpl`)
-  52. `bgi`: Borland BGI 图形设备驱动与字体包 (`pk\x08\x08BGI `, `.bgi`)
-- **嵌入式与固件镜像分卷** ([`src/detectors/rules/generated/embedded_rtos_images.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/embedded_rtos_images.rs), 69 行)：
-  53. `uf2`: Microsoft USB Flashing Format 固件烧录镜像 (`\x55\x46\x32\x0a\x57\x51\x5d\x9e`, `.uf2`)
-  54. `esp32_img`: 乐鑫 ESP32 / ESP8266 Flash 固件镜像 (`\xe9\x01\x02\x00`, `.esp32`)
-  55. `itb`: U-Boot Flattened Image Tree 现代化 FIT 固件镜像 (`\xd0\x0d\xfe\xed\x00\x00\x01`, `.itb`)
-  56. `qnx_ifs`: QNX IFS 引导映像 (`\xeb\x7e\xff\x00\x01`, `.qnx`)
-  57. `ti_txt`: 德州仪器 MSP430 固件烧录格式 (`@F000\r\n`, `.titxt`)
-  58. `ubifs`: Linux UBIFS 闪存文件系统镜像 (`UBI#`, `.ubi`, `.ubifs`)
-  59. `bcm_trx`: 华硕/博通双重 TRX 固件 (`HDR1`, `.trx2`)
-  60. `dlink_fw`: D-Link 路由器固件镜像 (`SHRS`, `.dlk`)
-  61. `netgear_fw`: Netgear 路由器固件包 (`2.00\x00\x00\x00\x00`, `.chk`)
-  62. `openwrt_trx`: OpenWrt 路由器固件包 (`OWRT`, `.owrt`)
-  63. `jlink_hex`: SEGGER J-Link 固件包 (`SEGGER`, `.jlink`)
-  64. `allwinner_egon`: 全志 Allwinner eGON 启动引导头 (`eGON.BT0`, `.egon`)
-  65. `intel_conf`: Intel 固件描述符区域 (`\x5a\xa5\xf0\x0f`, `.ifd`)
-- **全局扩展名映射表** ([`src/extension/registry.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/extension/registry.rs))：
-  - 严格扩充至 **672 项**，单调递增 ASCII 字典排序，0 重复项。
-- **全套自动化回归测试套件** ([`tests/test_batch_670_multidisciplinary.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/tests/test_batch_670_multidisciplinary.rs))：
-  - 新增专用端到端测试，全面覆盖 5 大垂直分卷核心格式，并验证扩展名双向匹配状态 (`ExtensionStatus::Match`)。
+### 1.1 架构分层解耦与突破 810 项格式里程碑
+为彻底消除行数超标瓶颈并维持 50~80 行铁律，将 `src/detectors/rules/generated/` 演进为“模块注册中心 + 静态规则汇总装配表”的双层架构：
+- [`src/detectors/rules/generated/mod.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/mod.rs) (53 行)：声明全部 44 个领域分卷模块，导出汇总常量，稳定收敛；
+- [`src/detectors/rules/generated/rule_tables.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/rule_tables.rs) (52 行)：统一装配 44 个分卷静态规则数组切片 `GENERATED_RULES`，对外类型 `&[&[SignatureRule]]` 保持零破坏；
+- 全量 46 个实现文件（44 个规则分卷 + 2 个架构文件）行数严格稳定在 **52~80 行**黄金规范区间。
+
+### 1.2 本次新增 11 个跨学科垂直领域分卷（共 143 项新规则）
+1. **工业自动化、PLC与组态协议** ([`industrial_plc_and_scada.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/industrial_plc_and_scada.rs), 70 行)：
+   `s7p` (Siemens Step 7), `pro_codesys` (CoDeSys), `mer` (Rockwell FT Machine Edition), `apa` (Rockwell FT Archive), `cxp` (Omron CX-Programmer), `cxd` (Omron CX-Designer), `mwp` (Siemens S7-200), `eds` (CANopen/CIP EDS), `gsd` (Profibus/Profinet GSD), `xcos` (Scilab Xcos), `s7opt` (Step 7 Options), `smc` (Schneider SoMachine), `pcu` (Sinumerik CNC).
+2. **大型机磁带与经典微机软盘镜像** ([`mainframe_and_legacy_fs.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/mainframe_and_legacy_fs.rs), 70 行)：
+   `het` (Hercules Emulated Tape), `atr` (Atari 8-bit SIO), `crt_c64` (Commodore 64 Cartridge), `xdf` (Sharp X68000 XDF), `dim` (Sharp X68000 DIM), `nfd` (PC-98 T98 FDI), `bkd` (Soviet BK-0010 Disk), `dsk_cpc` (Amstrad CPC DSK), `ipf` (Amiga/Atari CAPS SPS), `stx` (Pasti Atari ST ProCopy), `sad` (SAM Coupe Disk), `cpm_imd` (ImageDisk IMD CP/M/DOS), `hdi` (PC-98 Anex86 HDI).
+3. **高能物理、质谱与光谱分析** ([`physics_and_spectroscopy.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/physics_and_spectroscopy.rs), 70 行)：
+   `root` (CERN ROOT Framework), `mzml` (Proteomics mzML), `mzxml` (Legacy mzXML), `jcamp` (JCAMP-DX Spectroscopy), `shelx` (SHELX Crystallography), `baf` (Bruker Daltonics MS), `mgf` (Mascot Generic MS/MS), `mca` (Canberra MCA Spectrum), `nmredata` (NMR Data Exchange), `nexus` (NeXus Synchrotron/Neutron XML), `orca` (ORCA Quantum Chemistry), `gaussian` (Gaussian 09/16 Input), `gamess` (GAMESS Log).
+4. **专业非编工程、LUT与调色剪辑表** ([`video_editing_and_presets.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/video_editing_and_presets.rs), 70 行)：
+   `cube` (Iridas/Adobe 3D LUT), `look` (SpeedGrade Look), `edl` (CMX 3600 Edit List), `ale` (Avid Log Exchange), `cdl` (ASC Color Decision List), `aep` (Adobe After Effects RIFX Egg!), `c4d` (Cinema 4D), `otio` (OpenTimelineIO), `fcpxml` (Final Cut Pro XML), `fcp` (Final Cut Pro 7 KeyG), `veg` (Sony Vegas Pro vegs), `vpj` (VideoPad vprj), `tvp` (TVPaint Animation).
+5. **气象水文雷达与高精度定位遥感** ([`sensors_and_meteorology.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/sensors_and_meteorology.rs), 70 行)：
+   `bufr` (WMO BUFR), `mcl` (MicroWave Radar MCL1), `nexrad` (NOAA WSR-88D Level II), `iris` (Vaisala Sigmet IRIS), `cinrad` (China New Gen Weather Radar), `e57` (ASTM E57 3D LiDAR), `cwls_las` (CWLS LAS Well Log), `mseed` (IRIS Mini-SEED), `ubx` (u-blox GNSS Binary Protocol), `nmea` (NMEA 0183 GNSS Sentence), `novatel_gps` (NovAtel OEM GNSS), `dorade` (Super-SWEEP Radar), `fpa` (CMC FPA Weather Data).
+6. **电子设计自动化与集成电路版图** ([`eda_and_hardware_layout.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/eda_and_hardware_layout.rs), 70 行)：
+   `gdsii` (Calma GDSII Stream), `oasis` (SEMI P39 OASIS), `vcd_waveform` (IEEE 1364 Verilog VCD), `ghdl_ghw` (GHDL Waveform), `lef` (Cadence LEF), `def_layout` (Cadence DEF), `liberty_timing` (Synopsys Liberty), `gerber_x2` (RS-274X Gerber X2), `excellon_drl` (Excellon Drill), `ipc2581` (IPC-2581 PCB Data), `odb_step` (ODB++ Step), `spef` (IEEE 1481 Parasitic SPEF), `wgl` (Waveform Generation Language).
+7. **神经电生理、核磁共振与生物信号** ([`neuro_imaging_and_signals.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/neuro_imaging_and_signals.rs), 70 行)：
+   `tmsi_poly5` (TMSi Poly5 Biosignals), `bdf_biosemi` (BioSemi 24-bit EEG), `cnt_neuroscan` (Neuroscan Continuous EEG), `brainvision_vhdr` (BrainVision Header), `brainvision_vmrk` (BrainVision Markers), `afni_head` (AFNI Header), `nifti2` (NIfTI-2 Neuroimaging), `freesurfer_surf` (FreeSurfer Triangle Surface), `eeglab_set` (EEGLAB Dataset), `micromed_trc` (Micromed SystemPLUS TRC), `xdf_biosignals` (LabStreamingLayer XDF), `spike2_smr` (CED Spike2 Data), `ni_tdms` (NI LabVIEW TDMS).
+8. **通信协议、无线电采样与总线捕获** ([`telecom_protocols_and_sdr.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/telecom_protocols_and_sdr.rs), 70 行)：
+   `sigmf_meta` (SigMF Metadata JSON), `hdlc_stream` (HDLC Bit Stream Capture), `mpt1327` (MPT1327 Trunked Radio), `dmr_capture` (ETSI DMR Packet Capture), `tetra_capture` (TETRA Packet Capture), `dstar_voice` (D-STAR Digital Voice), `yaesu_fusion` (Yaesu C4FM Stream), `aprs_packet` (APRS Raw TNC Frame), `pcapng` (PCAPNG Enhanced Packet Capture), `btsnoop` (Bluetooth HCI Snoop), `kismet_log` (Kismet Wireless Sniffer), `rfcat_capture` (RFCat Sub-GHz Capture), `gnuradio_grc` (GNU Radio Flowgraph).
+9. **3D游戏引擎资源与场景关卡资产** ([`game_engines_and_virtual_worlds.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/game_engines_and_virtual_worlds.rs), 70 行)：
+   `unity_scene` (Unity 3D YAML Scene), `godot_scene` (Godot Text Scene), `godot_resource` (Godot Text Resource), `unreal_uasset` (Unreal Engine Asset), `unreal_upk` (Unreal Engine 3 Package), `cryengine_chunk` (Crytek CryEngine Chunk), `source_bsp` (Valve Source BSP Map), `source_mdl` (Valve Source 3D Model), `source_vmt` (Valve Material Type), `rockstar_rpf` (Rockstar Games RPF7 Archive), `infinity_ward_ff` (Call of Duty FastFile), `ogre3d_mesh` (OGRE 3D Mesh), `nintendo_yaz0` (Nintendo Yaz0 Compressed Archive).
+10. **安全凭证、数字信封与密码令牌** ([`cryptographic_tokens_and_security.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/cryptographic_tokens_and_security.rs), 70 行)：
+    `pkcs7_pem` (PKCS #7 PEM), `spkac` (Netscape SPKAC), `tss2_key` (TPM2 TSS FAPI Key), `pkcs15_profile` (PKCS #15 Smartcard Profile), `wireguard_conf` (WireGuard Interface Config), `openvpn_conf` (OpenVPN Client Config), `clamav_cvd` (ClamAV Virus Database Container), `tpm2_key` (TCG TPM 2.0 Key), `yubikey_oath` (YubiKey OATH Backup), `age_identity` (Age Secret Key), `bitwarden_export` (Bitwarden Encrypted Vault), `keepassx_xml` (KeePassX XML Database), `android_adb_backup` (Android ADB Backup).
+11. **高级专用编码、归档与地理容器** ([`advanced_codecs_and_containers.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/advanced_codecs_and_containers.rs), 70 行)：
+    `cuneiform_fed` (Cuneiform OCR Project), `nvidia_ptx` (NVIDIA PTX Assembly), `spirv_shader` (Khronos SPIR-V Shader Binary), `dvd_bup` (DVD Backup Navigation IFO), `canon_cr3` (Canon CR3 Raw Image), `panasonic_rw2` (Panasonic RW2 Raw Image), `olympus_orf` (Olympus ORF Raw Image), `geopackage` (OGC GeoPackage SQLite Container), `internet_archive_arc` (Internet Archive ARC Format), `mobipocket` (Mobipocket PalmDOC eBook), `zstd_dict` (Zstandard Compression Dictionary), `cramfs_img` (Linux CramFS ROM File System), `bzip3_archive` (Bzip3 Compressed Archive).
+
+### 1.3 全局扩展名索引与测试套件
+- **全局扩展名索引表** ([`src/extension/registry.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/extension/registry.rs))：
+  - 条目数由 672 项一举跃升至 **811 项**；
+  - 严格保持单调递增 ASCII 字典排序，0 重复项；
+- **全套自动化测试套件** ([`tests/test_batch_800_milestone.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/tests/test_batch_800_milestone.rs))：
+  - 新增专用端到端回归测试，包含工业、物理、遥感、EDA、神经电生理、游戏引擎、加密安全等 4 组 20 个代表性用例全部通过。
 
 ---
 
 ## 2. [当前状态] (Current State)
 
 - **本地测试状态**：
-  - 44 个测试套件，179 个测试用例，**100% 通过 (179/179 PASS)**；
+  - 全套 45 个测试套件，**183 个测试用例全部通过 (183/183 PASS)**；
   - `cargo clippy --all-targets -- -D warnings` **0 警告，0 错误**；
-  - `src/detectors/rules/generated/` 下全量 35 个分卷文件行数严格分布在 **59~79 行**区间（严守 50~80 行铁律）；
+  - `src/detectors/rules/generated/` 下全量 46 个文件行数严格分布在 **52~80 行**区间（100% 严守规范）；
 - **远端 CI 状态**：
-  - 前序提交 `59c7e7b`（604 项）在 GitHub Actions（macOS、Ubuntu、Windows 三端矩阵）成功全部通过。
+  - 前序提交 `3969d90`（672 项）已推送至远程 `origin/main`。
 
 ---
 
-## 3. [待办与阻塞] (Blockers & Next Steps)
+## 3. [待办与下一步] (Next Steps)
 
-- **阻塞项**：无阻塞。
-- **下一步动作**：
-  1. 执行 Git 原子提交并推送至远程仓库（`feat(detectors): expand format coverage to 672 formats across 34 partitions`）；
-  2. 启动【批次 2】冲刺（672 -> 740 项），随后推进【批次 3】达成 800 项总目标！
+1. **原子提交并推送到远端主线**：
+   - 提交信息：`feat(detectors): expand format coverage to 810+ formats across 44 partitions`；
+   - 推送至 `origin/main`，监控 GitHub Actions CI 三端测试通过。
+2. **向用户汇报达成 800+ 格式里程碑**。

@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static PHYSICS_AND_SPECTROSCOPY_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "root", category: "scientific", container_id: None, recommended_ext: "root", accepted_exts: &["root"],
+        patterns: &[MagicPattern::new(0, b"root\x00")], min_header_len: 5, priority: 50,
+        evidence_code: "rule.root.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mzml", category: "scientific", container_id: None, recommended_ext: "mzml", accepted_exts: &["mzml"],
+        patterns: &[MagicPattern::new(0, b"<mzML")], min_header_len: 5, priority: 50,
+        evidence_code: "rule.mzml.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mzxml", category: "scientific", container_id: None, recommended_ext: "mzxml", accepted_exts: &["mzxml"],
+        patterns: &[MagicPattern::new(0, b"<mzXML")], min_header_len: 6, priority: 50,
+        evidence_code: "rule.mzxml.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "jcamp", category: "scientific", container_id: None, recommended_ext: "jdx", accepted_exts: &["jdx", "dx"],
+        patterns: &[MagicPattern::new(0, b"##TITLE=")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.jcamp.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "shelx", category: "scientific", container_id: None, recommended_ext: "res", accepted_exts: &["res", "ins"],
+        patterns: &[MagicPattern::new(0, b"TITL ")], min_header_len: 5, priority: 50,
+        evidence_code: "rule.shelx.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "baf", category: "scientific", container_id: None, recommended_ext: "baf", accepted_exts: &["baf"],
+        patterns: &[MagicPattern::new(0, b"BAF2.0")], min_header_len: 6, priority: 50,
+        evidence_code: "rule.baf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mgf", category: "scientific", container_id: None, recommended_ext: "mgf", accepted_exts: &["mgf"],
+        patterns: &[MagicPattern::new(0, b"BEGIN IONS\n")], min_header_len: 11, priority: 50,
+        evidence_code: "rule.mgf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mca", category: "scientific", container_id: None, recommended_ext: "mca", accepted_exts: &["mca"],
+        patterns: &[MagicPattern::new(0, b"<<PMCA SPECTRUM>>")], min_header_len: 17, priority: 50,
+        evidence_code: "rule.mca.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "nmredata", category: "scientific", container_id: None, recommended_ext: "nmredata", accepted_exts: &["nmredata"],
+        patterns: &[MagicPattern::new(0, b"NMREDATA_VERSION=")], min_header_len: 17, priority: 50,
+        evidence_code: "rule.nmredata.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "nexus", category: "scientific", container_id: None, recommended_ext: "nxs", accepted_exts: &["nxs"],
+        patterns: &[MagicPattern::new(0, b"<NXroot")], min_header_len: 7, priority: 50,
+        evidence_code: "rule.nexus.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "orca", category: "scientific", container_id: None, recommended_ext: "orca", accepted_exts: &["orca", "out"],
+        patterns: &[MagicPattern::new(0, b"* O   R   C   A *")], min_header_len: 19, priority: 50,
+        evidence_code: "rule.orca.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gaussian", category: "scientific", container_id: None, recommended_ext: "gjf", accepted_exts: &["gjf", "com"],
+        patterns: &[MagicPattern::new(0, b"%chk=")], min_header_len: 5, priority: 50,
+        evidence_code: "rule.gaussian.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gamess", category: "scientific", container_id: None, recommended_ext: "gam", accepted_exts: &["gam", "log"],
+        patterns: &[MagicPattern::new(0, b" GAMESS EXECUTION SCRIPT")], min_header_len: 24, priority: 50,
+        evidence_code: "rule.gamess.magic", verification: Verification::Signature, validator: None,
+    },
+];

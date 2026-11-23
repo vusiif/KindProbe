@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static GAME_ENGINES_AND_VIRTUAL_WORLDS_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "unity_scene", category: "model", container_id: None, recommended_ext: "unity", accepted_exts: &["unity"],
+        patterns: &[MagicPattern::new(0, b"%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:")], min_header_len: 43, priority: 50,
+        evidence_code: "rule.unity_scene.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "godot_scene", category: "model", container_id: None, recommended_ext: "tscn", accepted_exts: &["tscn"],
+        patterns: &[MagicPattern::new(0, b"[gd_scene ")], min_header_len: 10, priority: 50,
+        evidence_code: "rule.godot_scene.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "godot_resource", category: "model", container_id: None, recommended_ext: "tres", accepted_exts: &["tres"],
+        patterns: &[MagicPattern::new(0, b"[gd_resource ")], min_header_len: 13, priority: 50,
+        evidence_code: "rule.godot_resource.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "unreal_uasset", category: "archive", container_id: None, recommended_ext: "uasset", accepted_exts: &["uasset"],
+        patterns: &[MagicPattern::new(0, b"\xc1\x83\x2a\x9e")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.unreal_uasset.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "unreal_upk", category: "archive", container_id: None, recommended_ext: "upk", accepted_exts: &["upk"],
+        patterns: &[MagicPattern::new(0, b"\x9e\x2a\x83\xc1")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.unreal_upk.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "cryengine_chunk", category: "model", container_id: None, recommended_ext: "chr", accepted_exts: &["chr"],
+        patterns: &[MagicPattern::new(0, b"CryTek\x00")], min_header_len: 7, priority: 50,
+        evidence_code: "rule.cryengine_chunk.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "source_bsp", category: "game_asset", container_id: None, recommended_ext: "bsp", accepted_exts: &["bsp"],
+        patterns: &[MagicPattern::new(0, b"VBSP")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.source_bsp.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "source_mdl", category: "model", container_id: None, recommended_ext: "mdl", accepted_exts: &["mdl"],
+        patterns: &[MagicPattern::new(0, b"IDST")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.source_mdl.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "source_vmt", category: "material", container_id: None, recommended_ext: "vmt", accepted_exts: &["vmt"],
+        patterns: &[MagicPattern::new(0, b"\"VertexLitGeneric\"")], min_header_len: 19, priority: 50,
+        evidence_code: "rule.source_vmt.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "rockstar_rpf", category: "archive", container_id: None, recommended_ext: "rpf", accepted_exts: &["rpf"],
+        patterns: &[MagicPattern::new(0, b"RPF7")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.rockstar_rpf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "infinity_ward_ff", category: "archive", container_id: None, recommended_ext: "ff", accepted_exts: &["ff"],
+        patterns: &[MagicPattern::new(0, b"IWff0100")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.infinity_ward_ff.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ogre3d_mesh", category: "model", container_id: None, recommended_ext: "mesh", accepted_exts: &["mesh"],
+        patterns: &[MagicPattern::new(0, b"[MeshSerializer_v1.")], min_header_len: 19, priority: 50,
+        evidence_code: "rule.ogre3d_mesh.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "nintendo_yaz0", category: "archive", container_id: None, recommended_ext: "szs", accepted_exts: &["szs", "yaz0"],
+        patterns: &[MagicPattern::new(0, b"Yaz0")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.nintendo_yaz0.magic", verification: Verification::Signature, validator: None,
+    },
+];

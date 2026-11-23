@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static NEURO_IMAGING_AND_SIGNALS_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "tmsi_poly5", category: "scientific", container_id: None, recommended_ext: "poly5", accepted_exts: &["poly5"],
+        patterns: &[MagicPattern::new(0, b"POLY SAMPLE FILE")], min_header_len: 16, priority: 50,
+        evidence_code: "rule.tmsi_poly5.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bdf_biosemi", category: "scientific", container_id: None, recommended_ext: "bdf", accepted_exts: &["bdf"],
+        patterns: &[MagicPattern::new(0, b"\xffBIOSEMI")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.bdf_biosemi.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "cnt_neuroscan", category: "scientific", container_id: None, recommended_ext: "cnt", accepted_exts: &["cnt"],
+        patterns: &[MagicPattern::new(0, b"COMP3.0 ")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.cnt_neuroscan.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "brainvision_vhdr", category: "scientific", container_id: None, recommended_ext: "vhdr", accepted_exts: &["vhdr"],
+        patterns: &[MagicPattern::new(0, b"Brain Vision Data Exchange Header File Version 1.0")], min_header_len: 49, priority: 50,
+        evidence_code: "rule.brainvision_vhdr.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "brainvision_vmrk", category: "scientific", container_id: None, recommended_ext: "vmrk", accepted_exts: &["vmrk"],
+        patterns: &[MagicPattern::new(0, b"Brain Vision Data Exchange Marker File, Version 1.0")], min_header_len: 51, priority: 50,
+        evidence_code: "rule.brainvision_vmrk.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "afni_head", category: "scientific", container_id: None, recommended_ext: "head", accepted_exts: &["head", "HEAD"],
+        patterns: &[MagicPattern::new(0, b"type = string-attribute\nname = IDCODE_STRING")], min_header_len: 44, priority: 50,
+        evidence_code: "rule.afni_head.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "nifti2", category: "scientific", container_id: None, recommended_ext: "nii", accepted_exts: &["nii"],
+        patterns: &[MagicPattern::new(0, b"\x24\x02\x00\x00")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.nifti2.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "freesurfer_surf", category: "scientific", container_id: None, recommended_ext: "surf", accepted_exts: &["surf"],
+        patterns: &[MagicPattern::new(0, b"\xff\xff\xfe")], min_header_len: 3, priority: 50,
+        evidence_code: "rule.freesurfer_surf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "eeglab_set", category: "scientific", container_id: None, recommended_ext: "set", accepted_exts: &["set"],
+        patterns: &[MagicPattern::new(0, b"# EEGLAB dataset")], min_header_len: 16, priority: 50,
+        evidence_code: "rule.eeglab_set.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "micromed_trc", category: "scientific", container_id: None, recommended_ext: "trc", accepted_exts: &["trc"],
+        patterns: &[MagicPattern::new(0, b"*TRCMARK*")], min_header_len: 9, priority: 50,
+        evidence_code: "rule.micromed_trc.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "xdf_biosignals", category: "scientific", container_id: None, recommended_ext: "xdf", accepted_exts: &["xdf"],
+        patterns: &[MagicPattern::new(0, b"XDF:")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.xdf_biosignals.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "spike2_smr", category: "scientific", container_id: None, recommended_ext: "smr", accepted_exts: &["smr"],
+        patterns: &[MagicPattern::new(0, b"CED1401")], min_header_len: 7, priority: 50,
+        evidence_code: "rule.spike2_smr.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ni_tdms", category: "scientific", container_id: None, recommended_ext: "tdms", accepted_exts: &["tdms"],
+        patterns: &[MagicPattern::new(0, b"TDSm")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.ni_tdms.magic", verification: Verification::Signature, validator: None,
+    },
+];

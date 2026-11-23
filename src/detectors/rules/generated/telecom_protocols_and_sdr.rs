@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static TELECOM_PROTOCOLS_AND_SDR_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "sigmf_meta", category: "telecom", container_id: None, recommended_ext: "sigmf-meta", accepted_exts: &["sigmf-meta"],
+        patterns: &[MagicPattern::new(0, b"\"global\": {")], min_header_len: 11, priority: 50,
+        evidence_code: "rule.sigmf_meta.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "hdlc_stream", category: "telecom", container_id: None, recommended_ext: "hdlc", accepted_exts: &["hdlc"],
+        patterns: &[MagicPattern::new(0, b"\x7e\xff\x03")], min_header_len: 3, priority: 50,
+        evidence_code: "rule.hdlc_stream.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mpt1327", category: "telecom", container_id: None, recommended_ext: "mpt", accepted_exts: &["mpt"],
+        patterns: &[MagicPattern::new(0, b"MPT1327")], min_header_len: 7, priority: 50,
+        evidence_code: "rule.mpt1327.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "dmr_capture", category: "telecom", container_id: None, recommended_ext: "dmr", accepted_exts: &["dmr"],
+        patterns: &[MagicPattern::new(0, b"DMR_BURST")], min_header_len: 9, priority: 50,
+        evidence_code: "rule.dmr_capture.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "tetra_capture", category: "telecom", container_id: None, recommended_ext: "tetra", accepted_exts: &["tetra"],
+        patterns: &[MagicPattern::new(0, b"TETRA_BURST")], min_header_len: 11, priority: 50,
+        evidence_code: "rule.tetra_capture.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "dstar_voice", category: "telecom", container_id: None, recommended_ext: "dstar", accepted_exts: &["dstar"],
+        patterns: &[MagicPattern::new(0, b"DSVT")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.dstar_voice.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "yaesu_fusion", category: "telecom", container_id: None, recommended_ext: "ysf", accepted_exts: &["ysf"],
+        patterns: &[MagicPattern::new(0, b"YSF_STREAM")], min_header_len: 10, priority: 50,
+        evidence_code: "rule.yaesu_fusion.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "aprs_packet", category: "telecom", container_id: None, recommended_ext: "aprs", accepted_exts: &["aprs"],
+        patterns: &[MagicPattern::new(0, b"APRS>")], min_header_len: 5, priority: 50,
+        evidence_code: "rule.aprs_packet.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "pcapng", category: "telecom", container_id: None, recommended_ext: "pcapng", accepted_exts: &["pcapng"],
+        patterns: &[MagicPattern::new(0, b"\x0a\x0d\x0d\x0a")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.pcapng.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "btsnoop", category: "telecom", container_id: None, recommended_ext: "btsnoop", accepted_exts: &["btsnoop"],
+        patterns: &[MagicPattern::new(0, b"btsnoop\x00")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.btsnoop.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "kismet_log", category: "telecom", container_id: None, recommended_ext: "kismet", accepted_exts: &["kismet"],
+        patterns: &[MagicPattern::new(0, b"KISMET\n")], min_header_len: 7, priority: 50,
+        evidence_code: "rule.kismet_log.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "rfcat_capture", category: "telecom", container_id: None, recommended_ext: "rfcat", accepted_exts: &["rfcat"],
+        patterns: &[MagicPattern::new(0, b"RFCAT_RAW")], min_header_len: 9, priority: 50,
+        evidence_code: "rule.rfcat_capture.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gnuradio_grc", category: "telecom", container_id: None, recommended_ext: "grc", accepted_exts: &["grc"],
+        patterns: &[MagicPattern::new(0, b"options:\n  parameters:\n    author:")], min_header_len: 34, priority: 50,
+        evidence_code: "rule.gnuradio_grc.magic", verification: Verification::Signature, validator: None,
+    },
+];
