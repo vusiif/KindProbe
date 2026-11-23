@@ -12,7 +12,7 @@ pub static SCIENTIFIC_RULES: &[SignatureRule] = &[
     },
     SignatureRule {
         format_id: "hdf4", category: "scientific", container_id: None,
-        recommended_ext: "hdf", accepted_exts: &["hdf"],
+        recommended_ext: "hdf", accepted_exts: &["hdf", "hdf4", "h4"],
         patterns: &[MagicPattern::new(0, b"\x0e\x03\x13\x01")],
         min_header_len: 4, priority: 50, evidence_code: "rule.hdf4.magic",
         verification: Verification::Signature, validator: None,

@@ -2,36 +2,50 @@
 
 > **单一真实信源 (Single Source of Truth - SSOT)**  
 > **更新时间**：2026-11-23  
-> **当前版本**：v0.1.0 (后缀引导快速探测路径已就绪，乐观命中与对抗透明回退架构，37 大测试套件 163 用例全绿)  
+> **当前版本**：v0.1.0 (格式扩展至 421 项！新增多媒体播放列表 playlists 与嵌入式/通信/高维数据交换 telecom_exchange 两大垂直分卷，38 大测试套件 165 用例全绿)  
 > **远端分支**：`origin/main`
 
 ---
 
 ## 1. [已完成] (Completed)
 
-### 1.1 后缀引导式快速探测 / 乐观命中路径架构 (Fast-Path Probing)
-- **内容真确性优先与零妥协**：后缀仅作为预测线索（Prediction Hint），绝对不无脑信任后缀；必须在真实文件头部成功通过该格式的特征签名或结构验证后才能确认；
-- **核心实现与规范契约** (`src/detectors/fast_path.rs`, 75 行)：严格符合 50~80 行黄金规范；实现 `probe_fast_path`，针对 ZIP 复合族系（OOXML/APK/JAR/EPUB/ODF）、CFB 二进制复合族系（DOC/XLS/PPT/MSI）、PDF、专有二进制格式（图片/归档/媒体/可执行/字体/数据库/虚拟磁盘）与 400 项声明式规则执行 O(1) 快速校验；
-- **对抗样本与伪装透明回退**：若快速校验未通过（如扩展名伪装成 `.png` 的 PE 可执行文件、重命名损坏文件或未知扩展名），自动重置流偏移量并平滑回退至原有的全量探测流程（Full Scan Pipeline），准确诊断出真实类型并给出正确的 `ExtensionStatus::Mismatch`，保证对抗安全性 100%；
-- **API 平滑支持** (`src/budget.rs` & `src/lib.rs`)：在 `DetectOptions` 中无缝引入 `pub extension_hint: Option<String>`；`detect_path` 自动提取路径后缀注入线索，调用方亦可手动指定 hint 进行极速探测。
+### 1.1 扩展新增两大垂直分卷（共 22 个分卷矩阵）
+新增实现文件严格符合 50~80 行黄金规范区间：
+- **流式多媒体播放列表与音轨工作单** ([`src/detectors/rules/generated/playlists.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/playlists.rs), 55 行)：
+  - 支持 M3U / M3U8 播放列表 (`#EXTM3U`, `.m3u`, `.m3u8`)；
+  - 支持 PLS Shoutcast 流媒体播放列表 (`[playlist]`, `.pls`)；
+  - 支持 CUE Sheet 高保真音轨索引工作单 (`FILE "`, `.cue`)；
+  - 支持 WPL Windows Media 播放列表 (`<?wpl`, `.wpl`)；
+  - 支持 XSPF XML 可共享播放列表 (`<playlist version="1"`, `.xspf`)；
+  - 支持 ASX 流式重定向播放列表 (`<asx version=`, `.asx`)；
+  - 支持 B4S Winamp 播放列表 (`Winamp XML`, `.b4s`)。
+- **嵌入式固件、通信与系统交换数据** ([`src/detectors/rules/generated/telecom_exchange.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/telecom_exchange.rs), 55 行)：
+  - 支持 Apple 二进制属性列表 (`bplist00`, `.bplist`)；
+  - 支持 Motorola S-Record 固件全系（S0 头部、S1 16位数据、S3 32位数据，`.srec`, `.s19`, `.s28`, `.s37`）；
+  - 支持 vCard 虚拟名片个人信息交换 (`BEGIN:VCARD`, `.vcf`, `.vcard`)；
+  - 支持 iCalendar 日历与日程交换 (`BEGIN:VCALENDAR`, `.ics`, `.ical`, `.ifb`)；
+  - 支持 LDIF LDAP 目录数据交换 (`version: 1\n`, `.ldif`)；
+  - 完善并强化地球观测科学数据 HDF4 格式接受扩展名 (`.hdf`, `.hdf4`, `.h4`)。
+- **分卷聚合入口更新** ([`src/detectors/rules/generated/mod.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/generated/mod.rs), 73 行)：注册两大新分卷，全局分卷增至 22 个。
 
-### 1.2 规则引擎解耦与单规则快速比对
-- **规则引擎抽取** (`src/detectors/rules/engine.rs` & `src/detectors/rules/mod.rs`)：将单个规则的匹配逻辑抽离为 `evaluate_single_rule`，并暴露 `probe_rule_by_format`，允许按 `target_fid` 瞬间定位对应规则进行单条核验，无需遍历全量分卷。
+### 1.2 全局扩展名索引表突破 421 项 ([`src/extension/registry.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/extension/registry.rs))
+- 扩展名总数由 400 项提升至 **421 项**；
+- 严格按 ASCII 升序字典序单调排列，通过 `test_registry_is_strictly_sorted_without_duplicates` 硬性断言测试。
 
-### 1.3 集成测试与对抗验证 (`tests/test_fast_path_and_mismatch.rs`)
-- 新增 `test_fast_path_and_mismatch.rs` 专项测试套件，全面覆盖真实 fixture 乐观命中、声明式规则命中、对抗性样本回退与 Mismatch 诊断、截断损坏文件与未知扩展名回退；
-- 累计 37 个测试套件，**163 个测试用例全部通过 (163/163 PASS)**；
-- `cargo clippy --all-targets -- -D warnings` 零警告。
+### 1.3 集成测试与全量保障 ([`tests/test_playlists_and_telecom_exchange.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/tests/test_playlists_and_telecom_exchange.rs))
+- 新增专项测试套件 `test_playlists_and_telecom_exchange.rs`，覆盖播放列表族系与固件/系统交换数据的内容探测与扩展名双向诊断；
+- 累计 38 个测试套件，**165 个测试用例全部通过 (165/165 PASS)**；
+- `cargo clippy --all-targets -- -D warnings` 保持 **0 Errors, 0 Warnings**。
 
 ---
 
 ## 2. [当前状态] (Current State)
 
 - **编译构建**：`cargo build` 成功。
-- **代码质量与静态检查**：`cargo clippy --all-targets -- -D warnings` 严格零警告 (0 Errors, 0 Warnings)。
-- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (163/163 PASS)。
-- **规范契约**：新增核心实现 `fast_path.rs` 精准收敛于 75 行，严格处于 50~80 行黄金区间。
-- **Git 仓库状态**：代码与交接文档准备就绪，等待原子提交与推送验证。
+- **静态代码检查**：`cargo clippy --all-targets -- -D warnings` 严格零警告。
+- **测试覆盖率**：全量 38 个套件、165 个测试用例全部通过 (165/165 PASS)。
+- **规范契约**：新增与修改的分卷文件行数严密收敛于 55~76 行黄金区间。
+- **Git 仓库状态**：改动就绪，等待提交与推送。
 
 ---
 
@@ -39,5 +53,5 @@
 
 - **阻碍 (Blockers)**：无。
 - **下一步动作**：
-  1. 执行原子提交并推送到 GitHub 远程仓库；
+  1. 经用户确认后执行 Git 原子提交并推送到 GitHub 远程仓库；
   2. 监控 GitHub Actions 确认三大平台 (Ubuntu, macOS, Windows) CI 全绿。

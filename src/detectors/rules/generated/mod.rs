@@ -13,9 +13,11 @@ pub mod models;
 pub mod multimedia_stream;
 pub mod netpbm;
 pub mod packages;
+pub mod playlists;
 pub mod robotics_firmware;
 pub mod roms;
 pub mod scientific;
+pub mod telecom_exchange;
 pub mod textures;
 pub mod vector_graphics;
 
@@ -34,15 +36,17 @@ pub use models::MODELS_RULES;
 pub use multimedia_stream::MULTIMEDIA_STREAM_RULES;
 pub use netpbm::NETPBM_RULES;
 pub use packages::PACKAGES_RULES;
+pub use playlists::PLAYLISTS_RULES;
 pub use robotics_firmware::ROBOTICS_FIRMWARE_RULES;
 pub use roms::ROMS_RULES;
 pub use scientific::SCIENTIFIC_RULES;
+pub use telecom_exchange::TELECOM_EXCHANGE_RULES;
 pub use textures::TEXTURES_RULES;
 pub use vector_graphics::VECTOR_GRAPHICS_RULES;
 
 use crate::detectors::rules::types::SignatureRule;
 
-/// Combined view of all auto-generated declarative signature rules across 20 partitions.
+/// Combined view of all auto-generated declarative signature rules across 22 partitions.
 pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     ARCHIVES_RULES,
     AUDIO_CHIPS_RULES,
@@ -59,9 +63,11 @@ pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     MULTIMEDIA_STREAM_RULES,
     NETPBM_RULES,
     PACKAGES_RULES,
+    PLAYLISTS_RULES,
     ROBOTICS_FIRMWARE_RULES,
     ROMS_RULES,
     SCIENTIFIC_RULES,
+    TELECOM_EXCHANGE_RULES,
     TEXTURES_RULES,
     VECTOR_GRAPHICS_RULES,
 ];
