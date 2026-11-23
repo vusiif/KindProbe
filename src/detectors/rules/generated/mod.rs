@@ -1,5 +1,6 @@
 pub mod archives;
 pub mod audio_chips;
+pub mod automotive_and_eda;
 pub mod bio_and_creative_design;
 pub mod bytecode;
 pub mod cad_and_gnss;
@@ -29,10 +30,11 @@ pub mod vector_graphics;
 
 use crate::detectors::rules::types::SignatureRule;
 
-/// Combined view of all auto-generated declarative signature rules across 28 partitions.
+/// Combined view of all auto-generated declarative signature rules across 29 partitions.
 pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     archives::ARCHIVES_RULES,
     audio_chips::AUDIO_CHIPS_RULES,
+    automotive_and_eda::AUTOMOTIVE_AND_EDA_RULES,
     bio_and_creative_design::BIO_AND_CREATIVE_DESIGN_RULES,
     bytecode::BYTECODE_RULES,
     cad_and_gnss::CAD_AND_GNSS_RULES,
