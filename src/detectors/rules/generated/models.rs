@@ -18,11 +18,9 @@ pub static MODELS_RULES: &[SignatureRule] = &[
         min_header_len: 20, priority: 50, evidence_code: "rule.fbx.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "3ds", category: "model", container_id: None,
-        recommended_ext: "3ds", accepted_exts: &["3ds"],
+        format_id: "3ds", category: "model", container_id: None, recommended_ext: "3ds", accepted_exts: &["3ds"],
         patterns: &[MagicPattern::new(0, b"MM\x02\x00")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.3ds.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.3ds.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "ply", category: "model", container_id: None,
@@ -73,5 +71,10 @@ pub static MODELS_RULES: &[SignatureRule] = &[
         format_id: "ply", category: "model", container_id: None, recommended_ext: "ply",
         accepted_exts: &["ply"], patterns: &[MagicPattern::new(0, b"ply\n")],
         min_header_len: 4, priority: 50, evidence_code: "rule.ply.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "3ds", category: "model", container_id: None, recommended_ext: "3ds",
+        accepted_exts: &["3ds"], patterns: &[MagicPattern::new(0, b"\x4d\x4d")],
+        min_header_len: 2, priority: 50, evidence_code: "rule.3ds.magic", verification: Verification::Signature, validator: None,
     },
 ];

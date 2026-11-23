@@ -29,18 +29,14 @@ pub static DISK_IMAGES_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.nrg.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "daa", category: "disk", container_id: None,
-        recommended_ext: "daa", accepted_exts: &["daa"],
+        format_id: "daa", category: "disk", container_id: None, recommended_ext: "daa", accepted_exts: &["daa"],
         patterns: &[MagicPattern::new(0, b"DAA\x00")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.daa.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.daa.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "ecm", category: "disk", container_id: None,
-        recommended_ext: "ecm", accepted_exts: &["ecm"],
+        format_id: "ecm", category: "disk", container_id: None, recommended_ext: "ecm", accepted_exts: &["ecm"],
         patterns: &[MagicPattern::new(0, b"ECM\x00")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.ecm.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.ecm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "qcow", category: "disk", container_id: None,
@@ -74,5 +70,10 @@ pub static DISK_IMAGES_RULES: &[SignatureRule] = &[
         format_id: "isz", category: "disk", container_id: None, recommended_ext: "isz",
         accepted_exts: &["isz"], patterns: &[MagicPattern::new(0, b"IsZ\x01")],
         min_header_len: 4, priority: 50, evidence_code: "rule.isz.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "cso", category: "disk", container_id: None, recommended_ext: "cso",
+        accepted_exts: &["cso"], patterns: &[MagicPattern::new(0, b"CISO")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.cso.magic", verification: Verification::Signature, validator: None,
     },
 ];

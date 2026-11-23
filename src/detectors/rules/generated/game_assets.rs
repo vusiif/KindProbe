@@ -18,11 +18,9 @@ pub static GAME_ASSETS_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.pak.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "pck", category: "archive", container_id: None,
-        recommended_ext: "pck", accepted_exts: &["pck"],
+        format_id: "pck", category: "archive", container_id: None, recommended_ext: "pck", accepted_exts: &["pck"],
         patterns: &[MagicPattern::new(0, b"GDPC")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.pck.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.pck.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "unity3d", category: "archive", container_id: None,
@@ -73,5 +71,10 @@ pub static GAME_ASSETS_RULES: &[SignatureRule] = &[
         format_id: "uasset", category: "game", container_id: None, recommended_ext: "uasset",
         accepted_exts: &["uasset", "umap"], patterns: &[MagicPattern::new(0, b"\xc1\x83\x2a\x9e")],
         min_header_len: 4, priority: 50, evidence_code: "rule.uasset.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bsp", category: "game", container_id: None, recommended_ext: "bsp",
+        accepted_exts: &["bsp"], patterns: &[MagicPattern::new(0, b"IBSP")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.bsp.magic", verification: Verification::Signature, validator: None,
     },
 ];

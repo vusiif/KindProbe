@@ -19,18 +19,14 @@ pub static PACKAGES_RULES: &[SignatureRule] = &[
         min_header_len: 5, priority: 50, evidence_code: "rule.lha.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "ace", category: "archive", container_id: None,
-        recommended_ext: "ace", accepted_exts: &["ace"],
+        format_id: "ace", category: "archive", container_id: None, recommended_ext: "ace", accepted_exts: &["ace"],
         patterns: &[MagicPattern::new(7, b"**ACE**")],
-        min_header_len: 14, priority: 50, evidence_code: "rule.ace.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 14, priority: 50, evidence_code: "rule.ace.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "zpaq", category: "archive", container_id: None,
-        recommended_ext: "zpaq", accepted_exts: &["zpaq"],
+        format_id: "zpaq", category: "archive", container_id: None, recommended_ext: "zpaq", accepted_exts: &["zpaq"],
         patterns: &[MagicPattern::new(0, b"zPAQ")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.zpaq.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.zpaq.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "arc", category: "archive", container_id: None,
@@ -74,5 +70,10 @@ pub static PACKAGES_RULES: &[SignatureRule] = &[
         format_id: "har", category: "web", container_id: None, recommended_ext: "har",
         accepted_exts: &["har"], patterns: &[MagicPattern::new(0, b"{\"log\":")],
         min_header_len: 7, priority: 50, evidence_code: "rule.har.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "manifest", category: "package", container_id: None, recommended_ext: "manifest",
+        accepted_exts: &["manifest", "mf"], patterns: &[MagicPattern::new(0, b"Manifest-Version: 1.0")],
+        min_header_len: 21, priority: 50, evidence_code: "rule.manifest.magic", verification: Verification::Signature, validator: None,
     },
 ];

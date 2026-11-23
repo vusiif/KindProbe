@@ -29,18 +29,14 @@ pub static BYTECODE_RULES: &[SignatureRule] = &[
         min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "dex", category: "executable", container_id: None,
-        recommended_ext: "dex", accepted_exts: &["dex"],
+        format_id: "dex", category: "executable", container_id: None, recommended_ext: "dex", accepted_exts: &["dex"],
         patterns: &[MagicPattern::new(0, b"dex\n039\x00")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "luac", category: "executable", container_id: None,
-        recommended_ext: "luac", accepted_exts: &["luac", "lua"],
+        format_id: "luac", category: "executable", container_id: None, recommended_ext: "luac", accepted_exts: &["luac", "lua"],
         patterns: &[MagicPattern::new(0, b"\x1bLua")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.luac.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.luac.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "ar", category: "archive", container_id: None,
@@ -74,5 +70,10 @@ pub static BYTECODE_RULES: &[SignatureRule] = &[
         format_id: "bc", category: "bytecode", container_id: None, recommended_ext: "bc",
         accepted_exts: &["bc"], patterns: &[MagicPattern::new(0, b"BC\xc0\xde")],
         min_header_len: 4, priority: 50, evidence_code: "rule.bc.llvm", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "jmod", category: "bytecode", container_id: None, recommended_ext: "jmod",
+        accepted_exts: &["jmod"], patterns: &[MagicPattern::new(0, b"JM\x01\x00")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.jmod.magic", verification: Verification::Signature, validator: None,
     },
 ];

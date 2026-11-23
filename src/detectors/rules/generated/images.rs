@@ -19,18 +19,14 @@ pub static IMAGES_RULES: &[SignatureRule] = &[
         min_header_len: 9, priority: 50, evidence_code: "rule.fits.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "icns", category: "image", container_id: None,
-        recommended_ext: "icns", accepted_exts: &["icns"],
+        format_id: "icns", category: "image", container_id: None, recommended_ext: "icns", accepted_exts: &["icns"],
         patterns: &[MagicPattern::new(0, b"icns")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.icns.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.icns.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "jp2", category: "image", container_id: None,
-        recommended_ext: "jp2", accepted_exts: &["jp2"],
+        format_id: "jp2", category: "image", container_id: None, recommended_ext: "jp2", accepted_exts: &["jp2"],
         patterns: &[MagicPattern::new(0, b"\x00\x00\x00\x0cjP  \x0d\x0a\x87\x0a")],
-        min_header_len: 12, priority: 50, evidence_code: "rule.jp2.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 12, priority: 50, evidence_code: "rule.jp2.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "bpg", category: "image", container_id: None,
@@ -74,5 +70,10 @@ pub static IMAGES_RULES: &[SignatureRule] = &[
         format_id: "qoi", category: "image", container_id: None, recommended_ext: "qoi",
         accepted_exts: &["qoi"], patterns: &[MagicPattern::new(0, b"qoif")],
         min_header_len: 4, priority: 50, evidence_code: "rule.qoi.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bpg", category: "image", container_id: None, recommended_ext: "bpg",
+        accepted_exts: &["bpg"], patterns: &[MagicPattern::new(0, b"BPG\xfb")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.bpg.magic", verification: Verification::Signature, validator: None,
     },
 ];

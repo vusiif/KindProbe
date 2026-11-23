@@ -19,18 +19,14 @@ pub static TELECOM_EXCHANGE_RULES: &[SignatureRule] = &[
         min_header_len: 8, priority: 50, evidence_code: "rule.srec.data16", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "srec", category: "firmware", container_id: None,
-        recommended_ext: "srec", accepted_exts: &["srec", "s19", "s28", "s37"],
+        format_id: "srec", category: "firmware", container_id: None, recommended_ext: "srec", accepted_exts: &["srec", "s19", "s28", "s37"],
         patterns: &[MagicPattern::new(0, b"S3")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.srec.data32",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.srec.data32", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "vcf", category: "contact", container_id: None,
-        recommended_ext: "vcf", accepted_exts: &["vcf", "vcard"],
+        format_id: "vcf", category: "contact", container_id: None, recommended_ext: "vcf", accepted_exts: &["vcf", "vcard"],
         patterns: &[MagicPattern::new(0, b"BEGIN:VCARD")],
-        min_header_len: 11, priority: 50, evidence_code: "rule.vcf.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 11, priority: 50, evidence_code: "rule.vcf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "ics", category: "calendar", container_id: None, recommended_ext: "ics", accepted_exts: &["ics", "ical", "ifb"],
@@ -74,5 +70,10 @@ pub static TELECOM_EXCHANGE_RULES: &[SignatureRule] = &[
         format_id: "ofx", category: "exchange", container_id: None, recommended_ext: "ofx",
         accepted_exts: &["ofx", "qfx"], patterns: &[MagicPattern::new(0, b"OFXHEADER")],
         min_header_len: 9, priority: 50, evidence_code: "rule.ofx.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mhtml", category: "exchange", container_id: None, recommended_ext: "mhtml",
+        accepted_exts: &["mhtml", "mht"], patterns: &[MagicPattern::new(0, b"From: <Saved by")],
+        min_header_len: 15, priority: 50, evidence_code: "rule.mhtml.magic", verification: Verification::Signature, validator: None,
     },
 ];

@@ -19,18 +19,14 @@ pub static FONTS_RULES: &[SignatureRule] = &[
         min_header_len: 16, priority: 50, evidence_code: "rule.afm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "pfb", category: "font", container_id: None,
-        recommended_ext: "pfb", accepted_exts: &["pfb"],
+        format_id: "pfb", category: "font", container_id: None, recommended_ext: "pfb", accepted_exts: &["pfb"],
         patterns: &[MagicPattern::new(0, b"\x80\x01")],
-        min_header_len: 2, priority: 50, evidence_code: "rule.pfb.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 2, priority: 50, evidence_code: "rule.pfb.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "eot", category: "font", container_id: None,
-        recommended_ext: "eot", accepted_exts: &["eot"],
+        format_id: "eot", category: "font", container_id: None, recommended_ext: "eot", accepted_exts: &["eot"],
         patterns: &[MagicPattern::new(8, b"LP")],
-        min_header_len: 10, priority: 50, evidence_code: "rule.eot.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 10, priority: 50, evidence_code: "rule.eot.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "cff", category: "font", container_id: None,
@@ -74,5 +70,10 @@ pub static FONTS_RULES: &[SignatureRule] = &[
         format_id: "bdf", category: "font", container_id: None, recommended_ext: "bdf",
         accepted_exts: &["bdf"], patterns: &[MagicPattern::new(0, b"STARTFONT ")],
         min_header_len: 10, priority: 50, evidence_code: "rule.bdf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "pcf", category: "font", container_id: None, recommended_ext: "pcf",
+        accepted_exts: &["pcf"], patterns: &[MagicPattern::new(0, b"\x01fcp")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.pcf.magic", verification: Verification::Signature, validator: None,
     },
 ];

@@ -18,11 +18,9 @@ pub static VECTOR_GRAPHICS_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.qoi.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "jxl", category: "image", container_id: None,
-        recommended_ext: "jxl", accepted_exts: &["jxl"],
+        format_id: "jxl", category: "image", container_id: None, recommended_ext: "jxl", accepted_exts: &["jxl"],
         patterns: &[MagicPattern::new(0, b"\xff\x0a")],
-        min_header_len: 2, priority: 50, evidence_code: "rule.jxl.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 2, priority: 50, evidence_code: "rule.jxl.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "jxl", category: "image", container_id: None,
@@ -73,5 +71,10 @@ pub static VECTOR_GRAPHICS_RULES: &[SignatureRule] = &[
         format_id: "sld", category: "image", container_id: None, recommended_ext: "sld",
         accepted_exts: &["sld"], patterns: &[MagicPattern::new(0, b"AutoCAD Slide\r\n\x1a\x00")],
         min_header_len: 17, priority: 50, evidence_code: "rule.sld.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "iges", category: "cad", container_id: None, recommended_ext: "iges",
+        accepted_exts: &["iges", "igs"], patterns: &[MagicPattern::new(72, b"S      1")],
+        min_header_len: 80, priority: 50, evidence_code: "rule.iges.magic", verification: Verification::Signature, validator: None,
     },
 ];

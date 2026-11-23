@@ -19,18 +19,14 @@ pub static ROMS_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.n64.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "v64", category: "rom", container_id: None,
-        recommended_ext: "v64", accepted_exts: &["v64"],
+        format_id: "v64", category: "rom", container_id: None, recommended_ext: "v64", accepted_exts: &["v64"],
         patterns: &[MagicPattern::new(0, b"7\x80@\x12")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.v64.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.v64.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "gba", category: "rom", container_id: None,
-        recommended_ext: "gba", accepted_exts: &["gba"],
+        format_id: "gba", category: "rom", container_id: None, recommended_ext: "gba", accepted_exts: &["gba"],
         patterns: &[MagicPattern::new(4, b"$\xff\xaeQ")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.gba.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.gba.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "gb", category: "rom", container_id: None,
@@ -74,5 +70,10 @@ pub static ROMS_RULES: &[SignatureRule] = &[
         format_id: "ips", category: "rom", container_id: None, recommended_ext: "ips",
         accepted_exts: &["ips"], patterns: &[MagicPattern::new(0, b"PATCH")],
         min_header_len: 5, priority: 50, evidence_code: "rule.ips.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gba", category: "rom", container_id: None, recommended_ext: "gba",
+        accepted_exts: &["gba"], patterns: &[MagicPattern::new(4, b"\x24\xff\xae\x51")],
+        min_header_len: 8, priority: 50, evidence_code: "rule.gba.magic", verification: Verification::Signature, validator: None,
     },
 ];

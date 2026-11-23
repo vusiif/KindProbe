@@ -18,11 +18,9 @@ pub static ROBOTICS_FIRMWARE_RULES: &[SignatureRule] = &[
         min_header_len: 8, priority: 50, evidence_code: "rule.pcd.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "dtb", category: "system", container_id: None,
-        recommended_ext: "dtb", accepted_exts: &["dtb", "dtbo"],
+        format_id: "dtb", category: "system", container_id: None, recommended_ext: "dtb", accepted_exts: &["dtb", "dtbo"],
         patterns: &[MagicPattern::new(0, b"\xd0\x0d\xfe\xed")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.dtb.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.dtb.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "uimage", category: "system", container_id: None,
@@ -73,5 +71,10 @@ pub static ROBOTICS_FIRMWARE_RULES: &[SignatureRule] = &[
         format_id: "urdf", category: "robotics", container_id: None, recommended_ext: "urdf",
         accepted_exts: &["urdf"], patterns: &[MagicPattern::new(0, b"<robot")],
         min_header_len: 6, priority: 50, evidence_code: "rule.urdf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sdf", category: "robotics", container_id: None, recommended_ext: "sdf",
+        accepted_exts: &["sdf"], patterns: &[MagicPattern::new(0, b"<sdf ")],
+        min_header_len: 5, priority: 50, evidence_code: "rule.sdf.magic", verification: Verification::Signature, validator: None,
     },
 ];

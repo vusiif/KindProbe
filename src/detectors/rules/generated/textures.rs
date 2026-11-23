@@ -18,11 +18,9 @@ pub static TEXTURES_RULES: &[SignatureRule] = &[
         min_header_len: 12, priority: 50, evidence_code: "rule.ktx2.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "astc", category: "image", container_id: None,
-        recommended_ext: "astc", accepted_exts: &["astc"],
+        format_id: "astc", category: "image", container_id: None, recommended_ext: "astc", accepted_exts: &["astc"],
         patterns: &[MagicPattern::new(0, b"\x13\xab\xa1\x5c")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.astc.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.astc.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "pvr", category: "image", container_id: None,
@@ -73,5 +71,10 @@ pub static TEXTURES_RULES: &[SignatureRule] = &[
         format_id: "basis", category: "texture", container_id: None, recommended_ext: "basis",
         accepted_exts: &["basis"], patterns: &[MagicPattern::new(0, b"sB\x01\x00")],
         min_header_len: 4, priority: 50, evidence_code: "rule.basis.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "crn", category: "texture", container_id: None, recommended_ext: "crn",
+        accepted_exts: &["crn"], patterns: &[MagicPattern::new(0, b"Cr")],
+        min_header_len: 2, priority: 50, evidence_code: "rule.crn.magic", verification: Verification::Signature, validator: None,
     },
 ];

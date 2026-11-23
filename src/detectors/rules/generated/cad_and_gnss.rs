@@ -19,18 +19,14 @@ pub static CAD_AND_GNSS_RULES: &[SignatureRule] = &[
         min_header_len: 7, priority: 50, evidence_code: "rule.wat.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "nmea", category: "navigation", container_id: None,
-        recommended_ext: "nmea", accepted_exts: &["nmea", "gps"],
+        format_id: "nmea", category: "navigation", container_id: None, recommended_ext: "nmea", accepted_exts: &["nmea", "gps"],
         patterns: &[MagicPattern::new(0, b"$GP")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.nmea.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.nmea.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "bib", category: "text", container_id: None,
-        recommended_ext: "bib", accepted_exts: &["bib"],
+        format_id: "bib", category: "text", container_id: None, recommended_ext: "bib", accepted_exts: &["bib"],
         patterns: &[MagicPattern::new(0, b"@article{")],
-        min_header_len: 9, priority: 50, evidence_code: "rule.bib.article",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 9, priority: 50, evidence_code: "rule.bib.article", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "bib", category: "text", container_id: None,
@@ -74,5 +70,10 @@ pub static CAD_AND_GNSS_RULES: &[SignatureRule] = &[
         format_id: "kml", category: "geospatial", container_id: None, recommended_ext: "kml",
         accepted_exts: &["kml"], patterns: &[MagicPattern::new(0, b"<kml")],
         min_header_len: 4, priority: 50, evidence_code: "rule.kml.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mif", category: "geospatial", container_id: None, recommended_ext: "mif",
+        accepted_exts: &["mif"], patterns: &[MagicPattern::new(0, b"Version ")],
+        min_header_len: 8, priority: 50, evidence_code: "rule.mif.magic", verification: Verification::Signature, validator: None,
     },
 ];

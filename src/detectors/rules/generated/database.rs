@@ -18,11 +18,9 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         min_header_len: 8, priority: 50, evidence_code: "rule.kdb.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "realm", category: "database", container_id: None,
-        recommended_ext: "realm", accepted_exts: &["realm"],
+        format_id: "realm", category: "database", container_id: None, recommended_ext: "realm", accepted_exts: &["realm"],
         patterns: &[MagicPattern::new(0, b"T-D-B!")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.realm.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 6, priority: 50, evidence_code: "rule.realm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "las", category: "scientific", container_id: None,
@@ -73,5 +71,10 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         format_id: "orc", category: "database", container_id: None, recommended_ext: "orc",
         accepted_exts: &["orc"], patterns: &[MagicPattern::new(0, b"ORC")],
         min_header_len: 3, priority: 50, evidence_code: "rule.orc.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sstable", category: "database", container_id: None, recommended_ext: "sst",
+        accepted_exts: &["sst"], patterns: &[MagicPattern::new(0, b"SST1")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.sst.magic", verification: Verification::Signature, validator: None,
     },
 ];

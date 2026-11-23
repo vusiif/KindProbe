@@ -29,18 +29,14 @@ pub static PLAYLISTS_RULES: &[SignatureRule] = &[
         min_header_len: 20, priority: 50, evidence_code: "rule.xspf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "asx", category: "multimedia", container_id: None,
-        recommended_ext: "asx", accepted_exts: &["asx", "wax", "wvx"],
+        format_id: "asx", category: "multimedia", container_id: None, recommended_ext: "asx", accepted_exts: &["asx", "wax", "wvx"],
         patterns: &[MagicPattern::new(0, b"<asx version=")],
-        min_header_len: 13, priority: 50, evidence_code: "rule.asx.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 13, priority: 50, evidence_code: "rule.asx.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "asx", category: "multimedia", container_id: None,
-        recommended_ext: "asx", accepted_exts: &["asx", "wax", "wvx"],
+        format_id: "asx", category: "multimedia", container_id: None, recommended_ext: "asx", accepted_exts: &["asx", "wax", "wvx"],
         patterns: &[MagicPattern::new(0, b"<ASX")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.asx.upper",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.asx.upper", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "b4s", category: "multimedia", container_id: None,
@@ -74,5 +70,10 @@ pub static PLAYLISTS_RULES: &[SignatureRule] = &[
         format_id: "smil", category: "multimedia", container_id: None, recommended_ext: "smil",
         accepted_exts: &["smil", "smi"], patterns: &[MagicPattern::new(0, b"<smil")],
         min_header_len: 5, priority: 50, evidence_code: "rule.smil.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ram", category: "multimedia", container_id: None, recommended_ext: "ram",
+        accepted_exts: &["ram"], patterns: &[MagicPattern::new(0, b"rtsp://")],
+        min_header_len: 7, priority: 50, evidence_code: "rule.ram.magic", verification: Verification::Signature, validator: None,
     },
 ];

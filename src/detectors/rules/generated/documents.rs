@@ -18,11 +18,9 @@ pub static DOCUMENTS_RULES: &[SignatureRule] = &[
         min_header_len: 5, priority: 50, evidence_code: "rule.rtf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "dwg", category: "document", container_id: None,
-        recommended_ext: "dwg", accepted_exts: &["dwg"],
+        format_id: "dwg", category: "document", container_id: None, recommended_ext: "dwg", accepted_exts: &["dwg"],
         patterns: &[MagicPattern::new(0, b"AC10")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.dwg.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.dwg.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "dxf_bin", category: "document", container_id: None,
@@ -73,5 +71,10 @@ pub static DOCUMENTS_RULES: &[SignatureRule] = &[
         format_id: "warc", category: "document", container_id: None, recommended_ext: "warc",
         accepted_exts: &["warc"], patterns: &[MagicPattern::new(0, b"WARC/1.")],
         min_header_len: 7, priority: 50, evidence_code: "rule.warc.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "winhelp", category: "document", container_id: None, recommended_ext: "hlp",
+        accepted_exts: &["hlp"], patterns: &[MagicPattern::new(0, b"?_\x00\x00")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.hlp.magic", verification: Verification::Signature, validator: None,
     },
 ];

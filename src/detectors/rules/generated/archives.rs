@@ -18,11 +18,9 @@ pub static ARCHIVES_RULES: &[SignatureRule] = &[
         min_header_len: 2, priority: 50, evidence_code: "rule.arj.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "zoo", category: "archive", container_id: None,
-        recommended_ext: "zoo", accepted_exts: &["zoo"],
+        format_id: "zoo", category: "archive", container_id: None, recommended_ext: "zoo", accepted_exts: &["zoo"],
         patterns: &[MagicPattern::new(20, b"\xdc\xa7\xc4\xfd")],
-        min_header_len: 24, priority: 50, evidence_code: "rule.zoo.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 24, priority: 50, evidence_code: "rule.zoo.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "cab", category: "archive", container_id: None,
@@ -73,5 +71,10 @@ pub static ARCHIVES_RULES: &[SignatureRule] = &[
         format_id: "squashfs", category: "archive", container_id: None, recommended_ext: "sqsh",
         accepted_exts: &["sqsh", "squashfs"], patterns: &[MagicPattern::new(0, b"hsqs")],
         min_header_len: 4, priority: 50, evidence_code: "rule.squashfs.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "dar", category: "archive", container_id: None, recommended_ext: "dar",
+        accepted_exts: &["dar"], patterns: &[MagicPattern::new(0, b"\x00\x00\x00\x7b")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.dar.magic", verification: Verification::Signature, validator: None,
     },
 ];

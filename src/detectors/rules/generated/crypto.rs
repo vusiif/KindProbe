@@ -19,18 +19,19 @@ pub static CRYPTO_RULES: &[SignatureRule] = &[
         min_header_len: 15, priority: 50, evidence_code: "rule.pgp.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "sshkey", category: "security", container_id: None,
-        recommended_ext: "key", accepted_exts: &["key", "priv"],
+        format_id: "sshkey", category: "security", container_id: None, recommended_ext: "key", accepted_exts: &["key", "priv"],
         patterns: &[MagicPattern::new(0, b"-----BEGIN OPENSSH PRIVATE KEY-----")],
-        min_header_len: 35, priority: 50, evidence_code: "rule.sshkey.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 35, priority: 50, evidence_code: "rule.sshkey.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "csr", category: "security", container_id: None,
-        recommended_ext: "csr", accepted_exts: &["csr"],
+        format_id: "csr", category: "security", container_id: None, recommended_ext: "csr", accepted_exts: &["csr"],
         patterns: &[MagicPattern::new(0, b"-----BEGIN CERTIFICATE REQUEST-----")],
-        min_header_len: 36, priority: 50, evidence_code: "rule.csr.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 36, priority: 50, evidence_code: "rule.csr.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "crl", category: "security", container_id: None, recommended_ext: "crl", accepted_exts: &["crl"],
+        patterns: &[MagicPattern::new(0, b"-----BEGIN X509 CRL-----")],
+        min_header_len: 24, priority: 50, evidence_code: "rule.crl.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "pem", category: "security", container_id: None,

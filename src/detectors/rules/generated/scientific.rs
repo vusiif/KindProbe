@@ -19,18 +19,14 @@ pub static SCIENTIFIC_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.netcdf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "shp", category: "scientific", container_id: None,
-        recommended_ext: "shp", accepted_exts: &["shp", "shx"],
+        format_id: "shp", category: "scientific", container_id: None, recommended_ext: "shp", accepted_exts: &["shp", "shx"],
         patterns: &[MagicPattern::new(0, b"\x00\x00'\x0a")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.shp.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.shp.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "grib", category: "scientific", container_id: None,
-        recommended_ext: "grb", accepted_exts: &["grb", "grb1", "grb2"],
+        format_id: "grib", category: "scientific", container_id: None, recommended_ext: "grb", accepted_exts: &["grb", "grb1", "grb2"],
         patterns: &[MagicPattern::new(0, b"GRIB")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.grib.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.grib.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "mat5", category: "scientific", container_id: None,
@@ -74,5 +70,10 @@ pub static SCIENTIFIC_RULES: &[SignatureRule] = &[
         format_id: "abf", category: "scientific", container_id: None, recommended_ext: "abf",
         accepted_exts: &["abf"], patterns: &[MagicPattern::new(0, b"ABF ")],
         min_header_len: 4, priority: 50, evidence_code: "rule.abf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "segy", category: "scientific", container_id: None, recommended_ext: "sgy",
+        accepted_exts: &["sgy", "segy"], patterns: &[MagicPattern::new(0, b"C 1 ")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.segy.magic", verification: Verification::Signature, validator: None,
     },
 ];

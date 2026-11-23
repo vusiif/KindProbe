@@ -19,18 +19,14 @@ pub static MEDIA_RULES: &[SignatureRule] = &[
         min_header_len: 2, priority: 50, evidence_code: "rule.ac3.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "au", category: "audio", container_id: None,
-        recommended_ext: "au", accepted_exts: &["au", "snd"],
+        format_id: "au", category: "audio", container_id: None, recommended_ext: "au", accepted_exts: &["au", "snd"],
         patterns: &[MagicPattern::new(0, b".snd")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.au.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.au.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "caf", category: "audio", container_id: None,
-        recommended_ext: "caf", accepted_exts: &["caf"],
+        format_id: "caf", category: "audio", container_id: None, recommended_ext: "caf", accepted_exts: &["caf"],
         patterns: &[MagicPattern::new(0, b"caff")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.caf.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.caf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "drc", category: "video", container_id: None,
@@ -74,5 +70,10 @@ pub static MEDIA_RULES: &[SignatureRule] = &[
         format_id: "ac3", category: "audio", container_id: None, recommended_ext: "ac3",
         accepted_exts: &["ac3"], patterns: &[MagicPattern::new(0, b"\x0b\x77")],
         min_header_len: 2, priority: 50, evidence_code: "rule.ac3.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "tta", category: "audio", container_id: None, recommended_ext: "tta",
+        accepted_exts: &["tta"], patterns: &[MagicPattern::new(0, b"TTA1")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.tta.magic", verification: Verification::Signature, validator: None,
     },
 ];

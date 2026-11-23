@@ -185,3 +185,181 @@ fn test_detect_batch_500_engineering_and_protocols() {
     assert_eq!(rep_sld.category, "image");
     assert_eq!(compare_extension(&rep_sld, Some(OsStr::new("sld"))), ExtensionStatus::Match);
 }
+
+#[test]
+fn test_detect_batch_535_multidisciplinary_formats() {
+    let opts = DetectOptions::default();
+
+    // 1. Disk ARchive (dar)
+    let dar_data = b"\x00\x00\x00\x7b\x00\x00\x00\x00";
+    let rep_dar = detect_bytes(dar_data, &opts).expect("detect dar");
+    assert_eq!(rep_dar.format_id.as_deref(), Some("dar"));
+    assert_eq!(rep_dar.category, "archive");
+    assert_eq!(compare_extension(&rep_dar, Some(OsStr::new("dar"))), ExtensionStatus::Match);
+
+    // 2. Game Boy Sound System (gbs)
+    let gbs_data = b"GBS\x01\x01\x01\x00";
+    let rep_gbs = detect_bytes(gbs_data, &opts).expect("detect gbs");
+    assert_eq!(rep_gbs.format_id.as_deref(), Some("gbs"));
+    assert_eq!(rep_gbs.category, "audio");
+    assert_eq!(compare_extension(&rep_gbs, Some(OsStr::new("gbs"))), ExtensionStatus::Match);
+
+    // 3. Java 9+ Module Archive (jmod)
+    let jmod_data = b"JM\x01\x00\x00\x00\x00\x00";
+    let rep_jmod = detect_bytes(jmod_data, &opts).expect("detect jmod");
+    assert_eq!(rep_jmod.format_id.as_deref(), Some("jmod"));
+    assert_eq!(rep_jmod.category, "bytecode");
+    assert_eq!(compare_extension(&rep_jmod, Some(OsStr::new("jmod"))), ExtensionStatus::Match);
+
+    // 4. MapInfo Interchange Format (mif / mid)
+    let mif_data = b"Version 300\nColumns 2\n";
+    let rep_mif = detect_bytes(mif_data, &opts).expect("detect mif");
+    assert_eq!(rep_mif.format_id.as_deref(), Some("mif"));
+    assert_eq!(rep_mif.category, "geospatial");
+    assert_eq!(compare_extension(&rep_mif, Some(OsStr::new("mif"))), ExtensionStatus::Match);
+
+    // 5. Certificate Revocation List (crl)
+    let crl_data = b"-----BEGIN X509 CRL-----\nMIIB";
+    let rep_crl = detect_bytes(crl_data, &opts).expect("detect crl");
+    assert_eq!(rep_crl.format_id.as_deref(), Some("crl"));
+    assert_eq!(rep_crl.category, "security");
+    assert_eq!(compare_extension(&rep_crl, Some(OsStr::new("crl"))), ExtensionStatus::Match);
+
+    // 6. LevelDB / RocksDB SSTable (sstable / sst)
+    let sst_data = b"SST1\x00\x00\x00\x00";
+    let rep_sst = detect_bytes(sst_data, &opts).expect("detect sstable");
+    assert_eq!(rep_sst.format_id.as_deref(), Some("sstable"));
+    assert_eq!(rep_sst.category, "database");
+    assert_eq!(compare_extension(&rep_sst, Some(OsStr::new("sst"))), ExtensionStatus::Match);
+
+    // 7. Compressed ISO Image (cso)
+    let cso_data = b"CISO\x01\x00\x00\x00";
+    let rep_cso = detect_bytes(cso_data, &opts).expect("detect cso");
+    assert_eq!(rep_cso.format_id.as_deref(), Some("cso"));
+    assert_eq!(rep_cso.category, "disk");
+    assert_eq!(compare_extension(&rep_cso, Some(OsStr::new("cso"))), ExtensionStatus::Match);
+
+    // 8. Windows Help File (winhelp / hlp)
+    let hlp_data = b"?_\x00\x00\x00\x00\x00\x00";
+    let rep_hlp = detect_bytes(hlp_data, &opts).expect("detect winhelp");
+    assert_eq!(rep_hlp.format_id.as_deref(), Some("winhelp"));
+    assert_eq!(rep_hlp.category, "document");
+    assert_eq!(compare_extension(&rep_hlp, Some(OsStr::new("hlp"))), ExtensionStatus::Match);
+
+    // 9. X11 Portable Compiled Font (pcf)
+    let pcf_data = b"\x01fcp\x00\x00\x00\x00";
+    let rep_pcf = detect_bytes(pcf_data, &opts).expect("detect pcf");
+    assert_eq!(rep_pcf.format_id.as_deref(), Some("pcf"));
+    assert_eq!(rep_pcf.category, "font");
+    assert_eq!(compare_extension(&rep_pcf, Some(OsStr::new("pcf"))), ExtensionStatus::Match);
+
+    // 10. Quake BSP Map (bsp)
+    let bsp_data = b"IBSP\x1e\x00\x00\x00";
+    let rep_bsp = detect_bytes(bsp_data, &opts).expect("detect bsp");
+    assert_eq!(rep_bsp.format_id.as_deref(), Some("bsp"));
+    assert_eq!(rep_bsp.category, "game");
+    assert_eq!(compare_extension(&rep_bsp, Some(OsStr::new("bsp"))), ExtensionStatus::Match);
+
+    // 11. Better Portable Graphics (bpg)
+    let bpg_data = b"BPG\xfb\x00\x00\x00\x00";
+    let rep_bpg = detect_bytes(bpg_data, &opts).expect("detect bpg");
+    assert_eq!(rep_bpg.format_id.as_deref(), Some("bpg"));
+    assert_eq!(rep_bpg.category, "image");
+    assert_eq!(compare_extension(&rep_bpg, Some(OsStr::new("bpg"))), ExtensionStatus::Match);
+
+    // 12. True Audio Lossless (tta)
+    let tta_data = b"TTA1\x01\x00\x02\x00";
+    let rep_tta = detect_bytes(tta_data, &opts).expect("detect tta");
+    assert_eq!(rep_tta.format_id.as_deref(), Some("tta"));
+    assert_eq!(rep_tta.category, "audio");
+    assert_eq!(compare_extension(&rep_tta, Some(OsStr::new("tta"))), ExtensionStatus::Match);
+
+    // 13. 3D Studio Mesh (3ds)
+    let ds_data = b"\x4d\x4d\x00\x00\x00\x00";
+    let rep_3ds = detect_bytes(ds_data, &opts).expect("detect 3ds");
+    assert_eq!(rep_3ds.format_id.as_deref(), Some("3ds"));
+    assert_eq!(rep_3ds.category, "model");
+    assert_eq!(compare_extension(&rep_3ds, Some(OsStr::new("3ds"))), ExtensionStatus::Match);
+
+    // 14. FastTracker 2 Extended Module (xm)
+    let xm_data = b"Extended Module: Song Name\x1a";
+    let rep_xm = detect_bytes(xm_data, &opts).expect("detect xm");
+    assert_eq!(rep_xm.format_id.as_deref(), Some("xm"));
+    assert_eq!(rep_xm.category, "audio");
+    assert_eq!(compare_extension(&rep_xm, Some(OsStr::new("xm"))), ExtensionStatus::Match);
+
+    // 15. X BitMap (xbm)
+    let xbm_data = b"#define test_width 16\n#define test_height 16\n";
+    let rep_xbm = detect_bytes(xbm_data, &opts).expect("detect xbm");
+    assert_eq!(rep_xbm.format_id.as_deref(), Some("xbm"));
+    assert_eq!(rep_xbm.category, "image");
+    assert_eq!(compare_extension(&rep_xbm, Some(OsStr::new("xbm"))), ExtensionStatus::Match);
+
+    // 16. JAR Manifest (manifest / mf)
+    let mf_data = b"Manifest-Version: 1.0\r\nCreated-By: 17.0.1\r\n";
+    let rep_mf = detect_bytes(mf_data, &opts).expect("detect manifest");
+    assert_eq!(rep_mf.format_id.as_deref(), Some("manifest"));
+    assert_eq!(rep_mf.category, "package");
+    assert_eq!(compare_extension(&rep_mf, Some(OsStr::new("manifest"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_mf, Some(OsStr::new("mf"))), ExtensionStatus::Match);
+
+    // 17. RealAudio Metafile (ram)
+    let ram_data = b"rtsp://streaming.example.com/live.rm\n";
+    let rep_ram = detect_bytes(ram_data, &opts).expect("detect ram");
+    assert_eq!(rep_ram.format_id.as_deref(), Some("ram"));
+    assert_eq!(rep_ram.category, "multimedia");
+    assert_eq!(compare_extension(&rep_ram, Some(OsStr::new("ram"))), ExtensionStatus::Match);
+
+    // 18. Gazebo Simulation Description Format (sdf)
+    let sdf_data = b"<sdf version=\"1.6\"><world name=\"default\"></world></sdf>";
+    let rep_sdf = detect_bytes(sdf_data, &opts).expect("detect sdf");
+    assert_eq!(rep_sdf.format_id.as_deref(), Some("sdf"));
+    assert_eq!(rep_sdf.category, "robotics");
+    assert_eq!(compare_extension(&rep_sdf, Some(OsStr::new("sdf"))), ExtensionStatus::Match);
+
+    // 19. Game Boy Advance ROM (gba)
+    let gba_data = b"\x00\x00\x00\x00\x24\xff\xae\x51";
+    let rep_gba = detect_bytes(gba_data, &opts).expect("detect gba");
+    assert_eq!(rep_gba.format_id.as_deref(), Some("gba"));
+    assert_eq!(rep_gba.category, "rom");
+    assert_eq!(compare_extension(&rep_gba, Some(OsStr::new("gba"))), ExtensionStatus::Match);
+
+    // 20. SEG-Y Seismic Data (segy / sgy)
+    let sgy_data = b"C 1 Client: KindProbe Project\n";
+    let rep_sgy = detect_bytes(sgy_data, &opts).expect("detect segy");
+    assert_eq!(rep_sgy.format_id.as_deref(), Some("segy"));
+    assert_eq!(rep_sgy.category, "scientific");
+    assert_eq!(compare_extension(&rep_sgy, Some(OsStr::new("sgy"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_sgy, Some(OsStr::new("segy"))), ExtensionStatus::Match);
+
+    // 21. EBU STL Broadcast Subtitle (stl)
+    let stl_data = b"850\x00\x00\x00\x00";
+    let rep_stl = detect_bytes(stl_data, &opts).expect("detect stl");
+    assert_eq!(rep_stl.format_id.as_deref(), Some("stl"));
+    assert_eq!(rep_stl.category, "media");
+    assert_eq!(compare_extension(&rep_stl, Some(OsStr::new("stl"))), ExtensionStatus::Match);
+
+    // 22. MHTML Web Archive (mhtml / mht)
+    let mhtml_data = b"From: <Saved by Web Browser>\nSubject: Test\n";
+    let rep_mhtml = detect_bytes(mhtml_data, &opts).expect("detect mhtml");
+    assert_eq!(rep_mhtml.format_id.as_deref(), Some("mhtml"));
+    assert_eq!(rep_mhtml.category, "exchange");
+    assert_eq!(compare_extension(&rep_mhtml, Some(OsStr::new("mhtml"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_mhtml, Some(OsStr::new("mht"))), ExtensionStatus::Match);
+
+    // 23. Crunch Advanced GPU Texture (crn)
+    let crn_data = b"Cr\x00\x01\x00\x00";
+    let rep_crn = detect_bytes(crn_data, &opts).expect("detect crn");
+    assert_eq!(rep_crn.format_id.as_deref(), Some("crn"));
+    assert_eq!(rep_crn.category, "texture");
+    assert_eq!(compare_extension(&rep_crn, Some(OsStr::new("crn"))), ExtensionStatus::Match);
+
+    // 24. IGES CAD Exchange (iges / igs)
+    let mut iges_data = vec![b' '; 72];
+    iges_data.extend_from_slice(b"S      1");
+    let rep_iges = detect_bytes(&iges_data, &opts).expect("detect iges");
+    assert_eq!(rep_iges.format_id.as_deref(), Some("iges"));
+    assert_eq!(rep_iges.category, "cad");
+    assert_eq!(compare_extension(&rep_iges, Some(OsStr::new("iges"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_iges, Some(OsStr::new("igs"))), ExtensionStatus::Match);
+}

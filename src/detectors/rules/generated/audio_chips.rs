@@ -19,18 +19,14 @@ pub static AUDIO_CHIPS_RULES: &[SignatureRule] = &[
         min_header_len: 4, priority: 50, evidence_code: "rule.vgm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "torrent", category: "media", container_id: None,
-        recommended_ext: "torrent", accepted_exts: &["torrent"],
+        format_id: "torrent", category: "media", container_id: None, recommended_ext: "torrent", accepted_exts: &["torrent"],
         patterns: &[MagicPattern::new(0, b"d8:announce")],
-        min_header_len: 11, priority: 50, evidence_code: "rule.torrent.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 11, priority: 50, evidence_code: "rule.torrent.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "s3m", category: "audio", container_id: None,
-        recommended_ext: "s3m", accepted_exts: &["s3m"],
+        format_id: "s3m", category: "audio", container_id: None, recommended_ext: "s3m", accepted_exts: &["s3m"],
         patterns: &[MagicPattern::new(44, b"SCRM")],
-        min_header_len: 48, priority: 50, evidence_code: "rule.s3m.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 48, priority: 50, evidence_code: "rule.s3m.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "xm", category: "audio", container_id: None,
@@ -74,5 +70,10 @@ pub static AUDIO_CHIPS_RULES: &[SignatureRule] = &[
         format_id: "nsf", category: "audio", container_id: None, recommended_ext: "nsf",
         accepted_exts: &["nsf"], patterns: &[MagicPattern::new(0, b"NESM\x1a")],
         min_header_len: 5, priority: 50, evidence_code: "rule.nsf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gbs", category: "audio", container_id: None, recommended_ext: "gbs",
+        accepted_exts: &["gbs"], patterns: &[MagicPattern::new(0, b"GBS\x01")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.gbs.magic", verification: Verification::Signature, validator: None,
     },
 ];

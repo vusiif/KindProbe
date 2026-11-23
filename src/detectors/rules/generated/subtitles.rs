@@ -19,11 +19,9 @@ pub static SUBTITLES_RULES: &[SignatureRule] = &[
         min_header_len: 6, priority: 50, evidence_code: "rule.srt.crlf", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "srt", category: "media", container_id: None,
-        recommended_ext: "srt", accepted_exts: &["srt"],
+        format_id: "srt", category: "media", container_id: None, recommended_ext: "srt", accepted_exts: &["srt"],
         patterns: &[MagicPattern::new(0, b"1\n00:")],
-        min_header_len: 5, priority: 50, evidence_code: "rule.srt.lf",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 5, priority: 50, evidence_code: "rule.srt.lf", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "smi", category: "media", container_id: None, recommended_ext: "smi",
@@ -31,11 +29,9 @@ pub static SUBTITLES_RULES: &[SignatureRule] = &[
         min_header_len: 6, priority: 50, evidence_code: "rule.smi.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "lrc", category: "media", container_id: None,
-        recommended_ext: "lrc", accepted_exts: &["lrc"],
+        format_id: "lrc", category: "media", container_id: None, recommended_ext: "lrc", accepted_exts: &["lrc"],
         patterns: &[MagicPattern::new(0, b"[ti:")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.lrc.title",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.lrc.title", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "lrc", category: "media", container_id: None,
@@ -74,5 +70,10 @@ pub static SUBTITLES_RULES: &[SignatureRule] = &[
         format_id: "sub", category: "media", container_id: None, recommended_ext: "sub",
         accepted_exts: &["sub"], patterns: &[MagicPattern::new(0, b"{1}{1}")],
         min_header_len: 6, priority: 50, evidence_code: "rule.sub.microdvd", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "stl", category: "media", container_id: None, recommended_ext: "stl",
+        accepted_exts: &["stl"], patterns: &[MagicPattern::new(0, b"850")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.stl.magic", verification: Verification::Signature, validator: None,
     },
 ];
