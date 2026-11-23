@@ -38,18 +38,14 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "mdb", category: "database", container_id: None,
-        recommended_ext: "mdb", accepted_exts: &["mdb"],
-        patterns: &[MagicPattern::new(0, b"\x00\x01\x00\x00Standard Jet DB")],
-        min_header_len: 19, priority: 50, evidence_code: "rule.mdb.magic",
-        verification: Verification::Signature, validator: None,
+        format_id: "mdb", category: "database", container_id: None, recommended_ext: "mdb", accepted_exts: &["mdb"],
+        patterns: &[MagicPattern::new(0, b"\x00\x01\x00\x00Standard Jet DB")], min_header_len: 19,
+        priority: 50, evidence_code: "rule.mdb.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "accdb", category: "database", container_id: None,
-        recommended_ext: "accdb", accepted_exts: &["accdb"],
-        patterns: &[MagicPattern::new(0, b"\x00\x01\x00\x00Standard ACE DB")],
-        min_header_len: 19, priority: 50, evidence_code: "rule.accdb.magic",
-        verification: Verification::Signature, validator: None,
+        format_id: "accdb", category: "database", container_id: None, recommended_ext: "accdb", accepted_exts: &["accdb"],
+        patterns: &[MagicPattern::new(0, b"\x00\x01\x00\x00Standard ACE DB")], min_header_len: 19,
+        priority: 50, evidence_code: "rule.accdb.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "snoop", category: "network", container_id: None,
@@ -70,6 +66,13 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         recommended_ext: "cbor", accepted_exts: &["cbor"],
         patterns: &[MagicPattern::new(0, b"\xd9\xd9\xf7")],
         min_header_len: 3, priority: 50, evidence_code: "rule.cbor.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sql", category: "database", container_id: None,
+        recommended_ext: "sql", accepted_exts: &["sql"],
+        patterns: &[MagicPattern::new(0, b"CREATE TABLE ")],
+        min_header_len: 13, priority: 50, evidence_code: "rule.sql.create",
         verification: Verification::Signature, validator: None,
     },
 ];

@@ -32,11 +32,9 @@ pub static SUBTITLES_RULES: &[SignatureRule] = &[
         verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "smi", category: "media", container_id: None,
-        recommended_ext: "smi", accepted_exts: &["smi", "sami"],
-        patterns: &[MagicPattern::new(0, b"<SAMI>")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.smi.magic",
-        verification: Verification::Signature, validator: None,
+        format_id: "smi", category: "media", container_id: None, recommended_ext: "smi",
+        accepted_exts: &["smi", "sami"], patterns: &[MagicPattern::new(0, b"<SAMI>")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.smi.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "lrc", category: "media", container_id: None,
@@ -60,10 +58,22 @@ pub static SUBTITLES_RULES: &[SignatureRule] = &[
         verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "ttml", category: "media", container_id: None,
-        recommended_ext: "ttml", accepted_exts: &["ttml", "dfxp"],
-        patterns: &[MagicPattern::new(0, b"<tt ")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.ttml.magic",
+        format_id: "ttml", category: "media", container_id: None, recommended_ext: "ttml",
+        accepted_exts: &["ttml", "dfxp"], patterns: &[MagicPattern::new(0, b"<tt ")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.ttml.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "idx", category: "media", container_id: None,
+        recommended_ext: "idx", accepted_exts: &["idx"],
+        patterns: &[MagicPattern::new(0, b"# VobSub index file")],
+        min_header_len: 19, priority: 50, evidence_code: "rule.idx.vobsub",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "usf", category: "media", container_id: None,
+        recommended_ext: "usf", accepted_exts: &["usf"],
+        patterns: &[MagicPattern::new(0, b"<USFSubtitles")],
+        min_header_len: 13, priority: 50, evidence_code: "rule.usf.magic",
         verification: Verification::Signature, validator: None,
     },
 ];

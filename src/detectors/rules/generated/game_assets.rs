@@ -45,18 +45,14 @@ pub static GAME_ASSETS_RULES: &[SignatureRule] = &[
         verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "big", category: "archive", container_id: None,
-        recommended_ext: "big", accepted_exts: &["big"],
-        patterns: &[MagicPattern::new(0, b"BIG4")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.big.magic",
-        verification: Verification::Signature, validator: None,
+        format_id: "big", category: "archive", container_id: None, recommended_ext: "big", accepted_exts: &["big"],
+        patterns: &[MagicPattern::new(0, b"BIG4")], min_header_len: 4,
+        priority: 50, evidence_code: "rule.big.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "grp", category: "archive", container_id: None,
-        recommended_ext: "grp", accepted_exts: &["grp"],
-        patterns: &[MagicPattern::new(0, b"KenSilverman")],
-        min_header_len: 12, priority: 50, evidence_code: "rule.grp.magic",
-        verification: Verification::Signature, validator: None,
+        format_id: "grp", category: "archive", container_id: None, recommended_ext: "grp", accepted_exts: &["grp"],
+        patterns: &[MagicPattern::new(0, b"KenSilverman")], min_header_len: 12,
+        priority: 50, evidence_code: "rule.grp.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "gen", category: "rom", container_id: None,
@@ -70,6 +66,13 @@ pub static GAME_ASSETS_RULES: &[SignatureRule] = &[
         recommended_ext: "voc", accepted_exts: &["voc"],
         patterns: &[MagicPattern::new(0, b"Creative Voice File\x1a")],
         min_header_len: 20, priority: 50, evidence_code: "rule.voc.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bik", category: "video", container_id: None,
+        recommended_ext: "bik", accepted_exts: &["bik", "bk2"],
+        patterns: &[MagicPattern::new(0, b"BIK")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.bik.magic",
         verification: Verification::Signature, validator: None,
     },
 ];

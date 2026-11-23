@@ -58,6 +58,18 @@ fn test_detect_subtitles_and_lyrics() {
     assert_eq!(rep_ttml.format_id.as_deref(), Some("ttml"));
     assert_eq!(compare_extension(&rep_ttml, Some(OsStr::new("ttml"))), ExtensionStatus::Match);
     assert_eq!(compare_extension(&rep_ttml, Some(OsStr::new("dfxp"))), ExtensionStatus::Match);
+
+    // 8. VobSub DVD Subtitle Index (idx)
+    let idx_data = b"# VobSub index file, v7 (do not modify this line!)\nsize: 720x480\n";
+    let rep_idx = detect_bytes(idx_data, &opts).expect("detect idx");
+    assert_eq!(rep_idx.format_id.as_deref(), Some("idx"));
+    assert_eq!(compare_extension(&rep_idx, Some(OsStr::new("idx"))), ExtensionStatus::Match);
+
+    // 9. Universal Subtitle Format (usf)
+    let usf_data = b"<USFSubtitles version=\"1.0\"><metadata><title>Test</title></metadata></USFSubtitles>";
+    let rep_usf = detect_bytes(usf_data, &opts).expect("detect usf");
+    assert_eq!(rep_usf.format_id.as_deref(), Some("usf"));
+    assert_eq!(compare_extension(&rep_usf, Some(OsStr::new("usf"))), ExtensionStatus::Match);
 }
 
 #[test]
@@ -113,4 +125,16 @@ fn test_detect_cad_models_and_navigation() {
     let rep_topo = detect_bytes(topo_data, &opts).expect("detect topojson");
     assert_eq!(rep_topo.format_id.as_deref(), Some("topojson"));
     assert_eq!(compare_extension(&rep_topo, Some(OsStr::new("topojson"))), ExtensionStatus::Match);
+
+    // 9. Garmin Training Center XML (tcx)
+    let tcx_data = b"<TrainingCenterDatabase xmlns=\"http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2\"><Activities/></TrainingCenterDatabase>";
+    let rep_tcx = detect_bytes(tcx_data, &opts).expect("detect tcx");
+    assert_eq!(rep_tcx.format_id.as_deref(), Some("tcx"));
+    assert_eq!(compare_extension(&rep_tcx, Some(OsStr::new("tcx"))), ExtensionStatus::Match);
+
+    // 10. EasyGPS / TopoGrafix Waypoint XML (loc)
+    let loc_data = b"<loc version=\"1.0\" src=\"EasyGPS\"><waypoint><name>Sample WP</name><coord lat=\"37.7\" lon=\"-122.4\"/></waypoint></loc>";
+    let rep_loc = detect_bytes(loc_data, &opts).expect("detect loc");
+    assert_eq!(rep_loc.format_id.as_deref(), Some("loc"));
+    assert_eq!(compare_extension(&rep_loc, Some(OsStr::new("loc"))), ExtensionStatus::Match);
 }

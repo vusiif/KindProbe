@@ -69,4 +69,11 @@ pub static DISK_IMAGES_RULES: &[SignatureRule] = &[
         min_header_len: 6, priority: 50, evidence_code: "rule.dmp.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "toast", category: "disk", container_id: None,
+        recommended_ext: "toast", accepted_exts: &["toast"],
+        patterns: &[MagicPattern::new(0, b"ER\x02\x00")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.toast.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

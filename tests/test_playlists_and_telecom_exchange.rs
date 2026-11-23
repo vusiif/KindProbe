@@ -59,6 +59,18 @@ fn test_detect_playlists_and_cue() {
     let rep_jspf = detect_bytes(jspf_data, &opts).expect("detect jspf");
     assert_eq!(rep_jspf.format_id.as_deref(), Some("jspf"));
     assert_eq!(compare_extension(&rep_jspf, Some(OsStr::new("jspf"))), ExtensionStatus::Match);
+
+    // 9. Zune XML Playlist (zpl)
+    let zpl_data = b"<?zpl version=\"2.0\"?>\n<smil><head></head><body><seq></seq></body></smil>";
+    let rep_zpl = detect_bytes(zpl_data, &opts).expect("detect zpl");
+    assert_eq!(rep_zpl.format_id.as_deref(), Some("zpl"));
+    assert_eq!(compare_extension(&rep_zpl, Some(OsStr::new("zpl"))), ExtensionStatus::Match);
+
+    // 10. AIMP Playlist (aimppl)
+    let aimp_data = b"AIMP30\x00\x01\x00\x00Sample AIMP Playlist";
+    let rep_aimp = detect_bytes(aimp_data, &opts).expect("detect aimppl");
+    assert_eq!(rep_aimp.format_id.as_deref(), Some("aimppl"));
+    assert_eq!(compare_extension(&rep_aimp, Some(OsStr::new("aimppl"))), ExtensionStatus::Match);
 }
 
 #[test]
@@ -130,4 +142,18 @@ fn test_detect_telecom_and_firmware_exchange() {
     let rep_qif = detect_bytes(qif_data, &opts).expect("detect qif");
     assert_eq!(rep_qif.format_id.as_deref(), Some("qif"));
     assert_eq!(compare_extension(&rep_qif, Some(OsStr::new("qif"))), ExtensionStatus::Match);
+
+    // 10. GEDCOM FamilySearch Genealogy Data (ged)
+    let ged_data = b"0 HEAD\n1 SOUR KindProbe\n1 GEDC\n2 VERS 5.5.1\n";
+    let rep_ged = detect_bytes(ged_data, &opts).expect("detect gedcom");
+    assert_eq!(rep_ged.format_id.as_deref(), Some("gedcom"));
+    assert_eq!(compare_extension(&rep_ged, Some(OsStr::new("ged"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_ged, Some(OsStr::new("gedcom"))), ExtensionStatus::Match);
+
+    // 11. UN/EDIFACT Electronic Data Interchange (edifact / edi)
+    let edi_data = b"UNA:+.? 'UNB+UNOC:3+SENDER+RECEIVER+261123:0000+1'";
+    let rep_edi = detect_bytes(edi_data, &opts).expect("detect edifact");
+    assert_eq!(rep_edi.format_id.as_deref(), Some("edifact"));
+    assert_eq!(compare_extension(&rep_edi, Some(OsStr::new("edi"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_edi, Some(OsStr::new("edifact"))), ExtensionStatus::Match);
 }

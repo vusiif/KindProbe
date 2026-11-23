@@ -68,4 +68,11 @@ pub static MULTIMEDIA_STREAM_RULES: &[SignatureRule] = &[
         min_header_len: 581, priority: 50, evidence_code: "rule.m2ts.magic",
         verification: Verification::Structure, validator: None,
     },
+    SignatureRule {
+        format_id: "ivf", category: "video", container_id: None,
+        recommended_ext: "ivf", accepted_exts: &["ivf"],
+        patterns: &[MagicPattern::new(0, b"DKIF")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.ivf.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

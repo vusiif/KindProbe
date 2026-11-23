@@ -69,4 +69,11 @@ pub static BYTECODE_RULES: &[SignatureRule] = &[
         min_header_len: 16, priority: 45, evidence_code: "rule.pyc.magic",
         verification: Verification::Structure, validator: Some(validate_pyc),
     },
+    SignatureRule {
+        format_id: "mo", category: "translation", container_id: None,
+        recommended_ext: "mo", accepted_exts: &["mo", "gmo"],
+        patterns: &[MagicPattern::new(0, b"\xde\x12\x04\x95")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.mo.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];
