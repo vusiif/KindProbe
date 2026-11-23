@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static FONTS_AND_TYPOGRAPHY_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "sfd", category: "font", container_id: None, recommended_ext: "sfd", accepted_exts: &["sfd"],
+        patterns: &[MagicPattern::new(0, b"SplineFontDB: ")], min_header_len: 14, priority: 50,
+        evidence_code: "rule.sfd.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "vfb", category: "font", container_id: None, recommended_ext: "vfb", accepted_exts: &["vfb"],
+        patterns: &[MagicPattern::new(0, b"VFB ")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.vfb.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ufo", category: "font", container_id: None, recommended_ext: "ufo", accepted_exts: &["ufo"],
+        patterns: &[MagicPattern::new(0, b"<ufo ")], min_header_len: 5, priority: 50,
+        evidence_code: "rule.ufo.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "pfm", category: "font", container_id: None, recommended_ext: "pfm", accepted_exts: &["pfm"],
+        patterns: &[MagicPattern::new(0, b"\x00\x01\x00\x00\x00")], min_header_len: 5, priority: 45,
+        evidence_code: "rule.pfm.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ttx", category: "font", container_id: None, recommended_ext: "ttx", accepted_exts: &["ttx"],
+        patterns: &[MagicPattern::new(0, b"<ttFont sfntVersion=")], min_header_len: 20, priority: 50,
+        evidence_code: "rule.ttx.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gf", category: "font", container_id: None, recommended_ext: "gf", accepted_exts: &["gf"],
+        patterns: &[MagicPattern::new(0, b"\xf7\x83")], min_header_len: 2, priority: 50,
+        evidence_code: "rule.gf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "vf", category: "font", container_id: None, recommended_ext: "vf", accepted_exts: &["vf"],
+        patterns: &[MagicPattern::new(0, b"\xf7\xf6")], min_header_len: 2, priority: 50,
+        evidence_code: "rule.vf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "spd", category: "font", container_id: None, recommended_ext: "spd", accepted_exts: &["spd"],
+        patterns: &[MagicPattern::new(0, b"Speedo")], min_header_len: 6, priority: 50,
+        evidence_code: "rule.spd.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ch8", category: "bytecode", container_id: None, recommended_ext: "ch8", accepted_exts: &["ch8"],
+        patterns: &[MagicPattern::new(0, b"\x12\x00\x00\x00")], min_header_len: 4, priority: 45,
+        evidence_code: "rule.ch8.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "chr", category: "font", container_id: None, recommended_ext: "chr", accepted_exts: &["chr"],
+        patterns: &[MagicPattern::new(0, b"PK\x08\x08BGI ")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.chr.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "pkf", category: "font", container_id: None, recommended_ext: "pkf", accepted_exts: &["pkf"],
+        patterns: &[MagicPattern::new(0, b"\xf7\x59")], min_header_len: 2, priority: 50,
+        evidence_code: "rule.pkf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "vpl", category: "font", container_id: None, recommended_ext: "vpl", accepted_exts: &["vpl"],
+        patterns: &[MagicPattern::new(0, b"(VTITLE ")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.vpl.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bgi", category: "hardware", container_id: None, recommended_ext: "bgi", accepted_exts: &["bgi"],
+        patterns: &[MagicPattern::new(0, b"pk\x08\x08BGI ")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.bgi.magic", verification: Verification::Signature, validator: None,
+    },
+];

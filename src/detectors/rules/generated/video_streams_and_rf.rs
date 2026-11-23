@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static VIDEO_STREAMS_AND_RF_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "h265", category: "video", container_id: None, recommended_ext: "h265", accepted_exts: &["h265", "hevc"],
+        patterns: &[MagicPattern::new(0, b"\x00\x00\x00\x01\x40\x01")], min_header_len: 6, priority: 50,
+        evidence_code: "rule.h265.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "h264", category: "video", container_id: None, recommended_ext: "h264", accepted_exts: &["h264", "264"],
+        patterns: &[MagicPattern::new(0, b"\x00\x00\x00\x01\x67")], min_header_len: 5, priority: 50,
+        evidence_code: "rule.h264.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "vc1", category: "video", container_id: None, recommended_ext: "vc1", accepted_exts: &["vc1"],
+        patterns: &[MagicPattern::new(0, b"\x00\x00\x01\x0f")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.vc1.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ac4", category: "audio", container_id: None, recommended_ext: "ac4", accepted_exts: &["ac4"],
+        patterns: &[MagicPattern::new(0, b"\xac\x40")], min_header_len: 2, priority: 50,
+        evidence_code: "rule.ac4.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "eac3", category: "audio", container_id: None, recommended_ext: "eac3", accepted_exts: &["eac3"],
+        patterns: &[MagicPattern::new(0, b"\x0b\x77")], min_header_len: 2, priority: 45,
+        evidence_code: "rule.eac3.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "truehd", category: "audio", container_id: None, recommended_ext: "thd", accepted_exts: &["thd"],
+        patterns: &[MagicPattern::new(4, b"\xf8\x72\x6f\xba")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.truehd.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "mlp", category: "audio", container_id: None, recommended_ext: "mlp", accepted_exts: &["mlp"],
+        patterns: &[MagicPattern::new(4, b"\xf8\x72\x6f\xbb")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.mlp.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "avs", category: "video", container_id: None, recommended_ext: "avs", accepted_exts: &["avs"],
+        patterns: &[MagicPattern::new(0, b"\x00\x00\x01\xb0")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.avs.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "avs2", category: "video", container_id: None, recommended_ext: "avs2", accepted_exts: &["avs2"],
+        patterns: &[MagicPattern::new(0, b"\x00\x00\x01\xd0")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.avs2.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sdp", category: "network", container_id: None, recommended_ext: "sdp", accepted_exts: &["sdp"],
+        patterns: &[MagicPattern::new(0, b"v=0\r\no=")], min_header_len: 6, priority: 50,
+        evidence_code: "rule.sdp.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sigmf", category: "scientific", container_id: None, recommended_ext: "sigmf", accepted_exts: &["sigmf"],
+        patterns: &[MagicPattern::new(0, b"{\n  \"global\": {")], min_header_len: 14, priority: 50,
+        evidence_code: "rule.sigmf.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "cfile", category: "scientific", container_id: None, recommended_ext: "cfile", accepted_exts: &["cfile"],
+        patterns: &[MagicPattern::new(0, b"\x00\x00\x80\x3f\x00\x00\x00\x00")], min_header_len: 8, priority: 40,
+        evidence_code: "rule.cfile.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "w64", category: "audio", container_id: None, recommended_ext: "w64", accepted_exts: &["w64"],
+        patterns: &[MagicPattern::new(0, b"riff\x2e\x91\xcf\x11\xa5\xd6\x28\xdb")], min_header_len: 16, priority: 50,
+        evidence_code: "rule.w64.magic", verification: Verification::Signature, validator: None,
+    },
+];

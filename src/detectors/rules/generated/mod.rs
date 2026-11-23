@@ -1,4 +1,5 @@
 pub mod archives;
+pub mod astronomy_and_space;
 pub mod audio_chips;
 pub mod automotive_and_eda;
 pub mod bio_and_creative_design;
@@ -8,9 +9,12 @@ pub mod crypto;
 pub mod database;
 pub mod disk_images;
 pub mod documents;
+pub mod embedded_rtos_images;
 pub mod firmware_and_forensics;
 pub mod fonts;
+pub mod fonts_and_typography;
 pub mod game_assets;
+pub mod geospatial_vector_cad;
 pub mod images;
 pub mod media;
 pub mod models;
@@ -27,12 +31,14 @@ pub mod subtitles;
 pub mod telecom_exchange;
 pub mod textures;
 pub mod vector_graphics;
+pub mod video_streams_and_rf;
 
 use crate::detectors::rules::types::SignatureRule;
 
-/// Combined view of all auto-generated declarative signature rules across 29 partitions.
+/// Combined view of all auto-generated declarative signature rules across 34 partitions.
 pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     archives::ARCHIVES_RULES,
+    astronomy_and_space::ASTRONOMY_AND_SPACE_RULES,
     audio_chips::AUDIO_CHIPS_RULES,
     automotive_and_eda::AUTOMOTIVE_AND_EDA_RULES,
     bio_and_creative_design::BIO_AND_CREATIVE_DESIGN_RULES,
@@ -42,9 +48,12 @@ pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     database::DATABASE_RULES,
     disk_images::DISK_IMAGES_RULES,
     documents::DOCUMENTS_RULES,
+    embedded_rtos_images::EMBEDDED_RTOS_IMAGES_RULES,
     firmware_and_forensics::FIRMWARE_AND_FORENSICS_RULES,
     fonts::FONTS_RULES,
+    fonts_and_typography::FONTS_AND_TYPOGRAPHY_RULES,
     game_assets::GAME_ASSETS_RULES,
+    geospatial_vector_cad::GEOSPATIAL_VECTOR_CAD_RULES,
     images::IMAGES_RULES,
     media::MEDIA_RULES,
     models::MODELS_RULES,
@@ -61,4 +70,5 @@ pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     telecom_exchange::TELECOM_EXCHANGE_RULES,
     textures::TEXTURES_RULES,
     vector_graphics::VECTOR_GRAPHICS_RULES,
+    video_streams_and_rf::VIDEO_STREAMS_AND_RF_RULES,
 ];
