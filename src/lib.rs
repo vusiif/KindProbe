@@ -65,10 +65,16 @@ pub fn detect_path(
         return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
     }
 
-    let mut report = detect_reader(&mut file, options)?;
+    let path_ext = resolve_path_extension(path);
+    let mut local_opts = options.clone();
+    if local_opts.extension_hint.is_none() {
+        local_opts.extension_hint = path_ext.and_then(|s| s.to_str()).map(|s| s.to_string());
+    }
+
+    let mut report = detect_reader(&mut file, &local_opts)?;
 
     // Perform independent extension diagnosis
-    report.extension_status = compare_extension(&report, resolve_path_extension(path));
+    report.extension_status = compare_extension(&report, path_ext);
     report.stats.duration_micros = start.elapsed().as_micros() as u64;
 
     Ok(report)

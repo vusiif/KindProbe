@@ -1,32 +1,26 @@
 # KindProbe 架构与工程交接文档 (HANDOFF)
 
 > **单一真实信源 (Single Source of Truth - SSOT)**  
-> **更新时间**：2026-11-22  
-> **当前版本**：v0.1.0 (全局扩展名突破 400 项大关！扩展支持 TeX/DVI/Age/PPK/Pack200/InstallShield/SunRaster/HDR/FLI/BinaryEPS/PVRT/DfuSe/RData，36 大测试套件 159 用例全绿)  
+> **更新时间**：2026-11-23  
+> **当前版本**：v0.1.0 (后缀引导快速探测路径已就绪，乐观命中与对抗透明回退架构，37 大测试套件 163 用例全绿)  
 > **远端分支**：`origin/main`
 
 ---
 
 ## 1. [已完成] (Completed)
 
-### 1.1 格式矩阵扩展并突破 400 项里程碑
-全部分卷与实现文件严格保持在 50~80 行黄金规范区间（67~76 行）：
-- **排版系统与学术文档** (`fonts.rs`, 69 行)：支持 TeX Packed 栅格字体 (`.pk`, `\xf7\x59`) 与 TeX 设备无关文档 (`.dvi`, `\xf7\x02`)；
-- **现代安全加密与远程凭据** (`crypto.rs`, 76 行)：支持 Filippo 现代 Age 加密容器 (`.age`, `age-encryption.org/v1\n`) 与 PuTTY SSH 专用私钥 (`.ppk`, `PuTTY-User-Key-File-`)；
-- **企业分发与嵌入式归档** (`archives.rs`, 75 行)：支持 Java Pack200 压缩 JAR 包 (`.pack`, `\xca\xfe\xd0\x0d`) 与 InstallShield CAB 封包 (`.isc`/`.hdr`, `ISc(`)；
-- **经典工作站与高动态渲染** (`netpbm.rs`, 76 行)：支持 Sun Raster 图元 (`.ras`/`.sun`, `\x59\xa6\x6a\x95`) 与 Radiance 高动态范围图像 (`.hdr`, `#?RADIANCE\n`)；
-- **矢量图形与序列流式动画** (`vector_graphics.rs`, 75 行)：支持 Autodesk Animator FLI 动画 (`.fli`, 偏移 4 `\x11\xaf`) 与 DOS 二进制封装 PostScript (`.eps`, `\xc5\xd0\xd3\xc6`)；
-- **主机专有硬件纹理** (`textures.rs`, 75 行)：扩展支持 Sega Dreamcast PowerVR 纹理容器 (`.pvr`/`.pvrt`, `PVRT`)；
-- **微控制器芯片固件** (`robotics_firmware.rs`, 75 行)：支持 STMicroelectronics DfuSe 芯片固件升级包 (`.dfu`, `DfuSe\x01`)；
-- **数据科学与统计计算** (`scientific.rs`, 76 行)：支持 R 语言工作区与 RDS 序列化数据 (`.rdata`/`.rds`/`.rda`, `RDX2\n`)。
+### 1.1 后缀引导式快速探测 / 乐观命中路径架构 (Fast-Path Probing)
+- **内容真确性优先与零妥协**：后缀仅作为预测线索（Prediction Hint），绝对不无脑信任后缀；必须在真实文件头部成功通过该格式的特征签名或结构验证后才能确认；
+- **核心实现与规范契约** (`src/detectors/fast_path.rs`, 75 行)：严格符合 50~80 行黄金规范；实现 `probe_fast_path`，针对 ZIP 复合族系（OOXML/APK/JAR/EPUB/ODF）、CFB 二进制复合族系（DOC/XLS/PPT/MSI）、PDF、专有二进制格式（图片/归档/媒体/可执行/字体/数据库/虚拟磁盘）与 400 项声明式规则执行 O(1) 快速校验；
+- **对抗样本与伪装透明回退**：若快速校验未通过（如扩展名伪装成 `.png` 的 PE 可执行文件、重命名损坏文件或未知扩展名），自动重置流偏移量并平滑回退至原有的全量探测流程（Full Scan Pipeline），准确诊断出真实类型并给出正确的 `ExtensionStatus::Mismatch`，保证对抗安全性 100%；
+- **API 平滑支持** (`src/budget.rs` & `src/lib.rs`)：在 `DetectOptions` 中无缝引入 `pub extension_hint: Option<String>`；`detect_path` 自动提取路径后缀注入线索，调用方亦可手动指定 hint 进行极速探测。
 
-### 1.2 扩展名索引表突破 400 项 (`src/extension/registry.rs`)
-- 扩展名总数由 386 项跃升至 **400 项**；
-- 严格按 ASCII 字典升序单调排列，通过 `test_registry_is_strictly_sorted_without_duplicates` 单调性与无重复硬性断言测试。
+### 1.2 规则引擎解耦与单规则快速比对
+- **规则引擎抽取** (`src/detectors/rules/engine.rs` & `src/detectors/rules/mod.rs`)：将单个规则的匹配逻辑抽离为 `evaluate_single_rule`，并暴露 `probe_rule_by_format`，允许按 `target_fid` 瞬间定位对应规则进行单条核验，无需遍历全量分卷。
 
-### 1.3 集成测试与质量保障 (`tests/test_publishing_and_security.rs`)
-- 新增 `test_publishing_and_security.rs` 专项测试套件，全面覆盖 TeX/DVI、Pack200、InstallShield、Age、PuTTY Key、Sun Raster、HDR、Binary EPS、DfuSe 与 RData；
-- 累计 36 个测试套件，**159 个测试用例全部通过 (159/159 PASS)**；
+### 1.3 集成测试与对抗验证 (`tests/test_fast_path_and_mismatch.rs`)
+- 新增 `test_fast_path_and_mismatch.rs` 专项测试套件，全面覆盖真实 fixture 乐观命中、声明式规则命中、对抗性样本回退与 Mismatch 诊断、截断损坏文件与未知扩展名回退；
+- 累计 37 个测试套件，**163 个测试用例全部通过 (163/163 PASS)**；
 - `cargo clippy --all-targets -- -D warnings` 零警告。
 
 ---
@@ -35,8 +29,8 @@
 
 - **编译构建**：`cargo build` 成功。
 - **代码质量与静态检查**：`cargo clippy --all-targets -- -D warnings` 严格零警告 (0 Errors, 0 Warnings)。
-- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (159/159 PASS)。
-- **规范契约**：所有 20 个垂直分卷行数严密收敛于 67~76 行，零单文件臃肿。
+- **测试覆盖率与基线**：全量 `cargo test --all-targets` 全部通过 (163/163 PASS)。
+- **规范契约**：新增核心实现 `fast_path.rs` 精准收敛于 75 行，严格处于 50~80 行黄金区间。
 - **Git 仓库状态**：代码与交接文档准备就绪，等待原子提交与推送验证。
 
 ---

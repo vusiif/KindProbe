@@ -20,6 +20,8 @@ pub struct DetectOptions {
     pub max_total_decompressed_bytes: usize,
     /// Maximum XML element depth (default 64)
     pub max_xml_depth: usize,
+    /// Optional extension or filename hint for fast-path probing
+    pub extension_hint: Option<String>,
 }
 
 impl Default for DetectOptions {
@@ -32,6 +34,7 @@ impl Default for DetectOptions {
             max_single_decompressed_bytes: 256 * 1024,
             max_total_decompressed_bytes: 1024 * 1024,
             max_xml_depth: 64,
+            extension_hint: None,
         }
     }
 }

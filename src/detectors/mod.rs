@@ -4,6 +4,7 @@ pub mod databases;
 pub mod disks;
 pub mod ebooks;
 pub mod executables;
+pub mod fast_path;
 pub mod fonts;
 pub mod images;
 pub mod media;
@@ -21,6 +22,7 @@ use crate::model::{
 use signatures::{probe_signatures, SignatureMatch};
 use zip_ooxml::detect_zip_ooxml;
 use cfb::{detect_cfb, CFB_MAGIC};
+use fast_path::probe_fast_path;
 
 pub fn detect_stream<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
@@ -103,6 +105,11 @@ pub fn detect_stream<R: Read + Seek>(
             stats: Default::default(),
             candidates: None,
         });
+    }
+
+    // Step 0: Extension-guided fast path probing (optimistic match)
+    if let Some(rep) = probe_fast_path(reader, &header, options)? {
+        return Ok(rep);
     }
 
     // Step 1: Check signatures (PNG, JPEG, GIF, PDF)
