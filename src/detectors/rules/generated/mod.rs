@@ -1,6 +1,7 @@
 pub mod archives;
 pub mod audio_chips;
 pub mod bytecode;
+pub mod cad_and_gnss;
 pub mod crypto;
 pub mod database;
 pub mod disk_images;
@@ -17,6 +18,7 @@ pub mod playlists;
 pub mod robotics_firmware;
 pub mod roms;
 pub mod scientific;
+pub mod subtitles;
 pub mod telecom_exchange;
 pub mod textures;
 pub mod vector_graphics;
@@ -24,6 +26,7 @@ pub mod vector_graphics;
 pub use archives::ARCHIVES_RULES;
 pub use audio_chips::AUDIO_CHIPS_RULES;
 pub use bytecode::BYTECODE_RULES;
+pub use cad_and_gnss::CAD_AND_GNSS_RULES;
 pub use crypto::CRYPTO_RULES;
 pub use database::DATABASE_RULES;
 pub use disk_images::DISK_IMAGES_RULES;
@@ -40,17 +43,19 @@ pub use playlists::PLAYLISTS_RULES;
 pub use robotics_firmware::ROBOTICS_FIRMWARE_RULES;
 pub use roms::ROMS_RULES;
 pub use scientific::SCIENTIFIC_RULES;
+pub use subtitles::SUBTITLES_RULES;
 pub use telecom_exchange::TELECOM_EXCHANGE_RULES;
 pub use textures::TEXTURES_RULES;
 pub use vector_graphics::VECTOR_GRAPHICS_RULES;
 
 use crate::detectors::rules::types::SignatureRule;
 
-/// Combined view of all auto-generated declarative signature rules across 22 partitions.
+/// Combined view of all auto-generated declarative signature rules across 24 partitions.
 pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     ARCHIVES_RULES,
     AUDIO_CHIPS_RULES,
     BYTECODE_RULES,
+    CAD_AND_GNSS_RULES,
     CRYPTO_RULES,
     DATABASE_RULES,
     DISK_IMAGES_RULES,
@@ -67,6 +72,7 @@ pub static GENERATED_RULES: &[&[SignatureRule]] = &[
     ROBOTICS_FIRMWARE_RULES,
     ROMS_RULES,
     SCIENTIFIC_RULES,
+    SUBTITLES_RULES,
     TELECOM_EXCHANGE_RULES,
     TEXTURES_RULES,
     VECTOR_GRAPHICS_RULES,

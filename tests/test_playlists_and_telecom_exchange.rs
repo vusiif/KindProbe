@@ -45,12 +45,20 @@ fn test_detect_playlists_and_cue() {
     let rep_asx = detect_bytes(asx_data, &opts).expect("detect asx");
     assert_eq!(rep_asx.format_id.as_deref(), Some("asx"));
     assert_eq!(compare_extension(&rep_asx, Some(OsStr::new("asx"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_asx, Some(OsStr::new("wax"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_asx, Some(OsStr::new("wvx"))), ExtensionStatus::Match);
 
     // 7. B4S Winamp Playlist
     let b4s_data = b"Winamp XML Playlist 1.0\n<playlist></playlist>";
     let rep_b4s = detect_bytes(b4s_data, &opts).expect("detect b4s");
     assert_eq!(rep_b4s.format_id.as_deref(), Some("b4s"));
     assert_eq!(compare_extension(&rep_b4s, Some(OsStr::new("b4s"))), ExtensionStatus::Match);
+
+    // 8. JSPF JSON Shareable Playlist
+    let jspf_data = b"{\"playlist\":{\"title\":\"Sample Playlist\",\"track\":[]}}";
+    let rep_jspf = detect_bytes(jspf_data, &opts).expect("detect jspf");
+    assert_eq!(rep_jspf.format_id.as_deref(), Some("jspf"));
+    assert_eq!(compare_extension(&rep_jspf, Some(OsStr::new("jspf"))), ExtensionStatus::Match);
 }
 
 #[test]
@@ -108,4 +116,18 @@ fn test_detect_telecom_and_firmware_exchange() {
     let rep_ldif = detect_bytes(ldif_data, &opts).expect("detect ldif");
     assert_eq!(rep_ldif.format_id.as_deref(), Some("ldif"));
     assert_eq!(compare_extension(&rep_ldif, Some(OsStr::new("ldif"))), ExtensionStatus::Match);
+
+    // 8. Intel HEX (ihex)
+    let ihex_data = b":10010000214601360121470136007EFE09D2190140\n:00000001FF\n";
+    let rep_ihex = detect_bytes(ihex_data, &opts).expect("detect ihex");
+    assert_eq!(rep_ihex.format_id.as_deref(), Some("ihex"));
+    assert_eq!(compare_extension(&rep_ihex, Some(OsStr::new("ihex"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_ihex, Some(OsStr::new("ihx"))), ExtensionStatus::Match);
+    assert_eq!(compare_extension(&rep_ihex, Some(OsStr::new("hex"))), ExtensionStatus::Match);
+
+    // 9. Quicken Interchange Format (qif)
+    let qif_data = b"!Type:Bank\nD03/03/2026\nT-100.00\nPKindProbe Store\n^\n";
+    let rep_qif = detect_bytes(qif_data, &opts).expect("detect qif");
+    assert_eq!(rep_qif.format_id.as_deref(), Some("qif"));
+    assert_eq!(compare_extension(&rep_qif, Some(OsStr::new("qif"))), ExtensionStatus::Match);
 }

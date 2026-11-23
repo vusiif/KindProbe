@@ -52,4 +52,18 @@ pub static TELECOM_EXCHANGE_RULES: &[SignatureRule] = &[
         min_header_len: 11, priority: 50, evidence_code: "rule.ldif.magic",
         verification: Verification::Signature, validator: None,
     },
+    SignatureRule {
+        format_id: "ihex", category: "firmware", container_id: None,
+        recommended_ext: "ihex", accepted_exts: &["ihex", "ihx", "hex"],
+        patterns: &[MagicPattern::new(0, b":10")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.ihex.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "qif", category: "finance", container_id: None,
+        recommended_ext: "qif", accepted_exts: &["qif"],
+        patterns: &[MagicPattern::new(0, b"!Type:")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.qif.magic",
+        verification: Verification::Signature, validator: None,
+    },
 ];

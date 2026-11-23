@@ -40,9 +40,16 @@ pub static PLAYLISTS_RULES: &[SignatureRule] = &[
     },
     SignatureRule {
         format_id: "asx", category: "multimedia", container_id: None,
-        recommended_ext: "asx", accepted_exts: &["asx"],
+        recommended_ext: "asx", accepted_exts: &["asx", "wax", "wvx"],
         patterns: &[MagicPattern::new(0, b"<asx version=")],
         min_header_len: 13, priority: 50, evidence_code: "rule.asx.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "asx", category: "multimedia", container_id: None,
+        recommended_ext: "asx", accepted_exts: &["asx", "wax", "wvx"],
+        patterns: &[MagicPattern::new(0, b"<ASX")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.asx.upper",
         verification: Verification::Signature, validator: None,
     },
     SignatureRule {
@@ -50,6 +57,13 @@ pub static PLAYLISTS_RULES: &[SignatureRule] = &[
         recommended_ext: "b4s", accepted_exts: &["b4s"],
         patterns: &[MagicPattern::new(0, b"Winamp XML")],
         min_header_len: 10, priority: 50, evidence_code: "rule.b4s.magic",
+        verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "jspf", category: "multimedia", container_id: None,
+        recommended_ext: "jspf", accepted_exts: &["jspf"],
+        patterns: &[MagicPattern::new(0, b"{\"playlist\":")],
+        min_header_len: 12, priority: 50, evidence_code: "rule.jspf.magic",
         verification: Verification::Signature, validator: None,
     },
 ];

@@ -26,7 +26,7 @@ pub static SCIENTIFIC_RULES: &[SignatureRule] = &[
     },
     SignatureRule {
         format_id: "shp", category: "scientific", container_id: None,
-        recommended_ext: "shp", accepted_exts: &["shp"],
+        recommended_ext: "shp", accepted_exts: &["shp", "shx"],
         patterns: &[MagicPattern::new(0, b"\x00\x00'\x0a")],
         min_header_len: 4, priority: 50, evidence_code: "rule.shp.magic",
         verification: Verification::Signature, validator: None,
