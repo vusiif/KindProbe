@@ -3,25 +3,19 @@ use crate::model::Verification;
 
 pub static GAME_ASSETS_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "wad", category: "archive", container_id: None,
-        recommended_ext: "wad", accepted_exts: &["wad"],
+        format_id: "wad", category: "archive", container_id: None, recommended_ext: "wad", accepted_exts: &["wad"],
         patterns: &[MagicPattern::new(0, b"IWAD")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.wad.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.wad.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "wad", category: "archive", container_id: None,
-        recommended_ext: "wad", accepted_exts: &["wad"],
+        format_id: "wad", category: "archive", container_id: None, recommended_ext: "wad", accepted_exts: &["wad"],
         patterns: &[MagicPattern::new(0, b"PWAD")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.wad.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.wad.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "pak", category: "archive", container_id: None,
-        recommended_ext: "pak", accepted_exts: &["pak"],
+        format_id: "pak", category: "archive", container_id: None, recommended_ext: "pak", accepted_exts: &["pak"],
         patterns: &[MagicPattern::new(0, b"PACK")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.pak.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.pak.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "pck", category: "archive", container_id: None,
@@ -74,5 +68,10 @@ pub static GAME_ASSETS_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"BIK")],
         min_header_len: 3, priority: 50, evidence_code: "rule.bik.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "uasset", category: "game", container_id: None, recommended_ext: "uasset",
+        accepted_exts: &["uasset", "umap"], patterns: &[MagicPattern::new(0, b"\xc1\x83\x2a\x9e")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.uasset.magic", verification: Verification::Signature, validator: None,
     },
 ];

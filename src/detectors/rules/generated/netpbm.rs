@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static NETPBM_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "pbm", category: "image", container_id: None,
-        recommended_ext: "pbm", accepted_exts: &["pbm"],
+        format_id: "pbm", category: "image", container_id: None, recommended_ext: "pbm", accepted_exts: &["pbm"],
         patterns: &[MagicPattern::new(0, b"P4\x0a")],
-        min_header_len: 3, priority: 50, evidence_code: "rule.pbm.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 3, priority: 50, evidence_code: "rule.pbm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "pgm", category: "image", container_id: None,
-        recommended_ext: "pgm", accepted_exts: &["pgm"],
+        format_id: "pgm", category: "image", container_id: None, recommended_ext: "pgm", accepted_exts: &["pgm"],
         patterns: &[MagicPattern::new(0, b"P5\x0a")],
-        min_header_len: 3, priority: 50, evidence_code: "rule.pgm.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 3, priority: 50, evidence_code: "rule.pgm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "ppm", category: "image", container_id: None,
-        recommended_ext: "ppm", accepted_exts: &["ppm"],
+        format_id: "ppm", category: "image", container_id: None, recommended_ext: "ppm", accepted_exts: &["ppm"],
         patterns: &[MagicPattern::new(0, b"P6\x0a")],
-        min_header_len: 3, priority: 50, evidence_code: "rule.ppm.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 3, priority: 50, evidence_code: "rule.ppm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "pam", category: "image", container_id: None,
@@ -75,5 +69,10 @@ pub static NETPBM_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"FORM"), MagicPattern::new(8, b"ILBM")],
         min_header_len: 12, priority: 50, evidence_code: "rule.ilbm.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "pam", category: "image", container_id: None, recommended_ext: "pam",
+        accepted_exts: &["pam"], patterns: &[MagicPattern::new(0, b"P7\n")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.pam.magic", verification: Verification::Signature, validator: None,
     },
 ];

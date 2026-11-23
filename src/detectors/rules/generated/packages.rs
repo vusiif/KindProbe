@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static PACKAGES_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "snappy", category: "archive", container_id: None,
-        recommended_ext: "sz", accepted_exts: &["sz", "snappy"],
+        format_id: "snappy", category: "archive", container_id: None, recommended_ext: "sz", accepted_exts: &["sz", "snappy"],
         patterns: &[MagicPattern::new(0, b"\xff\x06\x00\x00sNaPpY")],
-        min_header_len: 10, priority: 50, evidence_code: "rule.snappy.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 10, priority: 50, evidence_code: "rule.snappy.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "z", category: "archive", container_id: None,
-        recommended_ext: "z", accepted_exts: &["z"],
+        format_id: "z", category: "archive", container_id: None, recommended_ext: "z", accepted_exts: &["z"],
         patterns: &[MagicPattern::new(0, b"\x1f\x9d")],
-        min_header_len: 2, priority: 50, evidence_code: "rule.z.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 2, priority: 50, evidence_code: "rule.z.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "lha", category: "archive", container_id: None,
-        recommended_ext: "lha", accepted_exts: &["lha", "lzh"],
+        format_id: "lha", category: "archive", container_id: None, recommended_ext: "lha", accepted_exts: &["lha", "lzh"],
         patterns: &[MagicPattern::new(2, b"-lh")],
-        min_header_len: 5, priority: 50, evidence_code: "rule.lha.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 5, priority: 50, evidence_code: "rule.lha.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "ace", category: "archive", container_id: None,
@@ -75,5 +69,10 @@ pub static PACKAGES_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"<?php")],
         min_header_len: 5, priority: 50, evidence_code: "rule.php.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "har", category: "web", container_id: None, recommended_ext: "har",
+        accepted_exts: &["har"], patterns: &[MagicPattern::new(0, b"{\"log\":")],
+        min_header_len: 7, priority: 50, evidence_code: "rule.har.magic", verification: Verification::Signature, validator: None,
     },
 ];

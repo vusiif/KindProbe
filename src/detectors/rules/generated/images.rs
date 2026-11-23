@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static IMAGES_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "xcf", category: "image", container_id: None,
-        recommended_ext: "xcf", accepted_exts: &["xcf"],
+        format_id: "xcf", category: "image", container_id: None, recommended_ext: "xcf", accepted_exts: &["xcf"],
         patterns: &[MagicPattern::new(0, b"gimp xcf ")],
-        min_header_len: 9, priority: 50, evidence_code: "rule.xcf.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 9, priority: 50, evidence_code: "rule.xcf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "exr", category: "image", container_id: None,
-        recommended_ext: "exr", accepted_exts: &["exr"],
+        format_id: "exr", category: "image", container_id: None, recommended_ext: "exr", accepted_exts: &["exr"],
         patterns: &[MagicPattern::new(0, b"v/1\x01")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.exr.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.exr.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "fits", category: "image", container_id: None,
-        recommended_ext: "fits", accepted_exts: &["fits", "fit"],
+        format_id: "fits", category: "image", container_id: None, recommended_ext: "fits", accepted_exts: &["fits", "fit"],
         patterns: &[MagicPattern::new(0, b"SIMPLE  =")],
-        min_header_len: 9, priority: 50, evidence_code: "rule.fits.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 9, priority: 50, evidence_code: "rule.fits.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "icns", category: "image", container_id: None,
@@ -75,5 +69,10 @@ pub static IMAGES_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"\x80\x2a\x5f\xd7")],
         min_header_len: 4, priority: 50, evidence_code: "rule.cin.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "qoi", category: "image", container_id: None, recommended_ext: "qoi",
+        accepted_exts: &["qoi"], patterns: &[MagicPattern::new(0, b"qoif")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.qoi.magic", verification: Verification::Signature, validator: None,
     },
 ];

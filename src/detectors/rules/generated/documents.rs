@@ -3,25 +3,19 @@ use crate::model::Verification;
 
 pub static DOCUMENTS_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "dicom", category: "document", container_id: None,
-        recommended_ext: "dcm", accepted_exts: &["dcm", "dicm"],
+        format_id: "dicom", category: "document", container_id: None, recommended_ext: "dcm", accepted_exts: &["dcm", "dicm"],
         patterns: &[MagicPattern::new(128, b"DICM")],
-        min_header_len: 132, priority: 50, evidence_code: "rule.dicom.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 132, priority: 50, evidence_code: "rule.dicom.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "postscript", category: "document", container_id: None,
-        recommended_ext: "ps", accepted_exts: &["ps", "eps", "ai"],
+        format_id: "postscript", category: "document", container_id: None, recommended_ext: "ps", accepted_exts: &["ps", "eps", "ai"],
         patterns: &[MagicPattern::new(0, b"%!PS-Adobe-")],
-        min_header_len: 11, priority: 50, evidence_code: "rule.postscript.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 11, priority: 50, evidence_code: "rule.postscript.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "rtf", category: "document", container_id: None,
-        recommended_ext: "rtf", accepted_exts: &["rtf"],
+        format_id: "rtf", category: "document", container_id: None, recommended_ext: "rtf", accepted_exts: &["rtf"],
         patterns: &[MagicPattern::new(0, b"{\x5crtf")],
-        min_header_len: 5, priority: 50, evidence_code: "rule.rtf.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 5, priority: 50, evidence_code: "rule.rtf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "dwg", category: "document", container_id: None,
@@ -74,5 +68,10 @@ pub static DOCUMENTS_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"<FictionBook")],
         min_header_len: 12, priority: 50, evidence_code: "rule.fb2.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "warc", category: "document", container_id: None, recommended_ext: "warc",
+        accepted_exts: &["warc"], patterns: &[MagicPattern::new(0, b"WARC/1.")],
+        min_header_len: 7, priority: 50, evidence_code: "rule.warc.magic", verification: Verification::Signature, validator: None,
     },
 ];

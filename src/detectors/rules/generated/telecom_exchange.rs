@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static TELECOM_EXCHANGE_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "bplist", category: "system", container_id: None,
-        recommended_ext: "bplist", accepted_exts: &["bplist"],
+        format_id: "bplist", category: "system", container_id: None, recommended_ext: "bplist", accepted_exts: &["bplist"],
         patterns: &[MagicPattern::new(0, b"bplist00")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.bplist.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.bplist.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "srec", category: "firmware", container_id: None,
-        recommended_ext: "srec", accepted_exts: &["srec", "s19", "s28", "s37"],
+        format_id: "srec", category: "firmware", container_id: None, recommended_ext: "srec", accepted_exts: &["srec", "s19", "s28", "s37"],
         patterns: &[MagicPattern::new(0, b"S0")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.srec.header",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.srec.header", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "srec", category: "firmware", container_id: None,
-        recommended_ext: "srec", accepted_exts: &["srec", "s19", "s28", "s37"],
+        format_id: "srec", category: "firmware", container_id: None, recommended_ext: "srec", accepted_exts: &["srec", "s19", "s28", "s37"],
         patterns: &[MagicPattern::new(0, b"S1")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.srec.data16",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.srec.data16", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "srec", category: "firmware", container_id: None,
@@ -75,5 +69,10 @@ pub static TELECOM_EXCHANGE_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"UNA:")],
         min_header_len: 4, priority: 50, evidence_code: "rule.edifact.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ofx", category: "exchange", container_id: None, recommended_ext: "ofx",
+        accepted_exts: &["ofx", "qfx"], patterns: &[MagicPattern::new(0, b"OFXHEADER")],
+        min_header_len: 9, priority: 50, evidence_code: "rule.ofx.magic", verification: Verification::Signature, validator: None,
     },
 ];

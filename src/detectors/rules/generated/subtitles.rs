@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static SUBTITLES_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "vtt", category: "media", container_id: None,
-        recommended_ext: "vtt", accepted_exts: &["vtt"],
+        format_id: "vtt", category: "media", container_id: None, recommended_ext: "vtt", accepted_exts: &["vtt"],
         patterns: &[MagicPattern::new(0, b"WEBVTT")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.vtt.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 6, priority: 50, evidence_code: "rule.vtt.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "ass", category: "media", container_id: None,
-        recommended_ext: "ass", accepted_exts: &["ass", "ssa"],
+        format_id: "ass", category: "media", container_id: None, recommended_ext: "ass", accepted_exts: &["ass", "ssa"],
         patterns: &[MagicPattern::new(0, b"[Script Info]")],
-        min_header_len: 13, priority: 50, evidence_code: "rule.ass.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 13, priority: 50, evidence_code: "rule.ass.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "srt", category: "media", container_id: None,
-        recommended_ext: "srt", accepted_exts: &["srt"],
+        format_id: "srt", category: "media", container_id: None, recommended_ext: "srt", accepted_exts: &["srt"],
         patterns: &[MagicPattern::new(0, b"1\r\n00:")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.srt.crlf",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 6, priority: 50, evidence_code: "rule.srt.crlf", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "srt", category: "media", container_id: None,
@@ -75,5 +69,10 @@ pub static SUBTITLES_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"<USFSubtitles")],
         min_header_len: 13, priority: 50, evidence_code: "rule.usf.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sub", category: "media", container_id: None, recommended_ext: "sub",
+        accepted_exts: &["sub"], patterns: &[MagicPattern::new(0, b"{1}{1}")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.sub.microdvd", verification: Verification::Signature, validator: None,
     },
 ];

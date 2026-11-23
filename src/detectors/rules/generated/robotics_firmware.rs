@@ -3,25 +3,19 @@ use crate::model::Verification;
 
 pub static ROBOTICS_FIRMWARE_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "mcap", category: "scientific", container_id: None,
-        recommended_ext: "mcap", accepted_exts: &["mcap"],
+        format_id: "mcap", category: "scientific", container_id: None, recommended_ext: "mcap", accepted_exts: &["mcap"],
         patterns: &[MagicPattern::new(0, b"\x89MCAP0\x0d\x0a")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.mcap.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.mcap.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "bag", category: "scientific", container_id: None,
-        recommended_ext: "bag", accepted_exts: &["bag"],
+        format_id: "bag", category: "scientific", container_id: None, recommended_ext: "bag", accepted_exts: &["bag"],
         patterns: &[MagicPattern::new(0, b"#ROSBAG V2.0\x0a")],
-        min_header_len: 13, priority: 50, evidence_code: "rule.bag.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 13, priority: 50, evidence_code: "rule.bag.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "pcd", category: "scientific", container_id: None,
-        recommended_ext: "pcd", accepted_exts: &["pcd"],
+        format_id: "pcd", category: "scientific", container_id: None, recommended_ext: "pcd", accepted_exts: &["pcd"],
         patterns: &[MagicPattern::new(0, b"# .PCD v")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.pcd.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.pcd.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "dtb", category: "system", container_id: None,
@@ -74,5 +68,10 @@ pub static ROBOTICS_FIRMWARE_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"syntax = \"proto")],
         min_header_len: 15, priority: 50, evidence_code: "rule.proto.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "urdf", category: "robotics", container_id: None, recommended_ext: "urdf",
+        accepted_exts: &["urdf"], patterns: &[MagicPattern::new(0, b"<robot")],
+        min_header_len: 6, priority: 50, evidence_code: "rule.urdf.magic", verification: Verification::Signature, validator: None,
     },
 ];

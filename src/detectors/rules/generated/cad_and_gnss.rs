@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static CAD_AND_GNSS_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "stl", category: "model", container_id: None,
-        recommended_ext: "stl", accepted_exts: &["stl"],
+        format_id: "stl", category: "model", container_id: None, recommended_ext: "stl", accepted_exts: &["stl"],
         patterns: &[MagicPattern::new(0, b"solid ")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.stl.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 6, priority: 50, evidence_code: "rule.stl.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "vrml", category: "model", container_id: None,
-        recommended_ext: "wrl", accepted_exts: &["wrl", "vrml"],
+        format_id: "vrml", category: "model", container_id: None, recommended_ext: "wrl", accepted_exts: &["wrl", "vrml"],
         patterns: &[MagicPattern::new(0, b"#VRML V")],
-        min_header_len: 7, priority: 50, evidence_code: "rule.vrml.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 7, priority: 50, evidence_code: "rule.vrml.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "wat", category: "executable", container_id: None,
-        recommended_ext: "wat", accepted_exts: &["wat"],
+        format_id: "wat", category: "executable", container_id: None, recommended_ext: "wat", accepted_exts: &["wat"],
         patterns: &[MagicPattern::new(0, b"(module")],
-        min_header_len: 7, priority: 50, evidence_code: "rule.wat.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 7, priority: 50, evidence_code: "rule.wat.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "nmea", category: "navigation", container_id: None,
@@ -75,5 +69,10 @@ pub static CAD_AND_GNSS_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"<loc version=\"1.0\"")],
         min_header_len: 17, priority: 50, evidence_code: "rule.loc.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "kml", category: "geospatial", container_id: None, recommended_ext: "kml",
+        accepted_exts: &["kml"], patterns: &[MagicPattern::new(0, b"<kml")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.kml.magic", verification: Verification::Signature, validator: None,
     },
 ];

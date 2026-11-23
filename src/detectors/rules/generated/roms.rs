@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static ROMS_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "nes", category: "rom", container_id: None,
-        recommended_ext: "nes", accepted_exts: &["nes"],
+        format_id: "nes", category: "rom", container_id: None, recommended_ext: "nes", accepted_exts: &["nes"],
         patterns: &[MagicPattern::new(0, b"NES\x1a")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.nes.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.nes.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "z64", category: "rom", container_id: None,
-        recommended_ext: "z64", accepted_exts: &["z64"],
+        format_id: "z64", category: "rom", container_id: None, recommended_ext: "z64", accepted_exts: &["z64"],
         patterns: &[MagicPattern::new(0, b"\x807\x12@")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.z64.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.z64.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "n64", category: "rom", container_id: None,
-        recommended_ext: "n64", accepted_exts: &["n64"],
+        format_id: "n64", category: "rom", container_id: None, recommended_ext: "n64", accepted_exts: &["n64"],
         patterns: &[MagicPattern::new(0, b"@\x127\x80")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.n64.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.n64.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "v64", category: "rom", container_id: None,
@@ -75,5 +69,10 @@ pub static ROMS_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"UPS1")],
         min_header_len: 4, priority: 50, evidence_code: "rule.ups.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ips", category: "rom", container_id: None, recommended_ext: "ips",
+        accepted_exts: &["ips"], patterns: &[MagicPattern::new(0, b"PATCH")],
+        min_header_len: 5, priority: 50, evidence_code: "rule.ips.magic", verification: Verification::Signature, validator: None,
     },
 ];

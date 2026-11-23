@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static CRYPTO_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "jks", category: "security", container_id: None,
-        recommended_ext: "jks", accepted_exts: &["jks", "keystore", "ks"],
+        format_id: "jks", category: "security", container_id: None, recommended_ext: "jks", accepted_exts: &["jks", "keystore", "ks"],
         patterns: &[MagicPattern::new(0, b"\xfe\xed\xfe\xed")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.jks.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.jks.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "der", category: "security", container_id: None,
-        recommended_ext: "der", accepted_exts: &["der"],
+        format_id: "der", category: "security", container_id: None, recommended_ext: "der", accepted_exts: &["der"],
         patterns: &[MagicPattern::new(0, b"0\x82")],
-        min_header_len: 2, priority: 50, evidence_code: "rule.der.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 2, priority: 50, evidence_code: "rule.der.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "pgp", category: "security", container_id: None,
-        recommended_ext: "pgp", accepted_exts: &["pgp", "gpg", "asc"],
+        format_id: "pgp", category: "security", container_id: None, recommended_ext: "pgp", accepted_exts: &["pgp", "gpg", "asc"],
         patterns: &[MagicPattern::new(0, b"-----BEGIN PGP ")],
-        min_header_len: 15, priority: 50, evidence_code: "rule.pgp.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 15, priority: 50, evidence_code: "rule.pgp.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "sshkey", category: "security", container_id: None,
@@ -75,5 +69,10 @@ pub static CRYPTO_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"untrusted comment: ")],
         min_header_len: 19, priority: 50, evidence_code: "rule.minisig.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sshpub", category: "security", container_id: None, recommended_ext: "pub",
+        accepted_exts: &["pub"], patterns: &[MagicPattern::new(0, b"ssh-ed25519 ")],
+        min_header_len: 12, priority: 50, evidence_code: "rule.sshpub.magic", verification: Verification::Signature, validator: None,
     },
 ];

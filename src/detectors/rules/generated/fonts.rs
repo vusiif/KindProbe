@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static FONTS_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "pcf", category: "font", container_id: None,
-        recommended_ext: "pcf", accepted_exts: &["pcf"],
+        format_id: "pcf", category: "font", container_id: None, recommended_ext: "pcf", accepted_exts: &["pcf"],
         patterns: &[MagicPattern::new(0, b"\x01fcp")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.pcf.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.pcf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "bdf", category: "font", container_id: None,
-        recommended_ext: "bdf", accepted_exts: &["bdf"],
+        format_id: "bdf", category: "font", container_id: None, recommended_ext: "bdf", accepted_exts: &["bdf"],
         patterns: &[MagicPattern::new(0, b"STARTFONT ")],
-        min_header_len: 10, priority: 50, evidence_code: "rule.bdf.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 10, priority: 50, evidence_code: "rule.bdf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "afm", category: "font", container_id: None,
-        recommended_ext: "afm", accepted_exts: &["afm", "acfm", "amfm"],
+        format_id: "afm", category: "font", container_id: None, recommended_ext: "afm", accepted_exts: &["afm", "acfm", "amfm"],
         patterns: &[MagicPattern::new(0, b"StartFontMetrics")],
-        min_header_len: 16, priority: 50, evidence_code: "rule.afm.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 16, priority: 50, evidence_code: "rule.afm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "pfb", category: "font", container_id: None,
@@ -75,5 +69,10 @@ pub static FONTS_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"\x04\x10\x00\x00")],
         min_header_len: 4, priority: 50, evidence_code: "rule.snf.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bdf", category: "font", container_id: None, recommended_ext: "bdf",
+        accepted_exts: &["bdf"], patterns: &[MagicPattern::new(0, b"STARTFONT ")],
+        min_header_len: 10, priority: 50, evidence_code: "rule.bdf.magic", verification: Verification::Signature, validator: None,
     },
 ];

@@ -14,25 +14,19 @@ fn validate_pyc(header: &[u8]) -> ValidationStatus {
 
 pub static BYTECODE_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "dex", category: "executable", container_id: None,
-        recommended_ext: "dex", accepted_exts: &["dex"],
+        format_id: "dex", category: "executable", container_id: None, recommended_ext: "dex", accepted_exts: &["dex"],
         patterns: &[MagicPattern::new(0, b"dex\n035\x00")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "dex", category: "executable", container_id: None,
-        recommended_ext: "dex", accepted_exts: &["dex"],
+        format_id: "dex", category: "executable", container_id: None, recommended_ext: "dex", accepted_exts: &["dex"],
         patterns: &[MagicPattern::new(0, b"dex\n037\x00")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "dex", category: "executable", container_id: None,
-        recommended_ext: "dex", accepted_exts: &["dex"],
+        format_id: "dex", category: "executable", container_id: None, recommended_ext: "dex", accepted_exts: &["dex"],
         patterns: &[MagicPattern::new(0, b"dex\n038\x00")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.dex.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "dex", category: "executable", container_id: None,
@@ -75,5 +69,10 @@ pub static BYTECODE_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"\xde\x12\x04\x95")],
         min_header_len: 4, priority: 50, evidence_code: "rule.mo.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bc", category: "bytecode", container_id: None, recommended_ext: "bc",
+        accepted_exts: &["bc"], patterns: &[MagicPattern::new(0, b"BC\xc0\xde")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.bc.llvm", verification: Verification::Signature, validator: None,
     },
 ];

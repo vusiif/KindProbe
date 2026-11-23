@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static PLAYLISTS_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "m3u", category: "multimedia", container_id: None,
-        recommended_ext: "m3u", accepted_exts: &["m3u", "m3u8"],
+        format_id: "m3u", category: "multimedia", container_id: None, recommended_ext: "m3u", accepted_exts: &["m3u", "m3u8"],
         patterns: &[MagicPattern::new(0, b"#EXTM3U")],
-        min_header_len: 7, priority: 50, evidence_code: "rule.m3u.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 7, priority: 50, evidence_code: "rule.m3u.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "pls", category: "multimedia", container_id: None,
-        recommended_ext: "pls", accepted_exts: &["pls"],
+        format_id: "pls", category: "multimedia", container_id: None, recommended_ext: "pls", accepted_exts: &["pls"],
         patterns: &[MagicPattern::new(0, b"[playlist]")],
-        min_header_len: 10, priority: 50, evidence_code: "rule.pls.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 10, priority: 50, evidence_code: "rule.pls.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "cue", category: "audio", container_id: None,
-        recommended_ext: "cue", accepted_exts: &["cue"],
+        format_id: "cue", category: "audio", container_id: None, recommended_ext: "cue", accepted_exts: &["cue"],
         patterns: &[MagicPattern::new(0, b"FILE \"")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.cue.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 6, priority: 50, evidence_code: "rule.cue.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "wpl", category: "multimedia", container_id: None, recommended_ext: "wpl",
@@ -75,5 +69,10 @@ pub static PLAYLISTS_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"AIMP")],
         min_header_len: 4, priority: 50, evidence_code: "rule.aimppl.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "smil", category: "multimedia", container_id: None, recommended_ext: "smil",
+        accepted_exts: &["smil", "smi"], patterns: &[MagicPattern::new(0, b"<smil")],
+        min_header_len: 5, priority: 50, evidence_code: "rule.smil.magic", verification: Verification::Signature, validator: None,
     },
 ];

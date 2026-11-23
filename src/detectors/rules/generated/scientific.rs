@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static SCIENTIFIC_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "hdf5", category: "scientific", container_id: None,
-        recommended_ext: "h5", accepted_exts: &["h5", "hdf5", "he5"],
+        format_id: "hdf5", category: "scientific", container_id: None, recommended_ext: "h5", accepted_exts: &["h5", "hdf5", "he5"],
         patterns: &[MagicPattern::new(0, b"\x89HDF\x0d\x0a\x1a\x0a")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.hdf5.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.hdf5.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "hdf4", category: "scientific", container_id: None,
-        recommended_ext: "hdf", accepted_exts: &["hdf", "hdf4", "h4"],
+        format_id: "hdf4", category: "scientific", container_id: None, recommended_ext: "hdf", accepted_exts: &["hdf", "hdf4", "h4"],
         patterns: &[MagicPattern::new(0, b"\x0e\x03\x13\x01")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.hdf4.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.hdf4.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "netcdf", category: "scientific", container_id: None,
-        recommended_ext: "nc", accepted_exts: &["nc", "cdf"],
+        format_id: "netcdf", category: "scientific", container_id: None, recommended_ext: "nc", accepted_exts: &["nc", "cdf"],
         patterns: &[MagicPattern::new(0, b"CDF\x01")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.netcdf.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.netcdf.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "shp", category: "scientific", container_id: None,
@@ -75,5 +69,10 @@ pub static SCIENTIFIC_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"data_")],
         min_header_len: 5, priority: 50, evidence_code: "rule.cif.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "abf", category: "scientific", container_id: None, recommended_ext: "abf",
+        accepted_exts: &["abf"], patterns: &[MagicPattern::new(0, b"ABF ")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.abf.magic", verification: Verification::Signature, validator: None,
     },
 ];

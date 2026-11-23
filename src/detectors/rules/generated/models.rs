@@ -3,25 +3,19 @@ use crate::model::Verification;
 
 pub static MODELS_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "blend", category: "model", container_id: None,
-        recommended_ext: "blend", accepted_exts: &["blend"],
+        format_id: "blend", category: "model", container_id: None, recommended_ext: "blend", accepted_exts: &["blend"],
         patterns: &[MagicPattern::new(0, b"BLENDER")],
-        min_header_len: 7, priority: 50, evidence_code: "rule.blend.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 7, priority: 50, evidence_code: "rule.blend.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "glb", category: "model", container_id: None,
-        recommended_ext: "glb", accepted_exts: &["glb"],
+        format_id: "glb", category: "model", container_id: None, recommended_ext: "glb", accepted_exts: &["glb"],
         patterns: &[MagicPattern::new(0, b"glTF\x02\x00\x00\x00")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.glb.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.glb.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "fbx", category: "model", container_id: None,
-        recommended_ext: "fbx", accepted_exts: &["fbx"],
+        format_id: "fbx", category: "model", container_id: None, recommended_ext: "fbx", accepted_exts: &["fbx"],
         patterns: &[MagicPattern::new(0, b"Kaydara FBX Binary  ")],
-        min_header_len: 20, priority: 50, evidence_code: "rule.fbx.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 20, priority: 50, evidence_code: "rule.fbx.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "3ds", category: "model", container_id: None,
@@ -74,5 +68,10 @@ pub static MODELS_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"OFF\n")],
         min_header_len: 4, priority: 50, evidence_code: "rule.off.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ply", category: "model", container_id: None, recommended_ext: "ply",
+        accepted_exts: &["ply"], patterns: &[MagicPattern::new(0, b"ply\n")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.ply.magic", verification: Verification::Signature, validator: None,
     },
 ];

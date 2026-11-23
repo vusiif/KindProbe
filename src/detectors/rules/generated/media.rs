@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static MEDIA_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "flv", category: "video", container_id: None,
-        recommended_ext: "flv", accepted_exts: &["flv"],
+        format_id: "flv", category: "video", container_id: None, recommended_ext: "flv", accepted_exts: &["flv"],
         patterns: &[MagicPattern::new(0, b"FLV\x01")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.flv.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.flv.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "amr", category: "audio", container_id: None,
-        recommended_ext: "amr", accepted_exts: &["amr"],
+        format_id: "amr", category: "audio", container_id: None, recommended_ext: "amr", accepted_exts: &["amr"],
         patterns: &[MagicPattern::new(0, b"#!AMR\x0a")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.amr.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 6, priority: 50, evidence_code: "rule.amr.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "ac3", category: "audio", container_id: None,
-        recommended_ext: "ac3", accepted_exts: &["ac3"],
+        format_id: "ac3", category: "audio", container_id: None, recommended_ext: "ac3", accepted_exts: &["ac3"],
         patterns: &[MagicPattern::new(0, b"\x0bw")],
-        min_header_len: 2, priority: 50, evidence_code: "rule.ac3.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 2, priority: 50, evidence_code: "rule.ac3.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "au", category: "audio", container_id: None,
@@ -75,5 +69,10 @@ pub static MEDIA_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"NUTopencontainer\0")],
         min_header_len: 17, priority: 50, evidence_code: "rule.nut.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ac3", category: "audio", container_id: None, recommended_ext: "ac3",
+        accepted_exts: &["ac3"], patterns: &[MagicPattern::new(0, b"\x0b\x77")],
+        min_header_len: 2, priority: 50, evidence_code: "rule.ac3.magic", verification: Verification::Signature, validator: None,
     },
 ];

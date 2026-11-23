@@ -3,25 +3,19 @@ use crate::model::Verification;
 
 pub static DATABASE_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "arrow", category: "database", container_id: None,
-        recommended_ext: "arrow", accepted_exts: &["arrow", "feather"],
+        format_id: "arrow", category: "database", container_id: None, recommended_ext: "arrow", accepted_exts: &["arrow", "feather"],
         patterns: &[MagicPattern::new(0, b"ARROW1")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.arrow.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 6, priority: 50, evidence_code: "rule.arrow.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "kdbx", category: "database", container_id: None,
-        recommended_ext: "kdbx", accepted_exts: &["kdbx"],
+        format_id: "kdbx", category: "database", container_id: None, recommended_ext: "kdbx", accepted_exts: &["kdbx"],
         patterns: &[MagicPattern::new(0, b"\x03\xd9\xa2\x9ag\xfbK\xb5")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.kdbx.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.kdbx.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "kdb", category: "database", container_id: None,
-        recommended_ext: "kdb", accepted_exts: &["kdb"],
+        format_id: "kdb", category: "database", container_id: None, recommended_ext: "kdb", accepted_exts: &["kdb"],
         patterns: &[MagicPattern::new(0, b"\x03\xd9\xa2\x9ae\xfbK\xb5")],
-        min_header_len: 8, priority: 50, evidence_code: "rule.kdb.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 8, priority: 50, evidence_code: "rule.kdb.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "realm", category: "database", container_id: None,
@@ -74,5 +68,10 @@ pub static DATABASE_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"CREATE TABLE ")],
         min_header_len: 13, priority: 50, evidence_code: "rule.sql.create",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "orc", category: "database", container_id: None, recommended_ext: "orc",
+        accepted_exts: &["orc"], patterns: &[MagicPattern::new(0, b"ORC")],
+        min_header_len: 3, priority: 50, evidence_code: "rule.orc.magic", verification: Verification::Signature, validator: None,
     },
 ];

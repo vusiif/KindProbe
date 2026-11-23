@@ -3,25 +3,19 @@ use crate::model::Verification;
 
 pub static ARCHIVES_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "cpio", category: "archive", container_id: None,
-        recommended_ext: "cpio", accepted_exts: &["cpio"],
+        format_id: "cpio", category: "archive", container_id: None, recommended_ext: "cpio", accepted_exts: &["cpio"],
         patterns: &[MagicPattern::new(0, b"070707")],
-        min_header_len: 6, priority: 50, evidence_code: "rule.cpio.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 6, priority: 50, evidence_code: "rule.cpio.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "lz", category: "archive", container_id: None,
-        recommended_ext: "lz", accepted_exts: &["lz"],
+        format_id: "lz", category: "archive", container_id: None, recommended_ext: "lz", accepted_exts: &["lz"],
         patterns: &[MagicPattern::new(0, b"LZIP")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.lz.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.lz.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "arj", category: "archive", container_id: None,
-        recommended_ext: "arj", accepted_exts: &["arj"],
+        format_id: "arj", category: "archive", container_id: None, recommended_ext: "arj", accepted_exts: &["arj"],
         patterns: &[MagicPattern::new(0, b"`\xea")],
-        min_header_len: 2, priority: 50, evidence_code: "rule.arj.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 2, priority: 50, evidence_code: "rule.arj.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "zoo", category: "archive", container_id: None,
@@ -74,5 +68,10 @@ pub static ARCHIVES_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"RPA-")],
         min_header_len: 4, priority: 50, evidence_code: "rule.rpa.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "squashfs", category: "archive", container_id: None, recommended_ext: "sqsh",
+        accepted_exts: &["sqsh", "squashfs"], patterns: &[MagicPattern::new(0, b"hsqs")],
+        min_header_len: 4, priority: 50, evidence_code: "rule.squashfs.magic", verification: Verification::Signature, validator: None,
     },
 ];

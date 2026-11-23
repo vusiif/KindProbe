@@ -4,25 +4,19 @@ use crate::model::Verification;
 
 pub static AUDIO_CHIPS_RULES: &[SignatureRule] = &[
     SignatureRule {
-        format_id: "sid", category: "audio", container_id: None,
-        recommended_ext: "sid", accepted_exts: &["sid"],
+        format_id: "sid", category: "audio", container_id: None, recommended_ext: "sid", accepted_exts: &["sid"],
         patterns: &[MagicPattern::new(0, b"PSID")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.sid.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.sid.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "spc", category: "audio", container_id: None,
-        recommended_ext: "spc", accepted_exts: &["spc"],
+        format_id: "spc", category: "audio", container_id: None, recommended_ext: "spc", accepted_exts: &["spc"],
         patterns: &[MagicPattern::new(0, b"SNES-SPC700")],
-        min_header_len: 11, priority: 50, evidence_code: "rule.spc.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 11, priority: 50, evidence_code: "rule.spc.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
-        format_id: "vgm", category: "audio", container_id: None,
-        recommended_ext: "vgm", accepted_exts: &["vgm", "vgz"],
+        format_id: "vgm", category: "audio", container_id: None, recommended_ext: "vgm", accepted_exts: &["vgm", "vgz"],
         patterns: &[MagicPattern::new(0, b"Vgm ")],
-        min_header_len: 4, priority: 50, evidence_code: "rule.vgm.magic",
-        verification: Verification::Signature, validator: None,
+        min_header_len: 4, priority: 50, evidence_code: "rule.vgm.magic", verification: Verification::Signature, validator: None,
     },
     SignatureRule {
         format_id: "torrent", category: "media", container_id: None,
@@ -75,5 +69,10 @@ pub static AUDIO_CHIPS_RULES: &[SignatureRule] = &[
         patterns: &[MagicPattern::new(0, b"tBaK")],
         min_header_len: 4, priority: 50, evidence_code: "rule.tak.magic",
         verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "nsf", category: "audio", container_id: None, recommended_ext: "nsf",
+        accepted_exts: &["nsf"], patterns: &[MagicPattern::new(0, b"NESM\x1a")],
+        min_header_len: 5, priority: 50, evidence_code: "rule.nsf.magic", verification: Verification::Signature, validator: None,
     },
 ];
