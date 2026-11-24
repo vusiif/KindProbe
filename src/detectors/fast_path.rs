@@ -23,13 +23,16 @@ fn check_zip_or_cfb<R: Read + Seek>(
 ) -> Result<Option<DetectionReport>, crate::model::DetectError> {
     let is_zip = matches!(fid, "zip" | "docx" | "xlsx" | "pptx" | "jar" | "apk" | "epub" | "odt" | "ods" | "odp" | "kmz" | "ipa");
     if is_zip && header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")) {
+        let _ = reader.seek(SeekFrom::Start(0));
         let rep = detect_zip_ooxml(reader, options)?;
         if rep.format_id.as_deref() == Some(fid) || fid == "zip" { return Ok(Some(rep)); }
+        let _ = reader.seek(SeekFrom::Start(0));
     } else if matches!(fid, "cfb" | "doc" | "xls" | "ppt" | "msi") && header.len() >= 8 && header.starts_with(CFB_MAGIC) {
+        let _ = reader.seek(SeekFrom::Start(0));
         let rep = detect_cfb(reader, options)?;
         if rep.format_id.as_deref() == Some(fid) || fid == "cfb" { return Ok(Some(rep)); }
+        let _ = reader.seek(SeekFrom::Start(0));
     }
-    let _ = reader.seek(SeekFrom::Start(0));
     Ok(None)
 }
 

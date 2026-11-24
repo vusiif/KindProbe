@@ -20,63 +20,196 @@ pub enum SignatureMatch {
 }
 
 pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
-    // 1. Probe image formats (PNG, JPEG, GIF)
-    match probe_image_signatures(header) {
-        ImageMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-        ImageMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-        ImageMatch::None => (),
+    if header.is_empty() {
+        return SignatureMatch::None;
     }
 
-    // 2. Probe archive formats (7z, RAR)
-    match probe_archive_signatures(header) {
-        ArchiveMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-        ArchiveMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-        ArchiveMatch::None => (),
+    let b0 = header[0];
+
+    // 1. First-byte O(1) jump table for offset-0 signatures
+    match b0 {
+        0x89 => {
+            // PNG
+            match probe_image_signatures(header) {
+                ImageMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                ImageMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                ImageMatch::None => (),
+            }
+        }
+        0xFF => {
+            // JPEG or MP3 frame sync
+            match probe_image_signatures(header) {
+                ImageMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                ImageMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                ImageMatch::None => (),
+            }
+            match probe_media_signatures(header) {
+                MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                MediaMatch::None => (),
+            }
+        }
+        b'G' => {
+            // GIF
+            match probe_image_signatures(header) {
+                ImageMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                ImageMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                ImageMatch::None => (),
+            }
+        }
+        b'7' => {
+            // 7z
+            match probe_archive_signatures(header) {
+                ArchiveMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                ArchiveMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                ArchiveMatch::None => (),
+            }
+        }
+        b'R' => {
+            // RAR or RIFF (WAV, WebP, AVI)
+            match probe_archive_signatures(header) {
+                ArchiveMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                ArchiveMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                ArchiveMatch::None => (),
+            }
+            match probe_media_signatures(header) {
+                MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                MediaMatch::None => (),
+            }
+        }
+        0x1F | b'B' | 0xFD | 0x28 => {
+            // Gzip (0x1F), Bzip2 ('B'), XZ (0xFD), Zstd (0x28)
+            match probe_archive_signatures(header) {
+                ArchiveMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                ArchiveMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                ArchiveMatch::None => (),
+            }
+        }
+        0x1A | b'I' => {
+            // WebM / MKV (0x1A) or MP3 ID3 ('I')
+            match probe_media_signatures(header) {
+                MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                MediaMatch::None => (),
+            }
+        }
+        0x7F | b'M' | 0xFE | 0xCE | 0xCF | 0xCA | 0xBE | 0xED => {
+            // ELF (0x7F), PE ('M'), Mach-O / Class (0xFE, 0xCE, 0xCF, 0xCA, 0xBE, 0xED)
+            match probe_executable_signatures(header) {
+                ExecutableMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                ExecutableMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                ExecutableMatch::None => (),
+            }
+            if b0 == b'M' {
+                // 0x4D is also the first byte of modified PCAP (0x4D, 0x3C, 0xB2, 0xA1)
+                match probe_database_signatures(header) {
+                    DatabaseMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                    DatabaseMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                    DatabaseMatch::None => (),
+                }
+            }
+        }
+        0x00 => {
+            // WASM (0x00), TTF (0x00), or MP4 box size prefix (\0\0\0)
+            if header.starts_with(&[0, 0, 0]) {
+                match probe_media_signatures(header) {
+                    MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                    MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                    MediaMatch::None => (),
+                }
+            }
+            match probe_executable_signatures(header) {
+                ExecutableMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                ExecutableMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                ExecutableMatch::None => (),
+            }
+            match probe_font_signatures(header) {
+                FontMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                FontMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                FontMatch::None => (),
+            }
+        }
+        b'f' => {
+            if header.starts_with(b"ftyp") {
+                match probe_media_signatures(header) {
+                    MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                    MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                    MediaMatch::None => (),
+                }
+            }
+        }
+        b'O' => {
+            // OTF ('O') or Avro ('O')
+            match probe_font_signatures(header) {
+                FontMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                FontMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                FontMatch::None => (),
+            }
+            match probe_database_signatures(header) {
+                DatabaseMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                DatabaseMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                DatabaseMatch::None => (),
+            }
+        }
+        b'w' => {
+            // WOFF / WOFF2 ('w')
+            match probe_font_signatures(header) {
+                FontMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                FontMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                FontMatch::None => (),
+            }
+        }
+        b'S' | 0xD4 | 0xA1 | 0x0A | b'P' => {
+            // SQLite3 ('S'), PCAP (0xD4, 0xA1), PCAPNG (0x0A), Parquet ('P')
+            match probe_database_signatures(header) {
+                DatabaseMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                DatabaseMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                DatabaseMatch::None => (),
+            }
+        }
+        b'Q' | b'K' | b'#' | b'c' | b'v' => {
+            // QCOW ('Q'), VMDK ('K', '#'), VHD ('c'), VHDX ('v')
+            match probe_disk_signatures(header) {
+                DiskMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+                DiskMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+                DiskMatch::None => (),
+            }
+        }
+        _ => (),
     }
 
-    // 3. Probe media formats (MP4, MOV, WebM, MKV, WAV, WebP, AVI, MP3)
-    match probe_media_signatures(header) {
-        MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-        MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-        MediaMatch::None => (),
+    // 2. Bounded non-zero offset signature probes
+    if header.len() >= 8 && &header[4..8] == b"ftyp" {
+        match probe_media_signatures(header) {
+            MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+            MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+            MediaMatch::None => (),
+        }
+    }
+    if header.len() >= 262 && &header[257..262] == b"ustar" {
+        match probe_archive_signatures(header) {
+            ArchiveMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+            ArchiveMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+            ArchiveMatch::None => (),
+        }
+    }
+    if header.len() >= 64 {
+        match probe_ebook_signatures(header) {
+            EbookMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+            EbookMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+            EbookMatch::None => (),
+        }
+    }
+    if header.len() >= 32773 {
+        match probe_disk_signatures(header) {
+            DiskMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+            DiskMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+            DiskMatch::None => (),
+        }
     }
 
-    // 4. Probe executable and system binary formats (ELF, PE, WASM, Mach-O)
-    match probe_executable_signatures(header) {
-        ExecutableMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-        ExecutableMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-        ExecutableMatch::None => (),
-    }
-
-    // 5. Probe font formats (TTF, OTF, WOFF, WOFF2)
-    match probe_font_signatures(header) {
-        FontMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-        FontMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-        FontMatch::None => (),
-    }
-
-    // 6. Probe standalone e-book formats (MOBI, PalmDOC)
-    match probe_ebook_signatures(header) {
-        EbookMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-        EbookMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-        EbookMatch::None => (),
-    }
-
-    // 7. Probe database, columnar and capture formats (SQLite3, PCAP, PCAPNG, Parquet, Avro)
-    match probe_database_signatures(header) {
-        DatabaseMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-        DatabaseMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-        DatabaseMatch::None => (),
-    }
-
-    // 8. Probe virtual disk formats (QCOW2, VMDK, VHD, VHDX, ISO buffer)
-    match probe_disk_signatures(header) {
-        DiskMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-        DiskMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-        DiskMatch::None => (),
-    }
-
-    // 9. Probe all declarative and generated rules via 256-bucket indexed dispatch
+    // 3. Probe all declarative and generated rules via 256-bucket indexed dispatch
     match evaluate_indexed_rules(header) {
         RuleMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
         RuleMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),

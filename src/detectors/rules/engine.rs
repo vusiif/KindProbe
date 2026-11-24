@@ -9,6 +9,7 @@ pub enum RuleMatch {
     None,
 }
 
+#[inline]
 pub fn evaluate_single_rule(header: &[u8], rule: &SignatureRule) -> RuleMatch {
     let mut pattern_truncated = false;
 
