@@ -2,30 +2,27 @@
 
 > **单一真实信源 (Single Source of Truth - SSOT)**  
 > **更新时间**：2026-11-23  
-> **当前版本**：v0.1.0 (1000+ 格式里程碑达成；完成全维度安全审计与加固，库层全面推行 forbid(unsafe_code)，全工程 0 panic/0 unwrap/0 expect 绝对无恐慌保证，全套测试绿标)  
-> **远端分支**：`origin/main` (安全加固提交已推送到主线)
+> **当前版本**：v0.1.0 (完成首字节 256 桶调度与 Fast Path 二分索引，未知文件实测加速 7.87 倍，全格式提速 4~8 倍，全套测试 100% 绿标，Clippy 0 警告)  
+> **远端分支**：`origin/main` (安全加固提交 `42a84e6` 已在远端主线)
 
 ---
 
 ## 1. [已完成] (Completed)
 
-### 1.1 全维度安全审计与防御加固 (Security Audit & Hardening)
-依据 `security-and-hardening` 规范实施 STRIDE 威胁建模与代码审计：
-1. **内存安全加固 (Memory Safety)**：
-   - 在 [`src/lib.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/lib.rs) 顶部强行注入 `#![forbid(unsafe_code)]`，从编译器级别彻底阻断探测核心库引入任何 Unsafe 行为；
-   - 审计二进制入口 [`src/main.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/main.rs)，仅存在的两处 Win32 平台探测系统 API 调用补充完备的 `// SAFETY:` 论证注解，杜绝未定义行为 (UB)。
-2. **绝对防恐慌拒绝服务阻断 (Zero-Panic Guarantee)**：
-   - 清理并消除全工程仅存的 2 处 JSON 错误信封序列化 `.unwrap()` 调用，改用 `unwrap_or_else` 降级容错；
-   - 实现整个 `src/` 代码库 **0 `unwrap()`、0 `expect()`、0 `panic!()`**。面对任何畸形、截断或恶意构造的文件输入均优雅返回结果或错误。
-3. **资源耗尽与 DoS 边界防线验证 (Resource Caps & DoS Defense)**：
-   - 验证 `BudgetReader` 限制读取字节上限（默认 8MB）及 ZIP 目录窗口（默认 1MB）；
-   - 验证 `DecompressLimitReader` 限制解压膨胀上限（单个文件 256KB，总解压 1MB），阻断解压炸弹（Zip Bomb）；
-   - 验证 XML 深度硬预算（`max_xml_depth = 64`）防御“十亿笑脸”（Billion Laughs）递归攻击；
-   - 验证 CFB 目录遍历上限（`max_entries`）防御 FAT 循环链攻击；
-   - 验证 ZIP 目录检测逻辑对抗同名伪造条目（`zip.conflicting_entries`）攻击。
-4. **纯粹纯 Rust 依赖链与零网络暴露 (Supply Chain & Trust Boundaries)**：
-   - 无任何 C/C++ 动态链接依赖库（无 `zlib-sys`、`libarchive`、`openssl`），解压由纯 Rust `miniz_oxide` 驱动；
-   - 零网络栈（无 `reqwest`、`tokio`、`curl`），无外部端口监听或 SSRF 攻击面。
+### 1.1 性能优化阶段 1：首字节 256 桶调度与快速通道二分索引 (First-Byte Bucket Dispatch & FastPath Index)
+1. **首字节 256 桶调度表** ([`src/detectors/rules/dispatch.rs`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/src/detectors/rules/dispatch.rs))：
+   - 将全局 790 条声明式与分卷规则按首字节进行 $O(1)$ 桶划分：756 条（95.7%）规则完美归入 256 桶，133 个桶完全为空（输入可 $O(1)$ 瞬间驳回全部二进制规则，直达纯文本或未知），非空桶平均仅 6.15 条规则；
+   - 34 条 `offset > 0` 特殊规则安全归入紧凑回退数组，保障完全等价判定与 0 回归；
+   - 快速通道按 `format_id` ASCII 建立已排序切片，实现 $O(\log N)$ 二分查找快速匹配。
+2. **实测性能突破** (经 Release Profile 严密基准对比)：
+   - **Unknown Binary 最坏情况失配**：从 4,980 ns 降至 **632 ns** (**7.87 倍加速，耗时骤降 87.3%**)；
+   - **末尾分卷 Retro Sharp XDF (P59)**：从 2,917 ns 降至 **631 ns** (**4.62 倍加速**)；
+   - **纯文本与源码探测 (C/Python/Verilog)**：从 4,919~5,375 ns 降至 **1,211~1,287 ns** (**4.1~4.2 倍加速**)；
+   - **早期分卷 Blender/HDF5/FLV**：从 3,016~4,545 ns 降至 **685~697 ns** (**4.4~6.6 倍加速**)；
+   - **基准测试总耗时**：从 10.30 秒压降至 **3.38 秒**（整体基准提速 3 倍）。
+3. **测试规范与基准追踪归档**：
+   - 建立永久基线归档 [`research/benchmark_baseline_v1_original.md`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/research/benchmark_baseline_v1_original.md)；
+   - 建立全景优化对比追踪文档 [`docs/PERFORMANCE_BENCHMARK_AND_OPTIMIZATION.md`](file:///c:/Users/IceLolly/Music/Rust/KindProbe/docs/PERFORMANCE_BENCHMARK_AND_OPTIMIZATION.md)。
 
 ---
 
@@ -36,12 +33,15 @@
   - `cargo clippy --all-targets -- -D warnings` **0 警告，0 错误**；
   - `src/lib.rs` 强约束 `#![forbid(unsafe_code)]`；
   - `src/` 全代码库保持 0 `unwrap()` / 0 `expect()` / 0 `panic!()`。
-- **Git 状态**：
-  - 工作树整洁，安全加固改动已提交并推送到远端 `origin/main`。
+- **工作区变更**：
+  - 新增 `src/detectors/rules/dispatch.rs`（256 桶调度与二分查找实现）；
+  - 更新 `src/detectors/rules/mod.rs` 与 `src/detectors/signatures.rs`（接入索引调度）；
+  - 更新 `tests/test_performance_bench.rs` 与 `docs/PERFORMANCE_BENCHMARK_AND_OPTIMIZATION.md`。
 
 ---
 
 ## 3. [待办与下一步] (Next Steps)
 
-1. 保持远端 CI 构建监控；
-2. 持续支持后续功能扩展与新格式接入。
+1. 向用户汇报阶段 1 优化数据成果与加速比对比；
+2. 待用户确认后执行原子提交与远端推送；
+3. 根据需要继续推进阶段 3（高频格式与 ASCII 快速前置门禁）。

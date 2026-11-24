@@ -9,7 +9,7 @@ use super::executables::{probe_executable_signatures, ExecutableMatch};
 use super::fonts::{probe_font_signatures, FontMatch};
 use super::images::{probe_image_signatures, ImageMatch};
 use super::media::{probe_media_signatures, MediaMatch};
-use super::rules::{evaluate_rules, DECLARATIVE_RULES, GENERATED_RULES, RuleMatch};
+use super::rules::{evaluate_indexed_rules, RuleMatch};
 
 pub const PDF_SIGNATURE: &[u8] = b"%PDF-";
 
@@ -76,20 +76,11 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         DiskMatch::None => (),
     }
 
-    // 9. Probe declarative rules (DEB, RPM, CRX, FLAC, OGG, PSD, TIFF, ICO, CUR)
-    match evaluate_rules(header, DECLARATIVE_RULES) {
+    // 9. Probe all declarative and generated rules via 256-bucket indexed dispatch
+    match evaluate_indexed_rules(header) {
         RuleMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
         RuleMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
         RuleMatch::None => (),
-    }
-
-    // 10. Probe generated declarative rules from authoritative Tika library
-    for group in GENERATED_RULES {
-        match evaluate_rules(header, group) {
-            RuleMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
-            RuleMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
-            RuleMatch::None => (),
-        }
     }
 
     // 11. Probe PDF signature within first 1024 bytes

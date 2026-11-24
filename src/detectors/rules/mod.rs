@@ -1,8 +1,10 @@
+pub mod dispatch;
 pub mod engine;
 pub mod generated;
 pub mod registry;
 pub mod types;
 
+pub use dispatch::{evaluate_indexed_rules, probe_indexed_rule_by_format};
 pub use engine::{evaluate_rules, evaluate_single_rule, RuleMatch};
 pub use generated::GENERATED_RULES;
 pub use registry::DECLARATIVE_RULES;
@@ -13,17 +15,5 @@ pub fn probe_rule_by_format(
     header: &[u8],
     target_fid: &str,
 ) -> Option<crate::model::DetectionReport> {
-    if let Some(rule) = DECLARATIVE_RULES.iter().find(|r| r.format_id == target_fid) {
-        if let RuleMatch::Confirmed(rep) = evaluate_single_rule(header, rule) {
-            return Some(*rep);
-        }
-    }
-    for group in GENERATED_RULES {
-        if let Some(rule) = group.iter().find(|r| r.format_id == target_fid) {
-            if let RuleMatch::Confirmed(rep) = evaluate_single_rule(header, rule) {
-                return Some(*rep);
-            }
-        }
-    }
-    None
+    probe_indexed_rule_by_format(header, target_fid)
 }
