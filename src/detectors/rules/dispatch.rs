@@ -79,6 +79,13 @@ pub fn evaluate_indexed_rules(header: &[u8]) -> RuleMatch {
     let mut truncated_candidate: Option<String> = None;
 
     for &rule in index.buckets[b0].iter() {
+        if header.len() >= 2 && !rule.patterns.is_empty() {
+            let p0 = &rule.patterns[0];
+            if p0.offset == 0 && p0.mask.is_none() && p0.bytes.len() >= 2 && header[1] != p0.bytes[1] {
+                continue;
+            }
+        }
+
         match evaluate_single_rule(header, rule) {
             RuleMatch::Confirmed(rep) => return RuleMatch::Confirmed(rep),
             RuleMatch::Truncated(cand) => {

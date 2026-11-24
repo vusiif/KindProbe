@@ -88,9 +88,39 @@ pub fn detect_bytes(
     options: &DetectOptions,
 ) -> Result<DetectionReport, DetectError> {
     let start = Instant::now();
-    let mut cursor = Cursor::new(bytes);
-    let mut report = detect_reader(&mut cursor, options)?;
+    let header_len = bytes.len().min(options.initial_window_size);
+    let header = &bytes[..header_len];
+
+    let mut report = match detectors::detect_slice_non_container(header, options)? {
+        Some(rep) => rep,
+        None => {
+            let mut cursor = Cursor::new(bytes);
+            let mut budget_reader = BudgetReader::new(&mut cursor, options.max_source_bytes_read);
+            let mut rep = detectors::detect_stream(&mut budget_reader, options)?;
+            budget_reader.populate_stats(&mut rep.stats);
+            if budget_reader.is_budget_exceeded() {
+                rep.inspection = Inspection::Limited;
+                if !rep.warnings.iter().any(|w| w.code == "budget.source_read_exceeded") {
+                    rep.warnings.push(WarningItem::new(
+                        "budget.source_read_exceeded",
+                        "Total source read budget exceeded during detection",
+                    ));
+                }
+            }
+            rep
+        }
+    };
+
     report.stats.duration_micros = start.elapsed().as_micros() as u64;
+
+    // Independent extension diagnosis: readers and byte slices have no extension (None)
+    report.extension_status = compare_extension(&report, None);
+
+    // Verify invariants
+    if let Err(inv) = report.validate_invariants() {
+        return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+    }
+
     Ok(report)
 }
 

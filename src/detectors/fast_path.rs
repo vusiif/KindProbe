@@ -8,7 +8,6 @@ use super::databases::{probe_database_signatures, DatabaseMatch};
 use super::disks::{probe_disk_signatures, DiskMatch};
 use super::executables::{probe_executable_signatures, ExecutableMatch};
 use super::fonts::{probe_font_signatures, FontMatch};
-use super::images::{probe_image_signatures, ImageMatch};
 use super::media::{probe_media_signatures, MediaMatch};
 use super::rules::probe_rule_by_format;
 use super::signatures::{make_pdf_report, PDF_SIGNATURE};
@@ -38,7 +37,18 @@ fn check_zip_or_cfb<R: Read + Seek>(
 
 fn probe_by_fid(header: &[u8], fid: &str) -> Option<DetectionReport> {
     match fid {
-        "png" | "jpeg" | "gif" => match probe_image_signatures(header) { ImageMatch::Confirmed(r) => Some(*r), _ => None },
+        "png" => match super::images::png::probe_png(header) {
+            super::images::png::PngProbeResult::Confirmed { has_ihdr } => Some(super::images::png::make_png_report(has_ihdr)),
+            _ => None,
+        },
+        "jpeg" => match super::images::jpeg::probe_jpeg(header) {
+            super::images::jpeg::JpegProbeResult::Confirmed { has_segment } => Some(super::images::jpeg::make_jpeg_report(has_segment)),
+            _ => None,
+        },
+        "gif" => match super::images::gif::probe_gif(header) {
+            super::images::gif::GifProbeResult::Confirmed { has_screen_desc } => Some(super::images::gif::make_gif_report(has_screen_desc)),
+            _ => None,
+        },
         "7z" | "rar" | "tar.gz" | "gzip" | "bzip2" | "tar" | "xz" | "zstd" => match probe_archive_signatures(header) { ArchiveMatch::Confirmed(r) => Some(*r), _ => None },
         "mp4" | "mov" | "webm" | "mkv" | "wav" | "webp" | "avi" | "mp3" => match probe_media_signatures(header) { MediaMatch::Confirmed(r) => Some(*r), _ => None },
         "elf" | "pe" | "wasm" | "mach-o" => match probe_executable_signatures(header) { ExecutableMatch::Confirmed(r) => Some(*r), _ => None },
@@ -57,14 +67,60 @@ pub fn probe_fast_path<R: Read + Seek>(
     options: &DetectOptions,
 ) -> Result<Option<DetectionReport>, crate::model::DetectError> {
     let hint = match &options.extension_hint {
-        Some(h) if !h.trim().is_empty() => h.trim().to_ascii_lowercase(),
+        Some(h) if !h.trim().is_empty() => {
+            let trimmed = h.trim();
+            if trimmed.bytes().any(|b| b.is_ascii_uppercase()) {
+                std::borrow::Cow::Owned(trimmed.to_ascii_lowercase())
+            } else {
+                std::borrow::Cow::Borrowed(trimmed)
+            }
+        }
         _ => return Ok(None),
     };
-    let fid = find_registered_format(&hint).unwrap_or(hint.as_str());
+    let fid = find_registered_format(&hint).unwrap_or(&hint);
     if matches!(fid, "zip" | "docx" | "xlsx" | "pptx" | "jar" | "apk" | "epub" | "odt" | "ods" | "odp" | "kmz" | "ipa" | "cfb" | "doc" | "xls" | "ppt" | "msi") {
         return check_zip_or_cfb(reader, header, options, fid);
     }
     if fid == "pdf" {
+        if header.starts_with(PDF_SIGNATURE) {
+            return Ok(Some(make_pdf_report()));
+        }
+        let lim = header.len().min(1024);
+        if lim >= 5 && header[..lim].windows(5).any(|w| w == PDF_SIGNATURE) {
+            return Ok(Some(make_pdf_report()));
+        }
+        return Ok(None);
+    }
+    if let Some(r) = probe_by_fid(header, fid) {
+        if r.format_id.as_deref() == Some(fid) { return Ok(Some(r)); }
+    }
+    Ok(None)
+}
+
+/// Slice-only fast path probe (skips container readers, zero allocation).
+pub fn probe_fast_path_slice(
+    header: &[u8],
+    options: &DetectOptions,
+) -> Result<Option<DetectionReport>, crate::model::DetectError> {
+    let hint = match &options.extension_hint {
+        Some(h) if !h.trim().is_empty() => {
+            let trimmed = h.trim();
+            if trimmed.bytes().any(|b| b.is_ascii_uppercase()) {
+                std::borrow::Cow::Owned(trimmed.to_ascii_lowercase())
+            } else {
+                std::borrow::Cow::Borrowed(trimmed)
+            }
+        }
+        _ => return Ok(None),
+    };
+    let fid = find_registered_format(&hint).unwrap_or(&hint);
+    if matches!(fid, "zip" | "docx" | "xlsx" | "pptx" | "jar" | "apk" | "epub" | "odt" | "ods" | "odp" | "kmz" | "ipa" | "cfb" | "doc" | "xls" | "ppt" | "msi") {
+        return Ok(None);
+    }
+    if fid == "pdf" {
+        if header.starts_with(PDF_SIGNATURE) {
+            return Ok(Some(make_pdf_report()));
+        }
         let lim = header.len().min(1024);
         if lim >= 5 && header[..lim].windows(5).any(|w| w == PDF_SIGNATURE) {
             return Ok(Some(make_pdf_report()));
