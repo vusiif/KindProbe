@@ -83,9 +83,15 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         RuleMatch::None => (),
     }
 
-    // 11. Probe PDF signature within first 1024 bytes
+    // 11. Probe PDF signature (fast prefix check, followed by bounded window scan)
+    if header.starts_with(PDF_SIGNATURE) {
+        return SignatureMatch::Confirmed(Box::new(make_pdf_report()));
+    }
     let scan_limit = header.len().min(1024);
-    if scan_limit >= 5 && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE) {
+    if scan_limit >= 5
+        && header[..scan_limit].contains(&b'%')
+        && header[..scan_limit].windows(5).any(|w| w == PDF_SIGNATURE)
+    {
         return SignatureMatch::Confirmed(Box::new(make_pdf_report()));
     }
 

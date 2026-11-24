@@ -59,8 +59,8 @@ fn build_rule_index() -> RuleIndex {
         }
     }
 
+    fallback_vec.sort_by_key(|r| r.patterns.first().map(|p| p.offset).unwrap_or(0));
     by_fmt_vec.sort_unstable_by_key(|&(fid, _)| fid);
-    by_fmt_vec.dedup_by_key(|&mut (fid, _)| fid);
 
     RuleIndex {
         buckets: std::array::from_fn(|i| temp_buckets[i].clone().into_boxed_slice()),
@@ -91,6 +91,11 @@ pub fn evaluate_indexed_rules(header: &[u8]) -> RuleMatch {
     }
 
     for &rule in index.fallback.iter() {
+        if let Some(first_pat) = rule.patterns.first() {
+            if first_pat.offset >= header.len() {
+                break;
+            }
+        }
         match evaluate_single_rule(header, rule) {
             RuleMatch::Confirmed(rep) => return RuleMatch::Confirmed(rep),
             RuleMatch::Truncated(cand) => {
@@ -112,9 +117,17 @@ pub fn evaluate_indexed_rules(header: &[u8]) -> RuleMatch {
 pub fn probe_indexed_rule_by_format(header: &[u8], target_fid: &str) -> Option<DetectionReport> {
     let index = get_rule_index();
     if let Ok(idx) = index.by_format.binary_search_by_key(&target_fid, |&(fid, _)| fid) {
-        let rule = index.by_format[idx].1;
-        if let RuleMatch::Confirmed(rep) = evaluate_single_rule(header, rule) {
-            return Some(*rep);
+        let mut start = idx;
+        while start > 0 && index.by_format[start - 1].0 == target_fid {
+            start -= 1;
+        }
+        for item in &index.by_format[start..] {
+            if item.0 != target_fid {
+                break;
+            }
+            if let RuleMatch::Confirmed(rep) = evaluate_single_rule(header, item.1) {
+                return Some(*rep);
+            }
         }
     }
     None

@@ -28,9 +28,16 @@ pub fn detect_stream<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
     options: &DetectOptions,
 ) -> Result<DetectionReport, DetectError> {
-    // Read initial header window
-    let mut header = vec![0u8; options.initial_window_size];
-    let n = match reader.read(&mut header) {
+    // Read initial header window (stack-allocated buffer for default 4KB, avoiding heap allocations)
+    let mut stack_buf = [0u8; 4096];
+    let mut heap_buf;
+    let header_buf: &mut [u8] = if options.initial_window_size <= 4096 {
+        &mut stack_buf[..options.initial_window_size]
+    } else {
+        heap_buf = vec![0u8; options.initial_window_size];
+        &mut heap_buf[..]
+    };
+    let n = match reader.read(header_buf) {
         Ok(bytes) => bytes,
         Err(e) => {
             if reader.is_budget_exceeded() {
@@ -58,7 +65,7 @@ pub fn detect_stream<R: Read + Seek>(
             }
         }
     };
-    header.truncate(n);
+    let header = &header_buf[..n];
 
     // Rewind back to start for full structural parsing
     if let Err(e) = reader.seek(SeekFrom::Start(0)) {
@@ -108,12 +115,12 @@ pub fn detect_stream<R: Read + Seek>(
     }
 
     // Step 0: Extension-guided fast path probing (optimistic match)
-    if let Some(rep) = probe_fast_path(reader, &header, options)? {
+    if let Some(rep) = probe_fast_path(reader, header, options)? {
         return Ok(rep);
     }
 
     // Step 1: Check signatures (PNG, JPEG, GIF, PDF)
-    match probe_signatures(&header) {
+    match probe_signatures(header) {
         SignatureMatch::Confirmed(rep) => return Ok(*rep),
         SignatureMatch::Truncated(fmt) => {
             return Ok(DetectionReport {
@@ -189,13 +196,15 @@ pub fn detect_stream<R: Read + Seek>(
         });
     }
 
-    // Step 4: Check ISO 9660 volume descriptor at offset 32768
-    if let Some(rep) = disks::probe_iso_stream(reader) {
-        return Ok(rep);
+    // Step 4: Check ISO 9660 volume descriptor at offset 32768 (only if stream size >= window)
+    if header.len() >= options.initial_window_size {
+        if let Some(rep) = disks::probe_iso_stream(reader) {
+            return Ok(rep);
+        }
     }
 
     // Step 5: Check structured and plain text formats (JSON, XML, HTML, YAML, TOML, CSV, TXT)
-    if let Some(rep) = text::probe_text(&header) {
+    if let Some(rep) = text::probe_text(header) {
         return Ok(rep);
     }
 

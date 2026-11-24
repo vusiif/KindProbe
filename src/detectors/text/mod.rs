@@ -20,29 +20,69 @@ use crate::model::DetectionReport;
 pub fn probe_text(header: &[u8]) -> Option<DetectionReport> {
     // 1. Text Gateway check: BOM stripping, UTF-8 validity, control char filtering
     let text = examine_text_gateway(header)?;
-
-    // 2. High-confidence structural formats
-    if let Some(rep) = probe_json(text) {
-        return Some(rep);
+    let trimmed = text.trim_start();
+    if trimmed.is_empty() {
+        return Some(make_plain_text_report());
     }
 
-    if let Some(rep) = probe_xml_or_html(text) {
-        return Some(rep);
+    let first = trimmed.as_bytes()[0];
+
+    // 2. High-performance first-character dispatch
+    match first {
+        b'{' => {
+            if let Some(rep) = probe_json(text) {
+                return Some(rep);
+            }
+        }
+        b'[' => {
+            if let Some(rep) = probe_json(text) {
+                return Some(rep);
+            }
+            if let Some(rep) = probe_config(text) {
+                return Some(rep);
+            }
+        }
+        b'<' => {
+            if let Some(rep) = probe_xml_or_html(text) {
+                return Some(rep);
+            }
+        }
+        b'#' => {
+            if let Some(rep) = probe_source_code(text) {
+                return Some(rep);
+            }
+            if let Some(rep) = probe_config(text) {
+                return Some(rep);
+            }
+        }
+        b'-' => {
+            if let Some(rep) = probe_config(text) {
+                return Some(rep);
+            }
+            if let Some(rep) = probe_source_code(text) {
+                return Some(rep);
+            }
+        }
+        _ => {
+            if let Some(rep) = probe_source_code(text) {
+                return Some(rep);
+            }
+            if let Some(rep) = probe_config(text) {
+                return Some(rep);
+            }
+            if let Some(rep) = probe_csv_or_tsv(text) {
+                return Some(rep);
+            }
+        }
     }
 
-    if let Some(rep) = probe_config(text) {
-        return Some(rep);
+    // Secondary fallback checks for non-letter prefixes
+    if first == b'{' || first == b'[' || first == b'#' || first == b'-' {
+        if let Some(rep) = probe_csv_or_tsv(text) {
+            return Some(rep);
+        }
     }
 
-    if let Some(rep) = probe_csv_or_tsv(text) {
-        return Some(rep);
-    }
-
-    // 3. Source code and script formats (Shebang + syntax signatures)
-    if let Some(rep) = probe_source_code(text) {
-        return Some(rep);
-    }
-
-    // 4. Fallback to confirmed Plain Text
+    // Fallback to confirmed Plain Text
     Some(make_plain_text_report())
 }
