@@ -2,6 +2,7 @@ pub mod dispatch;
 pub mod engine;
 pub mod generated;
 pub mod registry;
+pub mod static_index;
 pub mod types;
 
 pub use dispatch::{evaluate_indexed_rules, probe_indexed_rule_by_format};
