@@ -45,7 +45,28 @@ pub fn evaluate_single_rule(header: &[u8], rule: &SignatureRule) -> RuleMatch {
                     .zip(m)
                     .zip(pat.bytes)
                     .all(|((&b, &mk), &p)| (b & mk) == p),
-                None => &available[..pat.bytes.len()] == pat.bytes,
+                None => match pat.bytes.len() {
+                    2 => {
+                        let b = &available[..2];
+                        b[0] == pat.bytes[0] && b[1] == pat.bytes[1]
+                    }
+                    4 => {
+                        let b = &available[..4];
+                        u32::from_ne_bytes([b[0], b[1], b[2], b[3]])
+                            == u32::from_ne_bytes([
+                                pat.bytes[0], pat.bytes[1], pat.bytes[2], pat.bytes[3],
+                            ])
+                    }
+                    8 => {
+                        let b = &available[..8];
+                        u64::from_ne_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
+                            == u64::from_ne_bytes([
+                                pat.bytes[0], pat.bytes[1], pat.bytes[2], pat.bytes[3],
+                                pat.bytes[4], pat.bytes[5], pat.bytes[6], pat.bytes[7],
+                            ])
+                    }
+                    _ => &available[..pat.bytes.len()] == pat.bytes,
+                },
             };
             if !is_match {
                 return if pattern_truncated {

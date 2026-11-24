@@ -79,10 +79,18 @@ pub fn evaluate_indexed_rules(header: &[u8]) -> RuleMatch {
     let mut truncated_candidate: Option<String> = None;
 
     for &rule in index.buckets[b0].iter() {
-        if header.len() >= 2 && !rule.patterns.is_empty() {
+        if !rule.patterns.is_empty() {
             let p0 = &rule.patterns[0];
-            if p0.offset == 0 && p0.mask.is_none() && p0.bytes.len() >= 2 && header[1] != p0.bytes[1] {
-                continue;
+            if p0.offset == 0 && p0.mask.is_none() {
+                if header.len() >= 4 && p0.bytes.len() >= 4 {
+                    let h4 = u32::from_ne_bytes([header[0], header[1], header[2], header[3]]);
+                    let p4 = u32::from_ne_bytes([p0.bytes[0], p0.bytes[1], p0.bytes[2], p0.bytes[3]]);
+                    if h4 != p4 {
+                        continue;
+                    }
+                } else if header.len() >= 2 && p0.bytes.len() >= 2 && header[1] != p0.bytes[1] {
+                    continue;
+                }
             }
         }
 
@@ -101,6 +109,9 @@ pub fn evaluate_indexed_rules(header: &[u8]) -> RuleMatch {
         if let Some(first_pat) = rule.patterns.first() {
             if first_pat.offset >= header.len() {
                 break;
+            }
+            if first_pat.mask.is_none() && !first_pat.bytes.is_empty() && header[first_pat.offset] != first_pat.bytes[0] {
+                continue;
             }
         }
         match evaluate_single_rule(header, rule) {
