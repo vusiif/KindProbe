@@ -83,6 +83,9 @@ mod platform_locale {
         }
 
         // Win32 GetUserDefaultUILanguage() retrieves the current user's native UI language preference
+        // SAFETY: Win32 GetUserDefaultUILanguage takes no arguments, performs no memory
+        // mutations or pointer dereferences, reads only user locale from the OS kernel,
+        // and returns a scalar u16 integer (LANGID). It cannot cause memory corruption or UB.
         let langid = unsafe { GetUserDefaultUILanguage() };
         if is_chinese_win_langid(langid) {
             AppLanguage::Chinese
@@ -148,6 +151,12 @@ mod win_console {
             return v == "1";
         }
 
+        // SAFETY: All Win32 console calls below interact only with standard Windows subsystem
+        // queries without executing arbitrary memory transformations:
+        // - GetConsoleWindow() takes no parameters and returns an HWND or NULL.
+        // - GetStdHandle() passes standard predefined handle IDs (STD_OUTPUT_HANDLE, STD_INPUT_HANDLE).
+        // - GetConsoleMode() writes to valid stack-allocated DWORD references (&mut out_mode / &mut in_mode).
+        // - GetConsoleProcessList() writes to a stack-allocated buffer (pids) with exact capacity 2 matching count argument.
         unsafe {
             // 1. Must have a valid console window handle
             let hwnd = GetConsoleWindow();
@@ -282,7 +291,9 @@ fn print_arg_error(json_mode: bool, lang: AppLanguage, err: ArgErrorType) -> i32
                 message: msg,
             },
         };
-        let json_err = serde_json::to_string(&env).unwrap();
+        let json_err = serde_json::to_string(&env).unwrap_or_else(|_| {
+            r#"{"schema_version":1,"error":{"code":"error.invalid_arguments","message":"argument error"}}"#.to_string()
+        });
         println!("{}", json_err);
     } else {
         match (lang, &err) {
@@ -818,7 +829,9 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
                         message: json_msg_str,
                     },
                 };
-                let json_err = serde_json::to_string(&env).unwrap();
+                let json_err = serde_json::to_string(&env).unwrap_or_else(|_| {
+                    r#"{"schema_version":1,"error":{"code":"error.serialization_failure","message":"failed to serialize error envelope"}}"#.to_string()
+                });
                 println!("{}", json_err);
             } else {
                 match lang {

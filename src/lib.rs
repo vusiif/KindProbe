@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 pub mod budget;
 pub mod detectors;
 pub mod extension;
