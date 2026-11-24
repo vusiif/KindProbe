@@ -40,10 +40,12 @@ fn is_normalized_opc_path(raw: &str) -> bool {
 /// Normalizes an OPC relative or absolute path relative to package root.
 /// Returns normalized path without leading slash, e.g. "word/document.xml".
 pub fn normalize_opc_path(raw: &str) -> String {
-    if is_normalized_opc_path(raw) {
-        return raw.to_string();
+    let trimmed = raw.trim();
+    let stripped = trimmed.trim_start_matches('/');
+    if is_normalized_opc_path(stripped) {
+        return stripped.to_string();
     }
-    let s = raw.trim().replace('\\', "/");
+    let s = trimmed.replace('\\', "/");
     let parts = s.split('/');
     let mut stack = Vec::new();
 
@@ -64,8 +66,10 @@ pub fn normalize_opc_path(raw: &str) -> String {
 /// Normalizes an OPC relative or absolute path, returning a borrowed `Cow`
 /// if already clean to avoid heap allocations.
 pub fn normalize_opc_path_cow<'a>(raw: &'a str) -> std::borrow::Cow<'a, str> {
-    if is_normalized_opc_path(raw) {
-        std::borrow::Cow::Borrowed(raw)
+    let trimmed = raw.trim();
+    let stripped = trimmed.trim_start_matches('/');
+    if is_normalized_opc_path(stripped) {
+        std::borrow::Cow::Borrowed(stripped)
     } else {
         std::borrow::Cow::Owned(normalize_opc_path(raw))
     }
@@ -73,9 +77,16 @@ pub fn normalize_opc_path_cow<'a>(raw: &'a str) -> std::borrow::Cow<'a, str> {
 
 /// Resolves a target relative to a base directory within an OPC package.
 pub fn resolve_target_path(base_dir: &str, target: &str) -> Option<String> {
-    let t = target.trim().replace('\\', "/");
+    let trimmed = target.trim();
+    let has_backslash = trimmed.as_bytes().contains(&b'\\');
+    let t_cow = if has_backslash {
+        std::borrow::Cow::Owned(trimmed.replace('\\', "/"))
+    } else {
+        std::borrow::Cow::Borrowed(trimmed)
+    };
+    let t = t_cow.as_ref();
     if t.starts_with('/') {
-        let norm = normalize_opc_path(&t);
+        let norm = normalize_opc_path(t);
         if norm.is_empty() {
             None
         } else {
@@ -83,7 +94,7 @@ pub fn resolve_target_path(base_dir: &str, target: &str) -> Option<String> {
         }
     } else {
         let combined = if base_dir.is_empty() {
-            t
+            t.to_string()
         } else {
             format!("{}/{}", base_dir, t)
         };
@@ -99,7 +110,8 @@ pub fn resolve_target_path(base_dir: &str, target: &str) -> Option<String> {
 /// Parses `_rels/.rels` XML to find the officeDocument core relationship target.
 pub fn parse_package_relationships(xml_bytes: &[u8]) -> Result<Option<String>, WarningItem> {
     let mut reader = XmlReader::from_reader(xml_bytes);
-    reader.config_mut().trim_text(true);
+    reader.config_mut().trim_text(false);
+    reader.config_mut().check_comments = false;
 
     let mut target_val: Option<String> = None;
     let mut buf = Vec::new();
@@ -155,7 +167,8 @@ pub fn parse_content_types(
     normalized_target: &str,
 ) -> Result<Option<String>, WarningItem> {
     let mut reader = XmlReader::from_reader(xml_bytes);
-    reader.config_mut().trim_text(true);
+    reader.config_mut().trim_text(false);
+    reader.config_mut().check_comments = false;
 
     let target_part_name = format!("/{}", normalized_target).to_ascii_lowercase();
     let target_part_bytes = target_part_name.as_bytes();

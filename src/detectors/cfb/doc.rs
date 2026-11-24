@@ -112,8 +112,9 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
     let required_table_name = if is_1table { "1Table" } else { "0Table" };
 
     let table_hint = if is_1table { table_1_path } else { table_0_path };
-    let actual_table_path = if let Some(p) = table_hint {
-        p.to_path_buf()
+    let fallback_path;
+    let actual_table_path: &Path = if let Some(p) = table_hint {
+        p
     } else {
         let mut found = None;
         if let Ok(root_entries) = comp.read_storage("/") {
@@ -125,7 +126,10 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
             }
         }
         match found {
-            Some(p) => p,
+            Some(p) => {
+                fallback_path = p;
+                &fallback_path
+            }
             None => {
                 report.warnings.push(WarningItem::new(
                     "cfb.table_stream_missing",
@@ -140,7 +144,7 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
     };
 
     // Verify table stream can be opened and read using its actual path
-    match comp.open_stream(&actual_table_path) {
+    match comp.open_stream(actual_table_path) {
         Ok(mut t_stream) => {
             let mut probe_buf = [0u8; 1];
             if let Err(e) = t_stream.read(&mut probe_buf) {

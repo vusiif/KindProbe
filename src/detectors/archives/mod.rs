@@ -7,20 +7,95 @@ pub mod sevenz;
 pub mod tar;
 pub mod xz_zstd;
 
-use bzip2::{probe_bzip2, Bzip2Match};
-use gzip::{probe_gzip, GzipMatch};
-use nested::probe_nested_gzip;
-use rar::{make_rar4_report, make_rar5_report, probe_rar, RarProbeResult};
-use sevenz::{make_sevenz_report, probe_sevenz, SevenZProbeResult};
-use tar::{probe_tar, TarMatch};
-use xz_zstd::{probe_xz_zstd, XzZstdMatch};
+use bzip2::{probe_bzip2, probe_bzip2_core, Bzip2Match};
+use gzip::{probe_gzip, probe_gzip_core, GzipMatch};
+use nested::{probe_nested_gzip, probe_nested_gzip_core};
+use rar::{make_rar4_core, make_rar4_report, make_rar5_core, make_rar5_report, probe_rar, RarProbeResult};
+use sevenz::{make_sevenz_core, make_sevenz_report, probe_sevenz, SevenZProbeResult};
+use tar::{probe_tar, probe_tar_core, TarMatch};
+use xz_zstd::{probe_xz_zstd, probe_xz_zstd_core, XzZstdMatch};
 
-use crate::model::DetectionReport;
+use crate::model::{DetectionCore, DetectionReport};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArchiveMatchCore {
+    Confirmed(DetectionCore),
+    Truncated(&'static str),
+    None,
+}
 
 pub enum ArchiveMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+/// Probes archive signatures returning zero-allocation DetectionCore.
+pub fn probe_archive_signatures_core(header: &[u8]) -> ArchiveMatchCore {
+    // 1. 7z
+    match probe_sevenz(header) {
+        SevenZProbeResult::Confirmed { has_start_header } => {
+            return ArchiveMatchCore::Confirmed(make_sevenz_core(has_start_header));
+        }
+        SevenZProbeResult::Truncated => return ArchiveMatchCore::Truncated("7z"),
+        SevenZProbeResult::None => (),
+    }
+
+    // 2. RAR (RAR4 / RAR5)
+    match probe_rar(header) {
+        RarProbeResult::ConfirmedRar5 => {
+            return ArchiveMatchCore::Confirmed(make_rar5_core());
+        }
+        RarProbeResult::ConfirmedRar4 { has_main_header } => {
+            return ArchiveMatchCore::Confirmed(make_rar4_core(has_main_header));
+        }
+        RarProbeResult::Truncated => return ArchiveMatchCore::Truncated("rar"),
+        RarProbeResult::None => (),
+    }
+
+    // 3. Nested tar.gz or standalone Gzip
+    if let Some(nested_core) = probe_nested_gzip_core(header) {
+        return ArchiveMatchCore::Confirmed(nested_core);
+    }
+    if header.len() < 2 && !header.is_empty() && header[0] == 0x1F {
+        return ArchiveMatchCore::Truncated("gzip");
+    }
+    if let Some(gzip_core) = probe_gzip_core(header) {
+        return ArchiveMatchCore::Confirmed(gzip_core);
+    }
+
+    // 4. Bzip2
+    if header.len() < 3 && !header.is_empty() && header.starts_with(b"BZ") {
+        return ArchiveMatchCore::Truncated("bzip2");
+    }
+    if let Some(bzip2_core) = probe_bzip2_core(header) {
+        return ArchiveMatchCore::Confirmed(bzip2_core);
+    }
+
+    // 5. XZ / Zstandard
+    if header.len() < 6 && !header.is_empty() {
+        if header.starts_with(b"\xFD7z") {
+            return ArchiveMatchCore::Truncated("xz");
+        } else if header.starts_with(&[0x28, 0xB5]) {
+            return ArchiveMatchCore::Truncated("zstd");
+        }
+    }
+    if let Some(xz_zstd_core) = probe_xz_zstd_core(header) {
+        return ArchiveMatchCore::Confirmed(xz_zstd_core);
+    }
+
+    // 6. Tar (POSIX ustar)
+    if header.len() < 512 {
+        if header.len() >= 265
+            && (&header[257..262] == b"ustar" || &header[257..264] == b"ustar\0\0")
+        {
+            return ArchiveMatchCore::Truncated("tar");
+        }
+    } else if let Some(tar_core) = probe_tar_core(header) {
+        return ArchiveMatchCore::Confirmed(tar_core);
+    }
+
+    ArchiveMatchCore::None
 }
 
 pub fn probe_archive_signatures(header: &[u8]) -> ArchiveMatch {

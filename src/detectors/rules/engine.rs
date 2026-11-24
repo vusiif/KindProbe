@@ -1,7 +1,14 @@
 use super::types::{SignatureRule, ValidationStatus};
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection,
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RuleMatchCore {
+    Confirmed(DetectionCore),
+    Truncated(&'static str),
+    None,
+}
 
 pub enum RuleMatch {
     Confirmed(Box<DetectionReport>),
@@ -10,15 +17,15 @@ pub enum RuleMatch {
 }
 
 #[inline]
-pub fn evaluate_single_rule(header: &[u8], rule: &SignatureRule) -> RuleMatch {
+pub fn evaluate_single_rule_core(header: &[u8], rule: &SignatureRule) -> RuleMatchCore {
     let mut pattern_truncated = false;
 
     for pat in rule.patterns {
         if header.len() < pat.offset {
             return if pattern_truncated {
-                RuleMatch::Truncated(rule.format_id.to_string())
+                RuleMatchCore::Truncated(rule.format_id)
             } else {
-                RuleMatch::None
+                RuleMatchCore::None
             };
         }
 
@@ -34,9 +41,9 @@ pub fn evaluate_single_rule(header: &[u8], rule: &SignatureRule) -> RuleMatch {
                 }
             }
             return if pattern_truncated {
-                RuleMatch::Truncated(rule.format_id.to_string())
+                RuleMatchCore::Truncated(rule.format_id)
             } else {
-                RuleMatch::None
+                RuleMatchCore::None
             };
         } else {
             let is_match = match pat.mask {
@@ -70,42 +77,67 @@ pub fn evaluate_single_rule(header: &[u8], rule: &SignatureRule) -> RuleMatch {
             };
             if !is_match {
                 return if pattern_truncated {
-                    RuleMatch::Truncated(rule.format_id.to_string())
+                    RuleMatchCore::Truncated(rule.format_id)
                 } else {
-                    RuleMatch::None
+                    RuleMatchCore::None
                 };
             }
         }
     }
 
     if header.len() < rule.min_header_len {
-        return RuleMatch::Truncated(rule.format_id.to_string());
+        return RuleMatchCore::Truncated(rule.format_id);
     }
 
     if let Some(validator) = rule.validator {
         match validator(header) {
             ValidationStatus::Valid => (),
-            ValidationStatus::Truncated => return RuleMatch::Truncated(rule.format_id.to_string()),
-            ValidationStatus::Invalid => return RuleMatch::None,
+            ValidationStatus::Truncated => return RuleMatchCore::Truncated(rule.format_id),
+            ValidationStatus::Invalid => return RuleMatchCore::None,
         }
     }
 
-    RuleMatch::Confirmed(Box::new(DetectionReport {
-        schema_version: 1,
-        format_id: Some(rule.format_id.to_string()),
-        category: rule.category.to_string(),
-        container_id: rule.container_id.map(|s| s.to_string()),
+    RuleMatchCore::Confirmed(DetectionCore {
+        format_id: Some(rule.format_id),
+        category: rule.category,
+        container_id: rule.container_id,
         identification: Identification::Format,
         verification: rule.verification,
         inspection: Inspection::Complete,
-        recommended_extension: Some(rule.recommended_ext.to_string()),
-        accepted_extensions: rule.accepted_exts.iter().map(|s| s.to_string()).collect(),
-        extension_status: ExtensionStatus::Undetermined,
-        evidence: vec![EvidenceItem::new(rule.evidence_code)],
-        warnings: Vec::new(),
-        stats: Default::default(),
-        candidates: None,
-    }))
+        recommended_extension: Some(rule.recommended_ext),
+        accepted_extensions: rule.accepted_exts,
+        primary_evidence: Some(rule.evidence_code),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    })
+}
+
+#[inline]
+pub fn evaluate_single_rule(header: &[u8], rule: &SignatureRule) -> RuleMatch {
+    match evaluate_single_rule_core(header, rule) {
+        RuleMatchCore::Confirmed(core) => {
+            RuleMatch::Confirmed(Box::new(core.to_report(Default::default(), ExtensionStatus::Undetermined)))
+        }
+        RuleMatchCore::Truncated(cand) => RuleMatch::Truncated(cand.to_string()),
+        RuleMatchCore::None => RuleMatch::None,
+    }
+}
+
+pub fn evaluate_rules_core(header: &[u8], rules: &[SignatureRule]) -> RuleMatchCore {
+    let mut truncated_candidate: Option<&'static str> = None;
+    for rule in rules {
+        match evaluate_single_rule_core(header, rule) {
+            RuleMatchCore::Confirmed(core) => return RuleMatchCore::Confirmed(core),
+            RuleMatchCore::Truncated(cand) => {
+                if truncated_candidate.is_none() {
+                    truncated_candidate = Some(cand);
+                }
+            }
+            RuleMatchCore::None => (),
+        }
+    }
+    truncated_candidate.map(RuleMatchCore::Truncated).unwrap_or(RuleMatchCore::None)
 }
 
 pub fn evaluate_rules(header: &[u8], rules: &[SignatureRule]) -> RuleMatch {

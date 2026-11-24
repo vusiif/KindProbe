@@ -3,7 +3,6 @@ pub mod ppt;
 pub mod xls;
 
 use std::io::{self, Read, Seek};
-use std::path::PathBuf;
 use cfb::CompoundFile;
 
 use crate::budget::{BudgetReader, DetectOptions};
@@ -67,11 +66,11 @@ pub fn detect_cfb<R: Read + Seek>(
 
     // Check CFB entries budget and discover root streams in a single walk pass
     let mut entries_count = 0;
-    let mut word_doc = None::<(PathBuf, u64)>;
-    let mut xls_doc = None::<(PathBuf, u64)>;
-    let mut ppt_doc = None::<(PathBuf, u64)>;
-    let mut table_0 = None::<PathBuf>;
-    let mut table_1 = None::<PathBuf>;
+    let mut word_doc = None::<(std::borrow::Cow<'static, std::path::Path>, u64)>;
+    let mut xls_doc = None::<(std::borrow::Cow<'static, std::path::Path>, u64)>;
+    let mut ppt_doc = None::<(std::borrow::Cow<'static, std::path::Path>, u64)>;
+    let mut table_0 = None::<std::borrow::Cow<'static, std::path::Path>>;
+    let mut table_1 = None::<std::borrow::Cow<'static, std::path::Path>>;
     let mut has_current_user = false;
 
     for entry in comp.walk() {
@@ -91,18 +90,30 @@ pub fn detect_cfb<R: Read + Seek>(
 
         if entry.is_stream() && entry.path().parent() == Some(std::path::Path::new("/")) {
             let name = entry.name();
-            if name.eq_ignore_ascii_case("WordDocument") {
-                word_doc = Some((entry.path().to_path_buf(), entry.len()));
+            if name == "WordDocument" {
+                word_doc = Some((std::borrow::Cow::Borrowed(std::path::Path::new("/WordDocument")), entry.len()));
+            } else if name.eq_ignore_ascii_case("WordDocument") {
+                word_doc = Some((std::borrow::Cow::Owned(entry.path().to_path_buf()), entry.len()));
+            } else if name == "Workbook" {
+                xls_doc = Some((std::borrow::Cow::Borrowed(std::path::Path::new("/Workbook")), entry.len()));
+            } else if name == "Book" {
+                xls_doc = Some((std::borrow::Cow::Borrowed(std::path::Path::new("/Book")), entry.len()));
             } else if name.eq_ignore_ascii_case("Workbook") || name.eq_ignore_ascii_case("Book") {
-                xls_doc = Some((entry.path().to_path_buf(), entry.len()));
+                xls_doc = Some((std::borrow::Cow::Owned(entry.path().to_path_buf()), entry.len()));
+            } else if name == "PowerPoint Document" {
+                ppt_doc = Some((std::borrow::Cow::Borrowed(std::path::Path::new("/PowerPoint Document")), entry.len()));
             } else if name.eq_ignore_ascii_case("PowerPoint Document") {
-                ppt_doc = Some((entry.path().to_path_buf(), entry.len()));
+                ppt_doc = Some((std::borrow::Cow::Owned(entry.path().to_path_buf()), entry.len()));
             } else if name.eq_ignore_ascii_case("Current User") {
                 has_current_user = true;
+            } else if name == "0Table" {
+                table_0 = Some(std::borrow::Cow::Borrowed(std::path::Path::new("/0Table")));
             } else if name.eq_ignore_ascii_case("0Table") {
-                table_0 = Some(entry.path().to_path_buf());
+                table_0 = Some(std::borrow::Cow::Owned(entry.path().to_path_buf()));
+            } else if name == "1Table" {
+                table_1 = Some(std::borrow::Cow::Borrowed(std::path::Path::new("/1Table")));
             } else if name.eq_ignore_ascii_case("1Table") {
-                table_1 = Some(entry.path().to_path_buf());
+                table_1 = Some(std::borrow::Cow::Owned(entry.path().to_path_buf()));
             }
         }
     }

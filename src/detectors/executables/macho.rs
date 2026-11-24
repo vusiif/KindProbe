@@ -1,11 +1,93 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 
 pub enum MachoMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+pub fn make_macho_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("macho"),
+        category: "executable",
+        container_id: None,
+        identification: Identification::Format,
+        verification: Verification::Signature,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("dylib"),
+        accepted_extensions: &["dylib", "bundle", "so", "bin"],
+        primary_evidence: Some("sig.macho.magic"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn make_macho_fat_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("macho"),
+        category: "executable",
+        container_id: None,
+        identification: Identification::Format,
+        verification: Verification::Signature,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("dylib"),
+        accepted_extensions: &["dylib", "bundle", "so", "bin"],
+        primary_evidence: Some("sig.macho.fat_magic"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn make_java_class_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("class"),
+        category: "executable",
+        container_id: None,
+        identification: Identification::Format,
+        verification: Verification::Signature,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("class"),
+        accepted_extensions: &["class"],
+        primary_evidence: Some("sig.java.class"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn probe_macho_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.len() < 4 {
+        return None;
+    }
+
+    let magic = &header[..4];
+    let is_macho_le = magic == [0xCE, 0xFA, 0xED, 0xFE] || magic == [0xCF, 0xFA, 0xED, 0xFE];
+    let is_macho_be = magic == [0xFE, 0xED, 0xFA, 0xCE] || magic == [0xFE, 0xED, 0xFA, 0xCF];
+
+    if is_macho_le || is_macho_be {
+        return Some(make_macho_core());
+    }
+
+    if magic == [0xCA, 0xFE, 0xBA, 0xBE] {
+        if header.len() >= 8 {
+            let (minor, major) = (u16::from_be_bytes([header[4], header[5]]), u16::from_be_bytes([header[6], header[7]]));
+            if minor == 0 && (43..=100).contains(&major) {
+                return Some(make_java_class_core());
+            }
+        }
+        return Some(make_macho_fat_core());
+    }
+
+    if magic == [0xBE, 0xBA, 0xFE, 0xCA] {
+        return Some(make_macho_fat_core());
+    }
+
+    None
 }
 
 /// Probes Mach-O binary format (macOS / iOS / Darwin) and Java class disambiguation.

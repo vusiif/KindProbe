@@ -1303,6 +1303,152 @@ pub static FALLBACK: &[&SignatureRule] = &[
     &GENERATED_RULES[3][7],
 ];
 
+#[derive(Debug, Clone, Copy)]
+pub struct OffsetGroup {
+    pub offset: usize,
+    pub min_header_len: usize,
+    pub rules: &'static [&'static SignatureRule],
+}
+
+pub static OFFSET_GROUPS: &[OffsetGroup] = &[
+    OffsetGroup {
+        offset: 2,
+        min_header_len: 5,
+        rules: &[
+            &GENERATED_RULES[7][7],
+            &GENERATED_RULES[42][2],
+        ],
+    },
+    OffsetGroup {
+        offset: 4,
+        min_header_len: 6,
+        rules: &[
+            &GENERATED_RULES[1][4],
+            &GENERATED_RULES[20][11],
+            &GENERATED_RULES[30][6],
+            &GENERATED_RULES[35][7],
+            &GENERATED_RULES[49][4],
+            &GENERATED_RULES[49][12],
+            &GENERATED_RULES[56][7],
+            &GENERATED_RULES[56][8],
+            &GENERATED_RULES[58][5],
+            &GENERATED_RULES[58][6],
+        ],
+    },
+    OffsetGroup {
+        offset: 7,
+        min_header_len: 14,
+        rules: &[
+            &GENERATED_RULES[42][3],
+        ],
+    },
+    OffsetGroup {
+        offset: 8,
+        min_header_len: 10,
+        rules: &[
+            &GENERATED_RULES[11][8],
+            &GENERATED_RULES[14][8],
+            &GENERATED_RULES[23][4],
+        ],
+    },
+    OffsetGroup {
+        offset: 12,
+        min_header_len: 16,
+        rules: &[
+            &GENERATED_RULES[49][6],
+        ],
+    },
+    OffsetGroup {
+        offset: 16,
+        min_header_len: 20,
+        rules: &[
+            &GENERATED_RULES[20][12],
+        ],
+    },
+    OffsetGroup {
+        offset: 20,
+        min_header_len: 24,
+        rules: &[
+            &GENERATED_RULES[0][3],
+            &GENERATED_RULES[2][7],
+            &GENERATED_RULES[2][8],
+            &GENERATED_RULES[2][11],
+            &GENERATED_RULES[2][12],
+        ],
+    },
+    OffsetGroup {
+        offset: 44,
+        min_header_len: 48,
+        rules: &[
+            &GENERATED_RULES[3][4],
+            &GENERATED_RULES[35][9],
+        ],
+    },
+    OffsetGroup {
+        offset: 60,
+        min_header_len: 68,
+        rules: &[
+            &GENERATED_RULES[1][9],
+        ],
+    },
+    OffsetGroup {
+        offset: 68,
+        min_header_len: 72,
+        rules: &[
+            &GENERATED_RULES[1][7],
+        ],
+    },
+    OffsetGroup {
+        offset: 72,
+        min_header_len: 80,
+        rules: &[
+            &GENERATED_RULES[56][12],
+        ],
+    },
+    OffsetGroup {
+        offset: 128,
+        min_header_len: 132,
+        rules: &[
+            &GENERATED_RULES[17][0],
+        ],
+    },
+    OffsetGroup {
+        offset: 208,
+        min_header_len: 212,
+        rules: &[
+            &GENERATED_RULES[50][7],
+        ],
+    },
+    OffsetGroup {
+        offset: 256,
+        min_header_len: 260,
+        rules: &[
+            &GENERATED_RULES[25][8],
+        ],
+    },
+    OffsetGroup {
+        offset: 260,
+        min_header_len: 268,
+        rules: &[
+            &GENERATED_RULES[49][5],
+        ],
+    },
+    OffsetGroup {
+        offset: 344,
+        min_header_len: 348,
+        rules: &[
+            &GENERATED_RULES[6][0],
+        ],
+    },
+    OffsetGroup {
+        offset: 1080,
+        min_header_len: 1084,
+        rules: &[
+            &GENERATED_RULES[3][7],
+        ],
+    },
+];
+
 pub static BY_FORMAT: &[(&str, &SignatureRule)] = &[
     ("3ds", &GENERATED_RULES[34][12]),
     ("3ds", &GENERATED_RULES[34][3]),

@@ -4,16 +4,60 @@ pub mod pe;
 pub mod pe_meta;
 pub mod wasm;
 
-use crate::model::DetectionReport;
-use elf::{probe_elf, ElfMatch};
-use macho::{probe_macho, MachoMatch};
-use pe::{probe_pe, PeMatch};
-use wasm::{probe_wasm, WasmMatch};
+use crate::model::{DetectionCore, DetectionReport};
+use elf::{probe_elf, probe_elf_core, ElfMatch};
+use macho::{probe_macho, probe_macho_core, MachoMatch};
+use pe::{probe_pe, probe_pe_core, PeMatch};
+use wasm::{probe_wasm, probe_wasm_core, WasmMatch};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutableMatchCore {
+    Confirmed(DetectionCore),
+    Truncated(&'static str),
+    None,
+}
 
 pub enum ExecutableMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+/// Probes executable and system binary signatures returning zero-allocation DetectionCore.
+pub fn probe_executable_signatures_core(header: &[u8]) -> ExecutableMatchCore {
+    // 1. ELF
+    if header.len() < 16 && !header.is_empty() && header.starts_with(&[0x7F, 0x45]) {
+        return ExecutableMatchCore::Truncated("elf");
+    }
+    if let Some(core) = probe_elf_core(header) {
+        return ExecutableMatchCore::Confirmed(core);
+    }
+
+    // 2. PE / MZ
+    if header.len() < 2 && !header.is_empty() && header[0] == b'M' {
+        return ExecutableMatchCore::Truncated("pe");
+    }
+    if let Some(core) = probe_pe_core(header) {
+        return ExecutableMatchCore::Confirmed(core);
+    }
+
+    // 3. WASM
+    if header.len() < 4 && !header.is_empty() && header.starts_with(&[0x00, 0x61]) {
+        return ExecutableMatchCore::Truncated("wasm");
+    }
+    if let Some(core) = probe_wasm_core(header) {
+        return ExecutableMatchCore::Confirmed(core);
+    }
+
+    // 4. Mach-O
+    if header.len() < 4 && !header.is_empty() && (header.starts_with(&[0xFE, 0xED]) || header.starts_with(&[0xCF, 0xFA])) {
+        return ExecutableMatchCore::Truncated("macho");
+    }
+    if let Some(core) = probe_macho_core(header) {
+        return ExecutableMatchCore::Confirmed(core);
+    }
+
+    ExecutableMatchCore::None
 }
 
 /// Probes executable and system binary signatures (ELF, PE, WASM, Mach-O).

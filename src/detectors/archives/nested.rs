@@ -2,10 +2,70 @@ use std::io::Read;
 use flate2::read::GzDecoder;
 
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 use super::gzip::GZIP_MAGIC;
 use super::tar::check_tar_header;
+
+/// Probes nested archive stream returning zero-allocation DetectionCore.
+pub fn probe_nested_gzip_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.len() < 10 || !header.starts_with(GZIP_MAGIC) {
+        return None;
+    }
+
+    let mut decoder = GzDecoder::new(header);
+    let mut decomp_buf = [0u8; 512];
+    let n = decoder.read(&mut decomp_buf).ok()?;
+    if n == 0 {
+        return None;
+    }
+
+    if n == 512 && check_tar_header(&decomp_buf).is_some() {
+        return Some(DetectionCore {
+            format_id: Some("tar.gz"),
+            category: "archive",
+            container_id: Some("gzip"),
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("tar.gz"),
+            accepted_extensions: &["tar.gz", "tgz", "gz"],
+            primary_evidence: Some("sig.gzip.magic"),
+            secondary_evidence: Some("sig.tar.ustar"),
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    let limit = n.min(256);
+    let mut buf = [0u8; 256];
+    for (i, &b) in decomp_buf[..limit].iter().enumerate() {
+        buf[i] = b.to_ascii_lowercase();
+    }
+    let head = &buf[..limit];
+    let is_xml = head.starts_with(b"<?xml");
+    let has_svg = head.windows(4).any(|w| w == b"<svg");
+
+    if head.starts_with(b"<svg") || (is_xml && has_svg) {
+        return Some(DetectionCore {
+            format_id: Some("svgz"),
+            category: "image",
+            container_id: Some("gzip"),
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("svgz"),
+            accepted_extensions: &["svgz", "svg", "gz"],
+            primary_evidence: Some("sig.gzip.magic"),
+            secondary_evidence: Some("sig.gzip.header"),
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    None
+}
 
 /// Probes nested archive stream within compressed containers (e.g. tar.gz, svgz).
 pub fn probe_nested_gzip(header: &[u8]) -> Option<DetectionReport> {

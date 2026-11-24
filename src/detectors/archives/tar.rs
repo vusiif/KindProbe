@@ -1,11 +1,41 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 
 pub enum TarMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+pub fn make_tar_core(verification: Verification) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("tar"),
+        category: "archive",
+        container_id: Some("tar"),
+        identification: Identification::Format,
+        verification,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("tar"),
+        accepted_extensions: &["tar"],
+        primary_evidence: Some("sig.tar.ustar"),
+        secondary_evidence: if verification == Verification::Structure {
+            Some("sig.tar.checksum")
+        } else {
+            None
+        },
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn probe_tar_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.len() < 512 {
+        return None;
+    }
+    let verification = check_tar_header(header)?;
+    Some(make_tar_core(verification))
 }
 
 /// Checks if a 512-byte block is a valid POSIX ustar tar header.

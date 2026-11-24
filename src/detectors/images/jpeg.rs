@@ -1,5 +1,5 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 pub enum JpegProbeResult {
@@ -40,11 +40,10 @@ pub fn probe_jpeg(header: &[u8]) -> JpegProbeResult {
     }
 }
 
-pub fn make_jpeg_report(has_segment: bool) -> DetectionReport {
-    DetectionReport {
-        schema_version: 1,
-        format_id: Some("jpeg".to_string()),
-        category: "image".to_string(),
+pub fn make_jpeg_core(has_segment: bool) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("jpeg"),
+        category: "image",
         container_id: None,
         identification: Identification::Format,
         verification: if has_segment {
@@ -53,24 +52,19 @@ pub fn make_jpeg_report(has_segment: bool) -> DetectionReport {
             Verification::Signature
         },
         inspection: Inspection::Complete,
-        recommended_extension: Some("jpg".to_string()),
-        accepted_extensions: vec![
-            "jpg".to_string(),
-            "jpeg".to_string(),
-            "jfif".to_string(),
-            "jpe".to_string(),
-        ],
-        extension_status: ExtensionStatus::Undetermined,
-        evidence: if has_segment {
-            vec![
-                EvidenceItem::new("sig.jpeg.soi"),
-                EvidenceItem::new("sig.jpeg.segment"),
-            ]
+        recommended_extension: Some("jpg"),
+        accepted_extensions: &["jpg", "jpeg", "jfif", "jpe"],
+        primary_evidence: Some("sig.jpeg.soi"),
+        secondary_evidence: if has_segment {
+            Some("sig.jpeg.segment")
         } else {
-            vec![EvidenceItem::new("sig.jpeg.soi")]
+            None
         },
-        warnings: Vec::new(),
-        stats: Default::default(),
-        candidates: None,
+        warning: None,
+        candidate: None,
     }
+}
+
+pub fn make_jpeg_report(has_segment: bool) -> DetectionReport {
+    make_jpeg_core(has_segment).to_report(Default::default(), ExtensionStatus::Undetermined)
 }

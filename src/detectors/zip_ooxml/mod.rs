@@ -48,6 +48,99 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         None => return Ok(report),
     };
 
+    // Check for OOXML indicators (already collected during central directory pre-check)
+    let has_content_types = cd_check.has_content_types;
+    let has_rels = cd_check.has_rels;
+    let has_ooxml_subdirs = cd_check.has_ooxml_subdirs;
+
+    // Fast short-circuit: non-OOXML and non-EPUB/ODF archives (APK, IPA, JAR, KMZ, plain ZIP)
+    // do not need ZipArchive instantiation, second EOCD search, or stream rewinding.
+    if !has_content_types && !has_rels && !has_ooxml_subdirs && !cd_check.has_mimetype {
+        report.stats.entries_inspected = cd_check.cd_total_entries;
+        report.evidence.push(EvidenceItem::new("zip.central_directory"));
+
+        // 1. Android Package (APK): AndroidManifest.xml and/or classes.dex
+        if cd_check.has_apk_manifest || cd_check.has_apk_dex {
+            report.identification = Identification::Format;
+            report.format_id = Some("apk".to_string());
+            report.category = "package".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("apk".to_string());
+            report.accepted_extensions = vec!["apk".to_string(), "xapk".to_string()];
+            if cd_check.has_apk_manifest {
+                report.evidence.push(EvidenceItem::new("zip.apk.manifest"));
+            }
+            if cd_check.has_apk_dex {
+                report.evidence.push(EvidenceItem::new("zip.apk.dex"));
+            }
+            return Ok(report);
+        }
+
+        // 2. iOS Application Archive (IPA): Payload/*.app/Info.plist
+        if cd_check.has_ipa_payload {
+            report.identification = Identification::Format;
+            report.format_id = Some("ipa".to_string());
+            report.category = "package".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("ipa".to_string());
+            report.accepted_extensions = vec!["ipa".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.ipa.payload"));
+            return Ok(report);
+        }
+
+        // 3. Java Archive (JAR): META-INF/MANIFEST.MF
+        if cd_check.has_jar_manifest {
+            report.identification = Identification::Format;
+            report.format_id = Some("jar".to_string());
+            report.category = "package".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("jar".to_string());
+            report.accepted_extensions = vec!["jar".to_string(), "war".to_string(), "ear".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.jar.manifest"));
+            return Ok(report);
+        }
+
+        // 4. Keyhole Markup Zip (KMZ): doc.kml
+        if cd_check.has_kmz_kml {
+            report.identification = Identification::Format;
+            report.format_id = Some("kmz".to_string());
+            report.category = "geospatial".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("kmz".to_string());
+            report.accepted_extensions = vec!["kmz".to_string(), "kml".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.kmz.kml"));
+            return Ok(report);
+        }
+
+        // 5. Plain ZIP archive
+        report.identification = Identification::Format;
+        report.format_id = Some("zip".to_string());
+        report.category = "archive".to_string();
+        report.container_id = Some("zip".to_string());
+        report.recommended_extension = Some("zip".to_string());
+        report.accepted_extensions = vec!["zip".to_string()];
+        return Ok(report);
+    }
+
+    // Incomplete OOXML short-circuit: OOXML indicators exist but [Content_Types].xml is absent
+    if !has_content_types && (has_rels || has_ooxml_subdirs) && !cd_check.has_mimetype {
+        report.stats.entries_inspected = cd_check.cd_total_entries;
+        report.evidence.push(EvidenceItem::new("zip.central_directory"));
+        report.warnings.push(WarningItem::new(
+            "ooxml.content_types_missing",
+            "OOXML package structure incomplete: [Content_Types].xml missing",
+        ));
+        return Ok(report);
+    }
+
     // Rewind back to start before calling ZipArchive
     if let Err(e) = reader.seek(SeekFrom::Start(0)) {
         if reader.is_budget_exceeded() {

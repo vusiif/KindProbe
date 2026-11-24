@@ -1,11 +1,56 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 
 pub enum ColumnarMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+pub fn make_parquet_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("parquet"),
+        category: "database",
+        container_id: None,
+        identification: Identification::Format,
+        verification: Verification::Structure,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("parquet"),
+        accepted_extensions: &["parquet"],
+        primary_evidence: Some("sig.parquet.magic"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn make_avro_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("avro"),
+        category: "database",
+        container_id: None,
+        identification: Identification::Format,
+        verification: Verification::Structure,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("avro"),
+        accepted_extensions: &["avro"],
+        primary_evidence: Some("sig.avro.magic"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn probe_parquet_avro_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.starts_with(b"PAR1") {
+        return Some(make_parquet_core());
+    }
+    if header.starts_with(b"Obj\x01") {
+        return Some(make_avro_core());
+    }
+    None
 }
 
 /// Probes Apache Parquet and Apache Avro columnar serialization formats.

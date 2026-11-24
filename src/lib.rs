@@ -12,10 +12,10 @@ use std::path::Path;
 use std::time::Instant;
 
 pub use budget::{BudgetReader, DetectOptions};
-pub use extension::compare_extension;
+pub use extension::{compare_extension, compare_extension_core};
 pub use model::{
-    DetectError, DetectionReport, DetectionStats, ErrorDetails, ErrorEnvelope, EvidenceItem,
-    ExtensionStatus, Identification, Inspection, Verification, WarningItem,
+    DetectError, DetectionCore, DetectionReport, DetectionStats, ErrorDetails, ErrorEnvelope,
+    EvidenceItem, ExtensionStatus, Identification, Inspection, Verification, WarningItem,
 };
 
 fn resolve_path_extension(path: &Path) -> Option<&OsStr> {
@@ -82,12 +82,66 @@ pub fn detect_path(
     Ok(report)
 }
 
+/// Detects the format of an in-memory byte slice returning a lightweight, zero-allocation DetectionCore.
+pub fn detect_bytes_core(
+    bytes: &[u8],
+    options: &DetectOptions,
+) -> Result<DetectionCore, DetectError> {
+    if options.max_source_bytes_read < options.initial_window_size && options.max_source_bytes_read < bytes.len() {
+        let core = DetectionCore::budget_exceeded();
+        if let Err(inv) = core.validate_invariants() {
+            return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+        }
+        return Ok(core);
+    }
+
+    let header_len = bytes.len().min(options.initial_window_size);
+    let header = &bytes[..header_len];
+
+    match detectors::detect_slice_non_container_core(header, options)? {
+        Some(core) => {
+            if let Err(inv) = core.validate_invariants() {
+                return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+            }
+            Ok(core)
+        }
+        None => {
+            let mut cursor = Cursor::new(bytes);
+            let mut budget_reader = BudgetReader::new(&mut cursor, options.max_source_bytes_read);
+            let rep = detectors::detect_stream(&mut budget_reader, options)?;
+            Ok(DetectionCore::from_report(&rep))
+        }
+    }
+}
+
 /// Detects the format of an in-memory byte slice.
 pub fn detect_bytes(
     bytes: &[u8],
     options: &DetectOptions,
 ) -> Result<DetectionReport, DetectError> {
     let start = Instant::now();
+
+    // Check read budget consistency with detect_reader:
+    // If the read budget is exhausted before the initial window can be read from non-empty input
+    if options.max_source_bytes_read < options.initial_window_size && options.max_source_bytes_read < bytes.len() {
+        let core = DetectionCore::budget_exceeded();
+        let mut report = core.to_report(
+            DetectionStats {
+                source_bytes_read: options.max_source_bytes_read,
+                seek_count: 0,
+                entries_inspected: 0,
+                decompressed_bytes: 0,
+                duration_micros: start.elapsed().as_micros() as u64,
+            },
+            ExtensionStatus::Undetermined,
+        );
+        report.extension_status = compare_extension(&report, None);
+        if let Err(inv) = report.validate_invariants() {
+            return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+        }
+        return Ok(report);
+    }
+
     let header_len = bytes.len().min(options.initial_window_size);
     let header = &bytes[..header_len];
 
@@ -122,6 +176,24 @@ pub fn detect_bytes(
     }
 
     Ok(report)
+}
+
+/// Lightweight detection for a seekable reader returning zero-allocation DetectionCore.
+pub fn detect_reader_core<R: Read + Seek>(
+    reader: &mut R,
+    options: &DetectOptions,
+) -> Result<DetectionCore, DetectError> {
+    let rep = detect_reader(reader, options)?;
+    Ok(DetectionCore::from_report(&rep))
+}
+
+/// Lightweight detection for a file path returning zero-allocation DetectionCore.
+pub fn detect_path_core(
+    path: &Path,
+    options: &DetectOptions,
+) -> Result<DetectionCore, DetectError> {
+    let rep = detect_path(path, options)?;
+    Ok(DetectionCore::from_report(&rep))
 }
 
 /// Detects the format of a seekable reader using content-first structural analysis.

@@ -2,15 +2,55 @@ pub mod pcap;
 pub mod parquet_avro;
 pub mod sqlite;
 
-use crate::model::DetectionReport;
-use pcap::{probe_pcap, PcapMatch};
-use parquet_avro::{probe_parquet_avro, ColumnarMatch};
-use sqlite::{probe_sqlite, SqliteMatch};
+use crate::model::{DetectionCore, DetectionReport};
+use pcap::{probe_pcap, probe_pcap_core, PcapMatch};
+use parquet_avro::{probe_parquet_avro, probe_parquet_avro_core, ColumnarMatch};
+use sqlite::{probe_sqlite, probe_sqlite_core, SqliteMatch};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DatabaseMatchCore {
+    Confirmed(DetectionCore),
+    Truncated(&'static str),
+    None,
+}
 
 pub enum DatabaseMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+/// Probes database, columnar and network capture signatures returning zero-allocation DetectionCore.
+pub fn probe_database_signatures_core(header: &[u8]) -> DatabaseMatchCore {
+    // 1. SQLite 3
+    if header.len() < 16 && !header.is_empty() && sqlite::SQLITE3_MAGIC.starts_with(header) {
+        return DatabaseMatchCore::Truncated("sqlite3");
+    }
+    if let Some(core) = probe_sqlite_core(header) {
+        return DatabaseMatchCore::Confirmed(core);
+    }
+
+    // 2. PCAP / PCAPNG
+    if header.len() < 4 && !header.is_empty() && (header[0] == 0xD4 || header[0] == 0xA1 || header[0] == 0x0A) {
+        return DatabaseMatchCore::Truncated("pcap");
+    }
+    if let Some(core) = probe_pcap_core(header) {
+        return DatabaseMatchCore::Confirmed(core);
+    }
+
+    // 3. Parquet / Avro
+    if header.len() < 4 && !header.is_empty() {
+        if header.starts_with(b"PAR") {
+            return DatabaseMatchCore::Truncated("parquet");
+        } else if header.starts_with(b"Obj") {
+            return DatabaseMatchCore::Truncated("avro");
+        }
+    }
+    if let Some(core) = probe_parquet_avro_core(header) {
+        return DatabaseMatchCore::Confirmed(core);
+    }
+
+    DatabaseMatchCore::None
 }
 
 /// Probes database, columnar and network capture signatures (SQLite3, PCAP, PCAPNG, Parquet, Avro).

@@ -1,5 +1,6 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 use super::pe_meta::extract_pe_metadata;
 
@@ -7,6 +8,47 @@ pub enum PeMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+pub fn make_pe_core(verification: Verification, is_dll: bool) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("pe"),
+        category: "executable",
+        container_id: None,
+        identification: Identification::Format,
+        verification,
+        inspection: Inspection::Complete,
+        recommended_extension: Some(if is_dll { "dll" } else { "exe" }),
+        accepted_extensions: &["exe", "dll", "sys", "efi"],
+        primary_evidence: Some("sig.pe.mz_header"),
+        secondary_evidence: if verification == Verification::Structure {
+            Some("sig.pe.signature")
+        } else {
+            None
+        },
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn probe_pe_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.len() < 2 || !header.starts_with(b"MZ") {
+        return None;
+    }
+
+    let (verification, is_dll) = if header.len() >= 0x40 {
+        let pe_offset = u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
+        if pe_offset >= 0x40 && pe_offset + 4 <= header.len() && &header[pe_offset..pe_offset + 4] == b"PE\0\0" {
+            let (dll_flag, _) = extract_pe_metadata(header, pe_offset);
+            (Verification::Structure, dll_flag)
+        } else {
+            (Verification::Signature, false)
+        }
+    } else {
+        (Verification::Signature, false)
+    };
+
+    Some(make_pe_core(verification, is_dll))
 }
 
 /// Probes Windows Portable Executable (PE) / DOS MZ format.

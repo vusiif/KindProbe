@@ -22,12 +22,39 @@ pub fn examine_text_gateway(bytes: &[u8]) -> Option<&str> {
         return None;
     }
 
-    // 2. Reject immediately if null bytes exist
-    if raw.contains(&0) {
+    // 2. Single-pass unified ASCII / NUL / control character scan
+    let total_len = raw.len();
+    let max_controls = total_len / 100;
+    let mut control_count = 0usize;
+    let mut ascii_end = raw.len();
+
+    for (i, &b) in raw.iter().enumerate() {
+        if b == 0 {
+            return None;
+        }
+        if b >= 0x80 {
+            ascii_end = i;
+            break;
+        }
+        if (b < 0x20 && b != b'\t' && b != b'\n' && b != b'\r') || b == 0x7F {
+            control_count += 1;
+            if control_count > max_controls {
+                return None;
+            }
+        }
+    }
+
+    // Pure ASCII fast path: guaranteed 100% valid UTF-8, no NULs, and valid control ratio
+    if ascii_end == raw.len() {
+        return std::str::from_utf8(raw).ok();
+    }
+
+    // 3. Fallback for non-ASCII UTF-8: check remaining slice for NUL bytes
+    if raw[ascii_end..].contains(&0) {
         return None;
     }
 
-    // 3. UTF-8 conversion
+    // 4. UTF-8 conversion with window-boundary truncation tolerance
     let s = match std::str::from_utf8(raw) {
         Ok(valid) => valid,
         Err(e) => {
@@ -45,38 +72,20 @@ pub fn examine_text_gateway(bytes: &[u8]) -> Option<&str> {
         return None;
     }
 
-    // 4. Control character ratio check (reject binary data masquerading as text)
-    // Fast path: if string is ASCII (the vast majority of source code and configs),
-    // we can avoid UTF-8 code point decoding entirely and operate directly on bytes.
-    if s.is_ascii() {
-        let b = s.as_bytes();
-        let total_chars = b.len();
-        let max_controls = total_chars / 100;
-        let mut control_count = 0usize;
+    // 5. Control character ratio check for non-ASCII text
+    let mut control_count = 0usize;
+    let mut total_chars = 0usize;
 
-        for &byte in b {
-            if (byte < 0x20 && byte != b'\t' && byte != b'\n' && byte != b'\r') || byte == 0x7F {
-                control_count += 1;
-                if control_count > max_controls {
-                    return None;
-                }
-            }
+    for ch in s.chars() {
+        total_chars += 1;
+        if ch.is_control() && ch != '\t' && ch != '\n' && ch != '\r' {
+            control_count += 1;
         }
-    } else {
-        let mut control_count = 0usize;
-        let mut total_chars = 0usize;
+    }
 
-        for ch in s.chars() {
-            total_chars += 1;
-            if ch.is_control() && ch != '\t' && ch != '\n' && ch != '\r' {
-                control_count += 1;
-            }
-        }
-
-        // If control characters exceed 1%, reject as binary
-        if control_count * 100 > total_chars {
-            return None;
-        }
+    // If control characters exceed 1%, reject as binary
+    if control_count * 100 > total_chars {
+        return None;
     }
 
     Some(s)

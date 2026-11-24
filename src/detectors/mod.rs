@@ -16,13 +16,110 @@ pub mod zip_ooxml;
 use std::io::{Read, Seek, SeekFrom};
 use crate::budget::{BudgetReader, DetectOptions};
 use crate::model::{
-    DetectError, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
+    DetectError, DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
     WarningItem,
 };
-use signatures::{probe_signatures, SignatureMatch};
+use signatures::{probe_signatures, probe_signatures_core, SignatureMatch, SignatureMatchCore};
 use zip_ooxml::detect_zip_ooxml;
 use cfb::{detect_cfb, CFB_MAGIC};
 use fast_path::probe_fast_path;
+
+/// Direct in-memory slice detection returning zero-allocation DetectionCore.
+/// Returns Ok(None) if the slice requires seekable container stream detection (ZIP, CFB, ISO).
+pub fn detect_slice_non_container_core(
+    header: &[u8],
+    options: &DetectOptions,
+) -> Result<Option<DetectionCore>, DetectError> {
+    if header.is_empty() {
+        return Ok(Some(DetectionCore::empty()));
+    }
+
+    // Fast path for non-container
+    if let Some(core) = fast_path::probe_fast_path_slice_core(header, options)? {
+        return Ok(Some(core));
+    }
+
+    // Signatures and rules
+    match probe_signatures_core(header) {
+        SignatureMatchCore::Confirmed(core) => {
+            return Ok(Some(core));
+        }
+        SignatureMatchCore::Truncated(fmt) => {
+            let cand = match fmt {
+                std::borrow::Cow::Borrowed(s) => s,
+                std::borrow::Cow::Owned(ref s) => {
+                    match s.as_str() {
+                        "pe" => "pe",
+                        "elf" => "elf",
+                        "wasm" => "wasm",
+                        "macho" => "macho",
+                        "7z" => "7z",
+                        "rar" => "rar",
+                        "zip" => "zip",
+                        "cfb" => "cfb",
+                        "tar" => "tar",
+                        "gzip" => "gzip",
+                        "bzip2" => "bzip2",
+                        "xz" => "xz",
+                        "zstd" => "zstd",
+                        "sqlite" => "sqlite",
+                        "pcap" => "pcap",
+                        "pcapng" => "pcapng",
+                        "parquet" => "parquet",
+                        "avro" => "avro",
+                        "mp3" => "mp3",
+                        "mp4" => "mp4",
+                        "webm" => "webm",
+                        "mkv" => "mkv",
+                        "wav" => "wav",
+                        "webp" => "webp",
+                        "avi" => "avi",
+                        "iso" => "iso",
+                        "qcow2" => "qcow2",
+                        "vmdk" => "vmdk",
+                        "vhd" => "vhd",
+                        "vhdx" => "vhdx",
+                        "mobi" => "mobi",
+                        "palmdoc" => "palmdoc",
+                        "ttf" => "ttf",
+                        "otf" => "otf",
+                        "woff" => "woff",
+                        "woff2" => "woff2",
+                        _ => crate::extension::find_registered_format(s).unwrap_or("unknown"),
+                    }
+                }
+            };
+            return Ok(Some(DetectionCore::truncated(cand)));
+        }
+        SignatureMatchCore::None => (),
+    }
+
+    // Truncated ZIP
+    if (header.len() >= 2 && header.starts_with(b"PK")) && header.len() < 4 {
+        return Ok(Some(DetectionCore::truncated("zip")));
+    }
+
+    // Truncated CFB
+    if header.len() >= 2 && header.starts_with(&[0xD0, 0xCF]) && header.len() < 8 {
+        return Ok(Some(DetectionCore::truncated("cfb")));
+    }
+
+    // If matches full container signature, delegate to stream detector
+    if (header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
+        || (header.len() >= 8 && header.starts_with(CFB_MAGIC))
+        || (header.len() >= options.initial_window_size)
+    {
+        return Ok(None);
+    }
+
+    // Text formats
+    if let Some(core) = text::probe_text_core(header) {
+        return Ok(Some(core));
+    }
+
+    // Unknown format
+    Ok(Some(DetectionCore::unknown()))
+}
 
 /// Direct in-memory slice detection for non-container formats.
 /// Returns Ok(None) if the slice requires seekable container stream detection (ZIP, CFB, ISO).
@@ -31,28 +128,16 @@ pub fn detect_slice_non_container(
     options: &DetectOptions,
 ) -> Result<Option<DetectionReport>, DetectError> {
     if header.is_empty() {
-        return Ok(Some(DetectionReport {
-            schema_version: 1,
-            format_id: None,
-            category: "unknown".to_string(),
-            container_id: None,
-            identification: Identification::Unknown,
-            verification: Verification::None,
-            inspection: Inspection::Complete,
-            recommended_extension: None,
-            accepted_extensions: Vec::new(),
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: Vec::new(),
-            warnings: vec![WarningItem::new("input.empty", "Input file has 0 bytes")],
-            stats: crate::model::DetectionStats {
+        return Ok(Some(DetectionCore::empty().to_report(
+            crate::model::DetectionStats {
                 source_bytes_read: 0,
                 seek_count: 0,
                 entries_inspected: 0,
                 decompressed_bytes: 0,
                 duration_micros: 0,
             },
-            candidates: None,
-        }));
+            ExtensionStatus::Undetermined,
+        )));
     }
 
     // Fast path for non-container
@@ -99,60 +184,30 @@ pub fn detect_slice_non_container(
 
     // Truncated ZIP
     if (header.len() >= 2 && header.starts_with(b"PK")) && header.len() < 4 {
-        return Ok(Some(DetectionReport {
-            schema_version: 1,
-            format_id: None,
-            category: "unknown".to_string(),
-            container_id: None,
-            identification: Identification::Unknown,
-            verification: Verification::None,
-            inspection: Inspection::Complete,
-            recommended_extension: None,
-            accepted_extensions: Vec::new(),
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: Vec::new(),
-            warnings: vec![WarningItem::new(
-                "input.truncated",
-                "Input header matches truncated ZIP signature",
-            )],
-            stats: crate::model::DetectionStats {
+        return Ok(Some(DetectionCore::truncated("zip").to_report(
+            crate::model::DetectionStats {
                 source_bytes_read: header.len(),
                 seek_count: 0,
                 entries_inspected: 0,
                 decompressed_bytes: 0,
                 duration_micros: 0,
             },
-            candidates: Some(vec!["zip".to_string()]),
-        }));
+            ExtensionStatus::Undetermined,
+        )));
     }
 
     // Truncated CFB
     if header.len() >= 2 && header.starts_with(&[0xD0, 0xCF]) && header.len() < 8 {
-        return Ok(Some(DetectionReport {
-            schema_version: 1,
-            format_id: None,
-            category: "unknown".to_string(),
-            container_id: None,
-            identification: Identification::Unknown,
-            verification: Verification::None,
-            inspection: Inspection::Complete,
-            recommended_extension: None,
-            accepted_extensions: Vec::new(),
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: Vec::new(),
-            warnings: vec![WarningItem::new(
-                "input.truncated",
-                "Input header matches truncated CFB signature",
-            )],
-            stats: crate::model::DetectionStats {
+        return Ok(Some(DetectionCore::truncated("cfb").to_report(
+            crate::model::DetectionStats {
                 source_bytes_read: header.len(),
                 seek_count: 0,
                 entries_inspected: 0,
                 decompressed_bytes: 0,
                 duration_micros: 0,
             },
-            candidates: Some(vec!["cfb".to_string()]),
-        }));
+            ExtensionStatus::Undetermined,
+        )));
     }
 
     // If matches full container signature, delegate to stream detector
@@ -170,31 +225,16 @@ pub fn detect_slice_non_container(
     }
 
     // Unknown format
-    Ok(Some(DetectionReport {
-        schema_version: 1,
-        format_id: None,
-        category: "unknown".to_string(),
-        container_id: None,
-        identification: Identification::Unknown,
-        verification: Verification::None,
-        inspection: Inspection::Complete,
-        recommended_extension: None,
-        accepted_extensions: Vec::new(),
-        extension_status: ExtensionStatus::Undetermined,
-        evidence: Vec::new(),
-        warnings: vec![WarningItem::new(
-            "format.unknown",
-            "No matching signature or structural evidence found",
-        )],
-        stats: crate::model::DetectionStats {
+    Ok(Some(DetectionCore::unknown().to_report(
+        crate::model::DetectionStats {
             source_bytes_read: header.len(),
             seek_count: 0,
             entries_inspected: 0,
             decompressed_bytes: 0,
             duration_micros: 0,
         },
-        candidates: None,
-    }))
+        ExtensionStatus::Undetermined,
+    )))
 }
 
 pub fn detect_stream<R: Read + Seek>(
@@ -210,35 +250,39 @@ pub fn detect_stream<R: Read + Seek>(
         heap_buf = vec![0u8; options.initial_window_size];
         &mut heap_buf[..]
     };
-    let n = match reader.read(header_buf) {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            if reader.is_budget_exceeded() {
-                return Ok(DetectionReport {
-                    schema_version: 1,
-                    format_id: None,
-                    category: "unknown".to_string(),
-                    container_id: None,
-                    identification: Identification::Unknown,
-                    verification: Verification::None,
-                    inspection: Inspection::Limited,
-                    recommended_extension: None,
-                    accepted_extensions: Vec::new(),
-                    extension_status: ExtensionStatus::Undetermined,
-                    evidence: Vec::new(),
-                    warnings: vec![WarningItem::new(
-                        "budget.source_read_exceeded",
-                        "Total source read budget exceeded during detection",
-                    )],
-                    stats: Default::default(),
-                    candidates: None,
-                });
-            } else {
-                return Err(DetectError::Io(e));
+    let mut total_read = 0;
+    while total_read < header_buf.len() {
+        match reader.read(&mut header_buf[total_read..]) {
+            Ok(0) => break, // True EOF reached
+            Ok(bytes) => total_read += bytes,
+            Err(e) => {
+                if reader.is_budget_exceeded() {
+                    return Ok(DetectionReport {
+                        schema_version: 1,
+                        format_id: None,
+                        category: "unknown".to_string(),
+                        container_id: None,
+                        identification: Identification::Unknown,
+                        verification: Verification::None,
+                        inspection: Inspection::Limited,
+                        recommended_extension: None,
+                        accepted_extensions: Vec::new(),
+                        extension_status: ExtensionStatus::Undetermined,
+                        evidence: Vec::new(),
+                        warnings: vec![WarningItem::new(
+                            "budget.source_read_exceeded",
+                            "Total source read budget exceeded during detection",
+                        )],
+                        stats: Default::default(),
+                        candidates: None,
+                    });
+                } else {
+                    return Err(DetectError::Io(e));
+                }
             }
         }
-    };
-    let header = &header_buf[..n];
+    }
+    let header = &header_buf[..total_read];
 
     // Rewind back to start for full structural parsing
     if let Err(e) = reader.seek(SeekFrom::Start(0)) {

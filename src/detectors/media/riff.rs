@@ -1,11 +1,150 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RiffMatchCore {
+    Confirmed(DetectionCore),
+    Truncated(&'static str),
+    None,
+}
 
 pub enum RiffMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+pub fn make_wav_core(has_fmt: bool) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("wav"),
+        category: "audio",
+        container_id: Some("riff"),
+        identification: Identification::Format,
+        verification: if has_fmt {
+            Verification::Structure
+        } else {
+            Verification::Signature
+        },
+        inspection: Inspection::Complete,
+        recommended_extension: Some("wav"),
+        accepted_extensions: &["wav", "wave"],
+        primary_evidence: Some("sig.riff.header"),
+        secondary_evidence: if has_fmt {
+            Some("sig.wav.fmt_chunk")
+        } else {
+            Some("sig.wav.wave_header")
+        },
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn make_webp_core(has_vp8: bool) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("webp"),
+        category: "image",
+        container_id: Some("riff"),
+        identification: Identification::Format,
+        verification: if has_vp8 {
+            Verification::Structure
+        } else {
+            Verification::Signature
+        },
+        inspection: Inspection::Complete,
+        recommended_extension: Some("webp"),
+        accepted_extensions: &["webp"],
+        primary_evidence: Some("sig.riff.header"),
+        secondary_evidence: if has_vp8 {
+            Some("sig.webp.vp8")
+        } else {
+            Some("sig.webp.header")
+        },
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn make_avi_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("avi"),
+        category: "video",
+        container_id: Some("riff"),
+        identification: Identification::Format,
+        verification: Verification::Signature,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("avi"),
+        accepted_extensions: &["avi"],
+        primary_evidence: Some("sig.riff.header"),
+        secondary_evidence: Some("sig.avi.header"),
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn probe_riff_core(header: &[u8]) -> RiffMatchCore {
+    if header.len() < 4 {
+        if header.len() >= 2 && header.starts_with(b"RI") {
+            return RiffMatchCore::Truncated("wav");
+        }
+        return RiffMatchCore::None;
+    }
+
+    if !header.starts_with(b"RIFF") {
+        return RiffMatchCore::None;
+    }
+
+    if header.len() < 12 {
+        return RiffMatchCore::Truncated("wav");
+    }
+
+    let form_type = &header[8..12];
+
+    // 1. WAV audio (form_type == b"WAVE")
+    if form_type == b"WAVE" {
+        let scan_limit = header.len().min(512);
+        let mut has_fmt = false;
+
+        if scan_limit >= 16 {
+            let mut offset = 12;
+            while offset + 8 <= scan_limit {
+                let chunk_id = &header[offset..offset + 4];
+                let chunk_size = u32::from_le_bytes([
+                    header[offset + 4],
+                    header[offset + 5],
+                    header[offset + 6],
+                    header[offset + 7],
+                ]) as usize;
+
+                if chunk_id == b"fmt " {
+                    has_fmt = true;
+                    break;
+                }
+                // Word-aligned chunk advance
+                offset += 8 + ((chunk_size + 1) & !1);
+            }
+        }
+
+        return RiffMatchCore::Confirmed(make_wav_core(has_fmt));
+    }
+
+    // 2. WebP image (form_type == b"WEBP")
+    if form_type == b"WEBP" {
+        let has_vp8 = header.len() >= 16
+            && (&header[12..16] == b"VP8 "
+                || &header[12..16] == b"VP8L"
+                || &header[12..16] == b"VP8X");
+
+        return RiffMatchCore::Confirmed(make_webp_core(has_vp8));
+    }
+
+    // 3. AVI video (form_type == b"AVI ")
+    if form_type == b"AVI " {
+        return RiffMatchCore::Confirmed(make_avi_core());
+    }
+
+    RiffMatchCore::None
 }
 
 /// Probes RIFF container and parses WAVE / WEBP / AVI subtypes.

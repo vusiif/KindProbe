@@ -1,5 +1,6 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 
 pub const ELF_MAGIC: &[u8] = &[0x7F, 0x45, 0x4C, 0x46];
@@ -8,6 +9,55 @@ pub enum ElfMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+pub fn make_elf_core(verification: Verification, rec_ext: &'static str) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("elf"),
+        category: "executable",
+        container_id: None,
+        identification: Identification::Format,
+        verification,
+        inspection: Inspection::Complete,
+        recommended_extension: Some(rec_ext),
+        accepted_extensions: &["elf", "so", "o", "bin"],
+        primary_evidence: Some("sig.elf.magic"),
+        secondary_evidence: if verification == Verification::Structure {
+            Some("sig.elf.header")
+        } else {
+            None
+        },
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn probe_elf_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.len() < 16 || !header.starts_with(ELF_MAGIC) {
+        return None;
+    }
+    let (class, data, ver) = (header[4], header[5], header[6]);
+    let valid_ident = (class == 1 || class == 2) && (data == 1 || data == 2) && ver == 1;
+
+    let mut rec_ext = "elf";
+    let verification = if valid_ident {
+        if header.len() >= 20 {
+            let is_le = data == 1;
+            let e_type = if is_le {
+                u16::from_le_bytes([header[16], header[17]])
+            } else {
+                u16::from_be_bytes([header[16], header[17]])
+            };
+            if e_type == 3 {
+                rec_ext = "so";
+            }
+        }
+        Verification::Structure
+    } else {
+        Verification::Signature
+    };
+
+    Some(make_elf_core(verification, rec_ext))
 }
 
 /// Probes ELF header (Executable and Linkable Format) and target CPU architectures.

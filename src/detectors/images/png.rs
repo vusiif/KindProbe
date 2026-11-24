@@ -1,5 +1,5 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 pub const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
@@ -28,11 +28,10 @@ pub fn probe_png(header: &[u8]) -> PngProbeResult {
     }
 }
 
-pub fn make_png_report(has_ihdr: bool) -> DetectionReport {
-    DetectionReport {
-        schema_version: 1,
-        format_id: Some("png".to_string()),
-        category: "image".to_string(),
+pub fn make_png_core(has_ihdr: bool) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("png"),
+        category: "image",
         container_id: None,
         identification: Identification::Format,
         verification: if has_ihdr {
@@ -41,19 +40,19 @@ pub fn make_png_report(has_ihdr: bool) -> DetectionReport {
             Verification::Signature
         },
         inspection: Inspection::Complete,
-        recommended_extension: Some("png".to_string()),
-        accepted_extensions: vec!["png".to_string()],
-        extension_status: ExtensionStatus::Undetermined,
-        evidence: if has_ihdr {
-            vec![
-                EvidenceItem::new("sig.png.header"),
-                EvidenceItem::new("sig.png.ihdr"),
-            ]
+        recommended_extension: Some("png"),
+        accepted_extensions: &["png"],
+        primary_evidence: Some("sig.png.header"),
+        secondary_evidence: if has_ihdr {
+            Some("sig.png.ihdr")
         } else {
-            vec![EvidenceItem::new("sig.png.header")]
+            None
         },
-        warnings: Vec::new(),
-        stats: Default::default(),
-        candidates: None,
+        warning: None,
+        candidate: None,
     }
+}
+
+pub fn make_png_report(has_ihdr: bool) -> DetectionReport {
+    make_png_core(has_ihdr).to_report(Default::default(), ExtensionStatus::Undetermined)
 }

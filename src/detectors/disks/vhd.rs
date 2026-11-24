@@ -1,5 +1,6 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 
 pub const VHDX_MAGIC: &[u8] = b"vhdxfile";
@@ -9,6 +10,50 @@ pub enum VhdMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+pub fn make_vhdx_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("vhdx"),
+        category: "disk",
+        container_id: None,
+        identification: Identification::Format,
+        verification: Verification::Structure,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("vhdx"),
+        accepted_extensions: &["vhdx"],
+        primary_evidence: Some("sig.vhdx.magic"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn make_vhd_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("vhd"),
+        category: "disk",
+        container_id: None,
+        identification: Identification::Format,
+        verification: Verification::Structure,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("vhd"),
+        accepted_extensions: &["vhd"],
+        primary_evidence: Some("sig.vhd.magic"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn probe_vhd_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.starts_with(VHDX_MAGIC) {
+        return Some(make_vhdx_core());
+    }
+    if header.starts_with(VHD_MAGIC) {
+        return Some(make_vhd_core());
+    }
+    None
 }
 
 /// Probes Microsoft Virtual Hard Disk (VHD & VHDX) formats.

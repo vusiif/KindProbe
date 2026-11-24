@@ -1,9 +1,9 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
-/// Probes whether the text represents a JSON document.
-pub fn probe_json(text: &str) -> Option<DetectionReport> {
+/// Probes whether the text represents a JSON document, returning zero-allocation DetectionCore.
+pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
     let trimmed = text.trim_start();
     if trimmed.is_empty() {
         return None;
@@ -41,29 +41,39 @@ pub fn probe_json(text: &str) -> Option<DetectionReport> {
         return None;
     }
 
-    let (fmt, cat, cont, rec, exts, ev) = if text.contains("\"FeatureCollection\"")
+    let (fmt, cat, cont, rec, exts, ev): (
+        &'static str,
+        &'static str,
+        Option<&'static str>,
+        &'static str,
+        &'static [&'static str],
+        &'static str,
+    ) = if text.contains("\"FeatureCollection\"")
         || text.contains("\"GeometryCollection\"")
         || (text.contains("\"Feature\"") && text.contains("\"geometry\""))
     {
-        ("geojson", "geospatial", Some("json".to_string()), "geojson", vec!["geojson".to_string(), "json".to_string()], "sig.text.geojson")
+        ("geojson", "geospatial", Some("json"), "geojson", &["geojson", "json"], "sig.text.geojson")
     } else {
-        ("json", "text", None, "json", vec!["json".to_string()], "sig.text.json")
+        ("json", "text", None, "json", &["json"], "sig.text.json")
     };
 
-    Some(DetectionReport {
-        schema_version: 1,
-        format_id: Some(fmt.to_string()),
-        category: cat.to_string(),
+    Some(DetectionCore {
+        format_id: Some(fmt),
+        category: cat,
         container_id: cont,
         identification: Identification::Format,
         verification: Verification::Structure,
         inspection: Inspection::Complete,
-        recommended_extension: Some(rec.to_string()),
+        recommended_extension: Some(rec),
         accepted_extensions: exts,
-        extension_status: ExtensionStatus::Undetermined,
-        evidence: vec![EvidenceItem::new(ev)],
-        warnings: Vec::new(),
-        stats: Default::default(),
-        candidates: None,
+        primary_evidence: Some(ev),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
     })
+}
+
+/// Probes whether the text represents a JSON document.
+pub fn probe_json(text: &str) -> Option<DetectionReport> {
+    probe_json_core(text).map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
 }

@@ -1,9 +1,9 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
-/// Probes whether the text represents a YAML or TOML configuration document.
-pub fn probe_config(text: &str) -> Option<DetectionReport> {
+/// Probes whether the text represents a YAML or TOML configuration document, returning zero-allocation DetectionCore.
+pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
     let trimmed = text.trim_start();
     if trimmed.is_empty() {
         return None;
@@ -14,13 +14,13 @@ pub fn probe_config(text: &str) -> Option<DetectionReport> {
     if let Some(first_line) = lines.next() {
         let fl = first_line.trim();
         if fl.starts_with('[') && fl.ends_with(']') && !fl.contains("://") && fl.len() >= 3 {
-            return Some(make_config_report("toml", vec!["toml"], "sig.text.toml"));
+            return Some(make_config_core("toml", &["toml"], "sig.text.toml"));
         }
     }
 
     // 2. YAML detection: Starts with document marker "---" or structured key: value pairs
     if trimmed.starts_with("---") {
-        return Some(make_config_report("yaml", vec!["yaml", "yml"], "sig.text.yaml"));
+        return Some(make_config_core("yaml", &["yaml", "yml"], "sig.text.yaml"));
     }
 
     // Heuristic for key: value structured documents
@@ -47,27 +47,30 @@ pub fn probe_config(text: &str) -> Option<DetectionReport> {
     }
 
     if total_lines >= 2 && valid_yaml_lines == total_lines {
-        return Some(make_config_report("yaml", vec!["yaml", "yml"], "sig.text.yaml"));
+        return Some(make_config_core("yaml", &["yaml", "yml"], "sig.text.yaml"));
     }
 
     None
 }
 
-fn make_config_report(fid: &str, exts: Vec<&str>, ev: &str) -> DetectionReport {
-    DetectionReport {
-        schema_version: 1,
-        format_id: Some(fid.to_string()),
-        category: "text".to_string(),
+/// Probes whether the text represents a YAML or TOML configuration document.
+pub fn probe_config(text: &str) -> Option<DetectionReport> {
+    probe_config_core(text).map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
+}
+
+fn make_config_core(fid: &'static str, exts: &'static [&'static str], ev: &'static str) -> DetectionCore {
+    DetectionCore {
+        format_id: Some(fid),
+        category: "text",
         container_id: None,
         identification: Identification::Format,
         verification: Verification::Structure,
         inspection: Inspection::Complete,
-        recommended_extension: Some(fid.to_string()),
-        accepted_extensions: exts.into_iter().map(|s| s.to_string()).collect(),
-        extension_status: ExtensionStatus::Undetermined,
-        evidence: vec![EvidenceItem::new(ev)],
-        warnings: Vec::new(),
-        stats: Default::default(),
-        candidates: None,
+        recommended_extension: Some(fid),
+        accepted_extensions: exts,
+        primary_evidence: Some(ev),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
     }
 }

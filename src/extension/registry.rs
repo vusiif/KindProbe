@@ -1007,12 +1007,44 @@ pub static EXTENSION_REGISTRY: &[(&str, &str)] = &[
     ("zstdict", "zstd_dict"),
 ];
 
-/// Fast binary search lookup in the global extension registry.
+/// Pre-indexed 256-bucket starting and ending offsets in EXTENSION_REGISTRY by first byte.
+/// Compile-time constant: 0 runtime allocation, 0 setup cost.
+pub static EXTENSION_BUCKETS: [(u16, u16); 256] = {
+    let mut table = [(0u16, 0u16); 256];
+    let mut b = 0;
+    let mut cur_idx = 0;
+    let total = EXTENSION_REGISTRY.len();
+    while b < 256 {
+        while cur_idx < total && EXTENSION_REGISTRY[cur_idx].0.as_bytes()[0] < b as u8 {
+            cur_idx += 1;
+        }
+        let start = cur_idx;
+        while cur_idx < total && EXTENSION_REGISTRY[cur_idx].0.as_bytes()[0] == b as u8 {
+            cur_idx += 1;
+        }
+        let end = cur_idx;
+        table[b] = (start as u16, end as u16);
+        b += 1;
+    }
+    table
+};
+
+/// Fast bucket-indexed binary search lookup in the global extension registry.
 pub fn find_registered_format(ext: &str) -> Option<&'static str> {
-    EXTENSION_REGISTRY
+    if ext.is_empty() {
+        return None;
+    }
+    let b0 = ext.as_bytes()[0] as usize;
+    let (start, end) = EXTENSION_BUCKETS[b0];
+    if start >= end {
+        return None;
+    }
+
+    let slice = &EXTENSION_REGISTRY[start as usize..end as usize];
+    slice
         .binary_search_by(|(registered_ext, _)| registered_ext.cmp(&ext))
         .ok()
-        .map(|idx| EXTENSION_REGISTRY[idx].1)
+        .map(|idx| slice[idx].1)
 }
 
 #[cfg(test)]
@@ -1026,5 +1058,19 @@ mod tests {
             let curr = window[1].0;
             assert!(prev < curr, "Registry ordering violation: '{}' should be strictly less than '{}'", prev, curr);
         }
+    }
+
+    #[test]
+    fn test_extension_bucket_index_correctness() {
+        for (ext, fid) in EXTENSION_REGISTRY.iter() {
+            let found = find_registered_format(ext);
+            assert_eq!(found, Some(*fid), "Lookup mismatch for extension '{}'", ext);
+        }
+
+        // Test non-existent extensions
+        assert_eq!(find_registered_format(""), None);
+        assert_eq!(find_registered_format("non_existent_123"), None);
+        assert_eq!(find_registered_format("xyz999"), None);
+        assert_eq!(find_registered_format("!invalid"), None);
     }
 }

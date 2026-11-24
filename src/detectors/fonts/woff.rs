@@ -1,11 +1,65 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 
 pub enum WoffMatch {
     Confirmed(Box<DetectionReport>),
     Truncated(String),
     None,
+}
+
+pub fn make_woff_core(is_woff2: bool, verification: Verification) -> DetectionCore {
+    let (fmt_id, magic_code, header_code) = if is_woff2 {
+        ("woff2", "sig.font.woff2_magic", "sig.font.woff2_header")
+    } else {
+        ("woff", "sig.font.woff_magic", "sig.font.woff_header")
+    };
+    DetectionCore {
+        format_id: Some(fmt_id),
+        category: "font",
+        container_id: None,
+        identification: Identification::Format,
+        verification,
+        inspection: Inspection::Complete,
+        recommended_extension: Some(fmt_id),
+        accepted_extensions: if is_woff2 { &["woff2"] } else { &["woff"] },
+        primary_evidence: Some(magic_code),
+        secondary_evidence: if verification == Verification::Structure {
+            Some(header_code)
+        } else {
+            None
+        },
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn probe_woff_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.len() < 4 {
+        return None;
+    }
+
+    let magic = &header[0..4];
+    let is_woff1 = magic == b"wOFF";
+    let is_woff2 = magic == b"wOF2";
+
+    if !is_woff1 && !is_woff2 {
+        return None;
+    }
+
+    let verification = if header.len() >= 14 {
+        let num_tables = u16::from_be_bytes([header[12], header[13]]);
+        if (1..=200).contains(&num_tables) {
+            Verification::Structure
+        } else {
+            Verification::Signature
+        }
+    } else {
+        Verification::Signature
+    };
+
+    Some(make_woff_core(is_woff2, verification))
 }
 
 /// Probes Web Open Font Format (WOFF 1.0 & WOFF 2.0).

@@ -1,5 +1,5 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 pub enum GifProbeResult {
@@ -26,11 +26,10 @@ pub fn probe_gif(header: &[u8]) -> GifProbeResult {
     }
 }
 
-pub fn make_gif_report(has_screen_desc: bool) -> DetectionReport {
-    DetectionReport {
-        schema_version: 1,
-        format_id: Some("gif".to_string()),
-        category: "image".to_string(),
+pub fn make_gif_core(has_screen_desc: bool) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("gif"),
+        category: "image",
         container_id: None,
         identification: Identification::Format,
         verification: if has_screen_desc {
@@ -39,19 +38,19 @@ pub fn make_gif_report(has_screen_desc: bool) -> DetectionReport {
             Verification::Signature
         },
         inspection: Inspection::Complete,
-        recommended_extension: Some("gif".to_string()),
-        accepted_extensions: vec!["gif".to_string()],
-        extension_status: ExtensionStatus::Undetermined,
-        evidence: if has_screen_desc {
-            vec![
-                EvidenceItem::new("sig.gif.header"),
-                EvidenceItem::new("sig.gif.logical_screen"),
-            ]
+        recommended_extension: Some("gif"),
+        accepted_extensions: &["gif"],
+        primary_evidence: Some("sig.gif.header"),
+        secondary_evidence: if has_screen_desc {
+            Some("sig.gif.logical_screen")
         } else {
-            vec![EvidenceItem::new("sig.gif.header")]
+            None
         },
-        warnings: Vec::new(),
-        stats: Default::default(),
-        candidates: None,
+        warning: None,
+        candidate: None,
     }
+}
+
+pub fn make_gif_report(has_screen_desc: bool) -> DetectionReport {
+    make_gif_core(has_screen_desc).to_report(Default::default(), ExtensionStatus::Undetermined)
 }

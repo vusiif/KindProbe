@@ -1,6 +1,7 @@
 use crate::detectors::archives::crc32::crc32_ieee;
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 
 pub const SEVENZ_SIGNATURE: &[u8] = &[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C];
@@ -34,6 +35,31 @@ pub fn probe_sevenz(header: &[u8]) -> SevenZProbeResult {
         SevenZProbeResult::Truncated
     } else {
         SevenZProbeResult::None
+    }
+}
+
+pub fn make_sevenz_core(has_start_header: bool) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("7z"),
+        category: "archive",
+        container_id: Some("7z"),
+        identification: Identification::Format,
+        verification: if has_start_header {
+            Verification::Structure
+        } else {
+            Verification::Signature
+        },
+        inspection: Inspection::Complete,
+        recommended_extension: Some("7z"),
+        accepted_extensions: &["7z"],
+        primary_evidence: Some("sig.7z.header"),
+        secondary_evidence: if has_start_header {
+            Some("sig.7z.start_header")
+        } else {
+            None
+        },
+        warning: None,
+        candidate: None,
     }
 }
 

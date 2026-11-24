@@ -1,17 +1,17 @@
 use std::io::{Read, Seek, SeekFrom};
 use crate::budget::{BudgetReader, DetectOptions};
 use crate::extension::find_registered_format;
-use crate::model::DetectionReport;
-use super::archives::{probe_archive_signatures, ArchiveMatch};
+use crate::model::{DetectionCore, DetectionReport, ExtensionStatus};
+use super::archives::{probe_archive_signatures, probe_archive_signatures_core, ArchiveMatch, ArchiveMatchCore};
 use super::cfb::{detect_cfb, CFB_MAGIC};
-use super::databases::{probe_database_signatures, DatabaseMatch};
-use super::disks::{probe_disk_signatures, DiskMatch};
-use super::executables::{probe_executable_signatures, ExecutableMatch};
-use super::fonts::{probe_font_signatures, FontMatch};
-use super::media::{probe_media_signatures, MediaMatch};
-use super::rules::probe_rule_by_format;
-use super::signatures::{make_pdf_report, PDF_SIGNATURE};
-use super::text::probe_text;
+use super::databases::{probe_database_signatures, probe_database_signatures_core, DatabaseMatch, DatabaseMatchCore};
+use super::disks::{probe_disk_signatures, probe_disk_signatures_core, DiskMatch, DiskMatchCore};
+use super::executables::{probe_executable_signatures, probe_executable_signatures_core, ExecutableMatch, ExecutableMatchCore};
+use super::fonts::{probe_font_signatures, probe_font_signatures_core, FontMatch, FontMatchCore};
+use super::media::{probe_media_signatures, probe_media_signatures_core, MediaMatch, MediaMatchCore};
+use super::rules::{probe_rule_by_format, probe_rule_by_format_core};
+use super::signatures::{make_pdf_core, make_pdf_report, PDF_SIGNATURE};
+use super::text::{probe_text, probe_text_core};
 use super::zip_ooxml::detect_zip_ooxml;
 
 fn check_zip_or_cfb<R: Read + Seek>(
@@ -24,15 +24,56 @@ fn check_zip_or_cfb<R: Read + Seek>(
     if is_zip && header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")) {
         let _ = reader.seek(SeekFrom::Start(0));
         let rep = detect_zip_ooxml(reader, options)?;
-        if rep.format_id.as_deref() == Some(fid) || fid == "zip" { return Ok(Some(rep)); }
-        let _ = reader.seek(SeekFrom::Start(0));
+        return Ok(Some(rep));
     } else if matches!(fid, "cfb" | "doc" | "xls" | "ppt" | "msi") && header.len() >= 8 && header.starts_with(CFB_MAGIC) {
         let _ = reader.seek(SeekFrom::Start(0));
         let rep = detect_cfb(reader, options)?;
-        if rep.format_id.as_deref() == Some(fid) || fid == "cfb" { return Ok(Some(rep)); }
-        let _ = reader.seek(SeekFrom::Start(0));
+        return Ok(Some(rep));
     }
     Ok(None)
+}
+
+fn probe_by_fid_core(header: &[u8], fid: &str) -> Option<DetectionCore> {
+    match fid {
+        "png" => match super::images::png::probe_png(header) {
+            super::images::png::PngProbeResult::Confirmed { has_ihdr } => Some(super::images::png::make_png_core(has_ihdr)),
+            _ => None,
+        },
+        "jpeg" => match super::images::jpeg::probe_jpeg(header) {
+            super::images::jpeg::JpegProbeResult::Confirmed { has_segment } => Some(super::images::jpeg::make_jpeg_core(has_segment)),
+            _ => None,
+        },
+        "gif" => match super::images::gif::probe_gif(header) {
+            super::images::gif::GifProbeResult::Confirmed { has_screen_desc } => Some(super::images::gif::make_gif_core(has_screen_desc)),
+            _ => None,
+        },
+        "7z" | "rar" | "tar.gz" | "gzip" | "bzip2" | "tar" | "xz" | "zstd" => match probe_archive_signatures_core(header) {
+            ArchiveMatchCore::Confirmed(c) => Some(c),
+            _ => None,
+        },
+        "mp4" | "mov" | "webm" | "mkv" | "wav" | "webp" | "avi" | "mp3" => match probe_media_signatures_core(header) {
+            MediaMatchCore::Confirmed(c) => Some(c),
+            _ => None,
+        },
+        "elf" | "pe" | "wasm" | "mach-o" => match probe_executable_signatures_core(header) {
+            ExecutableMatchCore::Confirmed(c) => Some(c),
+            _ => None,
+        },
+        "ttf" | "otf" | "woff" | "woff2" => match probe_font_signatures_core(header) {
+            FontMatchCore::Confirmed(c) => Some(c),
+            _ => None,
+        },
+        "sqlite3" | "pcap" | "pcapng" | "parquet" | "avro" => match probe_database_signatures_core(header) {
+            DatabaseMatchCore::Confirmed(c) => Some(c),
+            _ => None,
+        },
+        "qcow2" | "vmdk" | "vhd" | "vhdx" => match probe_disk_signatures_core(header) {
+            DiskMatchCore::Confirmed(c) => Some(c),
+            _ => None,
+        },
+        "json" | "xml" | "html" | "yaml" | "toml" | "csv" | "txt" => probe_text_core(header),
+        _ => probe_rule_by_format_core(header, fid),
+    }
 }
 
 fn probe_by_fid(header: &[u8], fid: &str) -> Option<DetectionReport> {
@@ -97,11 +138,11 @@ pub fn probe_fast_path<R: Read + Seek>(
     Ok(None)
 }
 
-/// Slice-only fast path probe (skips container readers, zero allocation).
-pub fn probe_fast_path_slice(
+/// Slice-only fast path probe returning a zero-allocation DetectionCore.
+pub fn probe_fast_path_slice_core(
     header: &[u8],
     options: &DetectOptions,
-) -> Result<Option<DetectionReport>, crate::model::DetectError> {
+) -> Result<Option<DetectionCore>, crate::model::DetectError> {
     let hint = match &options.extension_hint {
         Some(h) if !h.trim().is_empty() => {
             let trimmed = h.trim();
@@ -119,16 +160,27 @@ pub fn probe_fast_path_slice(
     }
     if fid == "pdf" {
         if header.starts_with(PDF_SIGNATURE) {
-            return Ok(Some(make_pdf_report()));
+            return Ok(Some(make_pdf_core()));
         }
         let lim = header.len().min(1024);
         if lim >= 5 && header[..lim].windows(5).any(|w| w == PDF_SIGNATURE) {
-            return Ok(Some(make_pdf_report()));
+            return Ok(Some(make_pdf_core()));
         }
         return Ok(None);
     }
-    if let Some(r) = probe_by_fid(header, fid) {
-        if r.format_id.as_deref() == Some(fid) { return Ok(Some(r)); }
+    if let Some(core) = probe_by_fid_core(header, fid) {
+        if core.format_id == Some(fid) { return Ok(Some(core)); }
     }
     Ok(None)
+}
+
+/// Slice-only fast path probe (skips container readers).
+pub fn probe_fast_path_slice(
+    header: &[u8],
+    options: &DetectOptions,
+) -> Result<Option<DetectionReport>, crate::model::DetectError> {
+    match probe_fast_path_slice_core(header, options)? {
+        Some(core) => Ok(Some(core.to_report(Default::default(), ExtensionStatus::Undetermined))),
+        None => Ok(None),
+    }
 }

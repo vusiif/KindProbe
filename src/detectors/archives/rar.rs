@@ -1,5 +1,6 @@
 use crate::model::{
-    DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection, Verification,
+    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
+    Verification,
 };
 
 pub const RAR4_SIGNATURE: &[u8] = &[0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00];
@@ -35,6 +36,48 @@ pub fn probe_rar(header: &[u8]) -> RarProbeResult {
         RarProbeResult::Truncated
     } else {
         RarProbeResult::None
+    }
+}
+
+pub fn make_rar4_core(has_main_header: bool) -> DetectionCore {
+    DetectionCore {
+        format_id: Some("rar"),
+        category: "archive",
+        container_id: Some("rar"),
+        identification: Identification::Format,
+        verification: if has_main_header {
+            Verification::Structure
+        } else {
+            Verification::Signature
+        },
+        inspection: Inspection::Complete,
+        recommended_extension: Some("rar"),
+        accepted_extensions: &["rar"],
+        primary_evidence: Some("sig.rar.header"),
+        secondary_evidence: if has_main_header {
+            Some("sig.rar.main_header")
+        } else {
+            None
+        },
+        warning: None,
+        candidate: None,
+    }
+}
+
+pub fn make_rar5_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("rar"),
+        category: "archive",
+        container_id: Some("rar"),
+        identification: Identification::Format,
+        verification: Verification::Signature,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("rar"),
+        accepted_extensions: &["rar"],
+        primary_evidence: Some("sig.rar5.signature"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
     }
 }
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::time::Instant;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::find_registered_format;
-use kindprobe::{detect_bytes, detect_path, detect_reader};
+use kindprobe::{detect_bytes, detect_bytes_core, detect_path, detect_reader};
 
 #[test]
 fn test_micro_benchmark_performance() {
@@ -64,9 +64,18 @@ fn test_micro_benchmark_performance() {
         let dur = start.elapsed();
         let ns_per_op = dur.as_nanos() as f64 / bytes_iterations as f64;
         let qps = bytes_iterations as f64 / dur.as_secs_f64();
-        println!("[2] detect_bytes - {}:", name);
-        println!("    Latency:    {:.2} ns ({:.3} μs) / detection", ns_per_op, ns_per_op / 1000.0);
-        println!("    Throughput: {:.2} thousand files / sec", qps / 1000.0);
+
+        let start_core = Instant::now();
+        for _ in 0..bytes_iterations {
+            let _ = detect_bytes_core(data, &opts);
+        }
+        let dur_core = start_core.elapsed();
+        let ns_core = dur_core.as_nanos() as f64 / bytes_iterations as f64;
+        let qps_core = bytes_iterations as f64 / dur_core.as_secs_f64();
+
+        println!("[2] {} :", name);
+        println!("    Full Report:     {:.2} ns / op ({:.2} kops/s)", ns_per_op, qps / 1000.0);
+        println!("    Core (Zero-Alloc): {:.2} ns / op ({:.2} kops/s) -> {:.1}x speedup", ns_core, qps_core / 1000.0, ns_per_op / ns_core);
     }
 
     // -------------------------------------------------------------------------
@@ -118,13 +127,31 @@ fn test_micro_benchmark_performance() {
     }
 
     // -------------------------------------------------------------------------
-    // 5. Deep Structural Container Detection (ZIP/OOXML DOCX & CFB DOC)
+    // 5. Deep Structural Container Detection (Plain ZIP, ZIP/OOXML DOCX & CFB DOC)
     // -------------------------------------------------------------------------
+    let zip_path = fixtures_dir.join("plain_zip.zip");
     let docx_path = fixtures_dir.join("true_docx.docx");
     let doc_path = fixtures_dir.join("true_doc.doc");
     let container_iterations = 5_000;
 
     println!("[5] Deep Container Structural Parsing (in-memory reader):");
+    if zip_path.exists() {
+        let mut f = File::open(&zip_path).unwrap();
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut f, &mut buf).unwrap();
+
+        let start = Instant::now();
+        for _ in 0..container_iterations {
+            let mut cur = std::io::Cursor::new(&buf);
+            let _ = detect_reader(&mut cur, &opts);
+        }
+        let dur = start.elapsed();
+        let us_per_op = dur.as_micros() as f64 / container_iterations as f64;
+        let qps = container_iterations as f64 / dur.as_secs_f64();
+        println!("    Plain ZIP (Single Central Directory Walk + Short Circuit):");
+        println!("        Latency:    {:.2} μs / archive", us_per_op);
+        println!("        Throughput: {:.0} archives / sec", qps);
+    }
     if docx_path.exists() {
         let mut f = File::open(&docx_path).unwrap();
         let mut buf = Vec::new();

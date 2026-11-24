@@ -19,7 +19,8 @@ pub fn verify_main_part_xml(
     max_depth: usize,
 ) -> Result<MainPartXmlOutcome, WarningItem> {
     let mut reader = NsReader::from_reader(xml_bytes);
-    reader.config_mut().trim_text(true);
+    reader.config_mut().trim_text(false);
+    reader.config_mut().check_comments = false;
 
     let mut current_depth: usize = 0;
     let mut root_seen = false;
