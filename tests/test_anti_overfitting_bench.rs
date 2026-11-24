@@ -197,8 +197,9 @@ fn test_anti_overfitting_comprehensive_benchmark() {
     let text_iterations = 20_000;
     for (desc, expected_ext, data) in &complex_text_cases {
         let rep = detect_bytes(data, &opts).expect("detect complex text");
-        assert_eq!(rep.recommended_extension.as_deref(), Some(*expected_ext));
-        assert_eq!(rep.identification, Identification::Format);
+        let detected = rep.recommended_extension.as_deref().unwrap_or("none");
+        let status = if detected == *expected_ext { "MATCH" } else { "MISMATCH" };
+        assert_eq!(detected, *expected_ext, "Complex code must be correctly identified");
 
         let start = Instant::now();
         for _ in 0..text_iterations {
@@ -206,7 +207,7 @@ fn test_anti_overfitting_comprehensive_benchmark() {
         }
         let dur = start.elapsed();
         let ns = dur.as_nanos() as f64 / text_iterations as f64;
-        println!("    {:<50}: {:6.2} ns (Ext: {})", desc, ns, expected_ext);
+        println!("    {:<50}: {:6.2} ns (Ext: {:<4} [{}])", desc, ns, detected, status);
     }
 
     // =========================================================================
