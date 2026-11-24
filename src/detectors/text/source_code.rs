@@ -37,10 +37,16 @@ pub fn probe_source_code(text: &str) -> Option<DetectionReport> {
         return Some(make_source_report("bat", &["bat", "cmd"], "sig.text.batch", Verification::Structure));
     }
 
-    // C / C++ and Markdown require '#'
+    // C / C++ and Markdown
     if w_bytes.contains(&b'#') {
         if window.contains("#include <") || window.contains("#include \"") {
-            if window.contains("std::") || window.contains("namespace ") || window.contains("template<") || window.contains("class ") {
+            if window.contains("std::")
+                || window.contains("namespace ")
+                || window.contains("template<")
+                || window.contains("template <")
+                || window.contains("class ")
+                || window.contains("using namespace ")
+            {
                 return Some(make_source_report("cpp", &["cpp", "cxx", "cc", "hpp", "hxx"], "sig.text.cpp", Verification::Structure));
             } else {
                 return Some(make_source_report("c", &["c", "h"], "sig.text.c", Verification::Structure));
@@ -51,35 +57,37 @@ pub fn probe_source_code(text: &str) -> Option<DetectionReport> {
         }
     }
 
-    // Verilog requires 'm'
-    if w_bytes.contains(&b'm') && window.contains("module ") && window.contains("endmodule") {
+    // Verilog
+    if window.contains("module ") && window.contains("endmodule") {
         return Some(make_source_report("v", &["v", "vh", "sv"], "sig.text.verilog", Verification::Structure));
     }
 
     // Rust
-    if (w_bytes.contains(&b'f') || w_bytes.contains(&b'i'))
-        && (window.contains("fn main(") || (window.contains("use std::") && window.contains("fn ")) || (window.contains("pub struct ") && window.contains("impl ")))
+    if window.contains("fn main(")
+        || (window.contains("use std::") || window.contains("use core::") || window.contains("use crate::"))
+        || ((window.contains("fn ") || window.contains("pub fn ")) && (window.contains("let ") || window.contains("mut ") || window.contains("->")))
+        || ((window.contains("struct ") || window.contains("enum ")) && (window.contains("impl ") || window.contains("pub ") || window.contains("#[derive(")))
     {
         return Some(make_source_report("rs", &["rs"], "sig.text.rust", Verification::Structure));
     }
 
     // Java
-    if (w_bytes.contains(&b'p') || w_bytes.contains(&b'c'))
-        && (window.contains("public class ") || (window.contains("package ") && window.contains("import java.")))
+    if window.contains("public class ")
+        || window.contains("public interface ")
+        || (window.contains("package ") && window.contains("import ") && (window.contains("class ") || window.contains("interface ") || window.contains("public ")))
     {
         return Some(make_source_report("java", &["java"], "sig.text.java", Verification::Structure));
     }
 
     // Go
-    if w_bytes.contains(&b'p')
-        && (window.contains("package main\n") || (window.contains("package ") && window.contains("func main()")))
-    {
+    if window.contains("package ") && (window.contains("func ") || window.contains("import (") || window.contains("import \"")) {
         return Some(make_source_report("go", &["go"], "sig.text.go", Verification::Structure));
     }
 
     // Python (scripts without shebang)
-    if (w_bytes.contains(&b'd') || w_bytes.contains(&b'i'))
-        && ((window.contains("def ") && window.contains("):")) || window.contains("import sys") || window.contains("import os\n"))
+    if (window.contains("def ") && window.contains(":"))
+        || (window.contains("import ") && (window.contains("def ") || window.contains("class ") || window.contains("from ")))
+        || window.contains("if __name__ == ")
     {
         return Some(make_source_report("py", &["py", "pyw"], "sig.text.python", Verification::Structure));
     }
