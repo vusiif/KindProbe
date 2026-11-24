@@ -194,14 +194,14 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
             ArchiveMatch::None => (),
         }
     }
-    if header.len() >= 64 {
+    if header.len() >= 64 && (&header[60..64] == b"BOOK" || &header[60..64] == b"TEXt") {
         match probe_ebook_signatures(header) {
             EbookMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
             EbookMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
             EbookMatch::None => (),
         }
     }
-    if header.len() >= 32773 {
+    if header.len() >= 32774 && (&header[32768..32774] == b"\x01CD001" || &header[32768..32774] == b"\x02CD001") {
         match probe_disk_signatures(header) {
             DiskMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
             DiskMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),

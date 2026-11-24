@@ -29,16 +29,17 @@
   - `cargo clippy --all-targets --all-features -- -D warnings` **0 警告，0 错误**；
   - `src/lib.rs` 强约束 `#![forbid(unsafe_code)]`；
   - `src/` 全代码库保持 0 `unwrap()` / 0 `expect()` / 0 `panic!()`。
-- **微基准实测性能 (Release Profile)**：
-  - **Unknown Binary (Full Scan Miss)**: **544.36 ns** (9.15x 加速, -89.1%)
-  - **PDF Document**: **650.73 ns** (7.10x 加速, -85.9%)
-  - **HDF5 Scientific**: **670.82 ns** (6.78x 加速, -85.2%)
-  - **Python Shebang**: **834.07 ns** (5.90x 加速, -83.0%)
-  - **C Source Code**: **984.13 ns** (5.46x 加速, -81.7%)
-  - **Retro Sharp XDF (P59)**: **564.19 ns** (5.17x 加速, -80.7%)
-  - **Blender 3D**: **651.39 ns** (4.82x 加速, -79.2%)
-  - **PNG Image**: **475.10 ns** (2.105 M files/sec)
-  - **基准测试套件执行耗时**: 从 10.30s 缩减至 **2.94s** (3.50x 整体提速)
+- **微基准实测性能 (Release Profile - 阶段 3 精确守卫)**：
+  - **Unknown Binary (Full Scan Miss)**: **445.54 ns** (11.18x 加速, -91.1%)
+  - **HDF5 Scientific**: **579.52 ns** (7.84x 加速, -87.2%)
+  - **PDF Document**: **635.95 ns** (7.27x 加速, -86.2%)
+  - **Retro Sharp XDF (P59)**: **465.58 ns** (6.27x 加速, -84.0%)
+  - **FLV Video (P1)**: **490.62 ns** (6.15x 加速, -83.7%)
+  - **Verilog HDL Source**: **904.73 ns** (5.81x 加速, -82.8%)
+  - **C Source Code**: **952.45 ns** (5.64x 加速, -82.3%)
+  - **Blender 3D**: **581.47 ns** (5.40x 加速, -81.5%)
+  - **PNG Image**: **469.56 ns** (2.13 M files/sec)
+  - **基准测试套件执行耗时**: 从 10.30s 缩减至 **2.61s** (3.95x 整体提速)
 
 ---
 
