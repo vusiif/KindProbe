@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static CRYPTOCURRENCY_AND_BLOCKCHAINS_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "bitcoin_blk_dat", category: "blockchain", container_id: None, recommended_ext: "blk", accepted_exts: &["blk"],
+        patterns: &[MagicPattern::new(0, b"\xf9\xbe\xb4\xd9")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.bitcoin_blk_dat.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bitcoin_testnet_blk", category: "blockchain", container_id: None, recommended_ext: "blktest", accepted_exts: &["blktest"],
+        patterns: &[MagicPattern::new(0, b"\x0b\x11\x09\x07")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.bitcoin_testnet_blk.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "litecoin_blk_dat", category: "blockchain", container_id: None, recommended_ext: "litblk", accepted_exts: &["litblk"],
+        patterns: &[MagicPattern::new(0, b"\xfb\xc0\xb6\xdb")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.litecoin_blk_dat.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "dogecoin_blk_dat", category: "blockchain", container_id: None, recommended_ext: "dogeblk", accepted_exts: &["dogeblk"],
+        patterns: &[MagicPattern::new(0, b"\xc0\xc0\xc0\xc0")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.dogecoin_blk_dat.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "monero_block_cache", category: "blockchain", container_id: None, recommended_ext: "mcache", accepted_exts: &["mcache"],
+        patterns: &[MagicPattern::new(0, b"MONERO_BLOCK_CACHE_V1")], min_header_len: 21, priority: 50,
+        evidence_code: "rule.monero_block_cache.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ethereum_keystore_v3", category: "blockchain", container_id: None, recommended_ext: "ethkey", accepted_exts: &["ethkey"],
+        patterns: &[MagicPattern::new(0, b"{\"crypto\":{\"cipher\":\"aes-128-ctr\"")], min_header_len: 33, priority: 50,
+        evidence_code: "rule.ethereum_keystore_v3.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "solana_ledger_slice", category: "blockchain", container_id: None, recommended_ext: "solledger", accepted_exts: &["solledger"],
+        patterns: &[MagicPattern::new(0, b"SOLANA_LEDGER_SLICE_V1")], min_header_len: 22, priority: 50,
+        evidence_code: "rule.solana_ledger_slice.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "cardano_chunk", category: "blockchain", container_id: None, recommended_ext: "cchunk", accepted_exts: &["cchunk"],
+        patterns: &[MagicPattern::new(0, b"CARDANO_CHUNK_V1\x00")], min_header_len: 17, priority: 50,
+        evidence_code: "rule.cardano_chunk.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "bip39_seed_backup", category: "blockchain", container_id: None, recommended_ext: "bip39", accepted_exts: &["bip39"],
+        patterns: &[MagicPattern::new(0, b"BIP39_SEED_BACKUP\n")], min_header_len: 18, priority: 50,
+        evidence_code: "rule.bip39_seed_backup.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "electrum_wallet_v1", category: "blockchain", container_id: None, recommended_ext: "elcwallet", accepted_exts: &["elcwallet"],
+        patterns: &[MagicPattern::new(0, b"{\"seed_version\": 1")], min_header_len: 18, priority: 50,
+        evidence_code: "rule.electrum_wallet_v1.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "trezor_metadata", category: "blockchain", container_id: None, recommended_ext: "trezor", accepted_exts: &["trezor"],
+        patterns: &[MagicPattern::new(0, b"TREZOR_METADATA_V1")], min_header_len: 18, priority: 50,
+        evidence_code: "rule.trezor_metadata.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ledger_backup_apdu", category: "blockchain", container_id: None, recommended_ext: "lapdu", accepted_exts: &["lapdu"],
+        patterns: &[MagicPattern::new(0, b"LEDGER_APDU_DUMP_V1")], min_header_len: 19, priority: 50,
+        evidence_code: "rule.ledger_backup_apdu.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "chia_plot_v1", category: "blockchain", container_id: None, recommended_ext: "plot", accepted_exts: &["plot"],
+        patterns: &[MagicPattern::new(0, b"Proof of Space Plot")], min_header_len: 19, priority: 50,
+        evidence_code: "rule.chia_plot_v1.magic", verification: Verification::Signature, validator: None,
+    },
+];

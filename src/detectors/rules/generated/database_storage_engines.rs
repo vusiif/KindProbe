@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static DATABASE_STORAGE_ENGINES_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "mysql_innodb_ibd", category: "database", container_id: None, recommended_ext: "ibd", accepted_exts: &["ibd"],
+        patterns: &[MagicPattern::new(0, b"\xd4\x75\x5a\x6e")], min_header_len: 4, priority: 50,
+        evidence_code: "rule.mysql_innodb_ibd.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "rocksdb_sst_file", category: "database", container_id: None, recommended_ext: "sst_rocks", accepted_exts: &["sst_rocks"],
+        patterns: &[MagicPattern::new(0, b"ROCKSDB_SST_FILE_V1\x00")], min_header_len: 20, priority: 50,
+        evidence_code: "rule.rocksdb_sst_file.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "postgresql_base_block", category: "database", container_id: None, recommended_ext: "pgdata", accepted_exts: &["pgdata"],
+        patterns: &[MagicPattern::new(0, b"POSTGRESQL_RELATION_BLOCK_V1\x00")], min_header_len: 30, priority: 50,
+        evidence_code: "rule.postgresql_base_block.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "firebird_fdb", category: "database", container_id: None, recommended_ext: "fdb", accepted_exts: &["fdb"],
+        patterns: &[MagicPattern::new(0, b"\x13\x57\x9a\xbcFirebirdDatabase\x00")], min_header_len: 21, priority: 50,
+        evidence_code: "rule.firebird_fdb.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "redis_dump_rdb9", category: "database", container_id: None, recommended_ext: "rdb9", accepted_exts: &["rdb9"],
+        patterns: &[MagicPattern::new(0, b"REDIS0009")], min_header_len: 9, priority: 50,
+        evidence_code: "rule.redis_dump_rdb9.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "etcd_wal_segment", category: "database", container_id: None, recommended_ext: "wal_etcd", accepted_exts: &["wal_etcd"],
+        patterns: &[MagicPattern::new(0, b"ETCD_WAL_LOG_V1\x00")], min_header_len: 16, priority: 50,
+        evidence_code: "rule.etcd_wal_segment.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "cassandra_sstable_toc", category: "database", container_id: None, recommended_ext: "db_toc", accepted_exts: &["db_toc"],
+        patterns: &[MagicPattern::new(0, b"SSTableTOC:\n")], min_header_len: 12, priority: 50,
+        evidence_code: "rule.cassandra_sstable_toc.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "couchdb_couch_file", category: "database", container_id: None, recommended_ext: "couch", accepted_exts: &["couch"],
+        patterns: &[MagicPattern::new(0, b"couchdb_header_v1\x00")], min_header_len: 18, priority: 50,
+        evidence_code: "rule.couchdb_couch_file.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "neo4j_store_db", category: "database", container_id: None, recommended_ext: "neostore", accepted_exts: &["neostore"],
+        patterns: &[MagicPattern::new(0, b"NEO4J_RECORD_STORE_V1\x00")], min_header_len: 22, priority: 50,
+        evidence_code: "rule.neo4j_store_db.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "clickhouse_bin_column", category: "database", container_id: None, recommended_ext: "clickbin", accepted_exts: &["clickbin"],
+        patterns: &[MagicPattern::new(0, b"CLICKHOUSE_COLUMN_BIN_V1\x00")], min_header_len: 25, priority: 50,
+        evidence_code: "rule.clickhouse_bin_column.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "scylladb_sstable", category: "database", container_id: None, recommended_ext: "scylla", accepted_exts: &["scylla"],
+        patterns: &[MagicPattern::new(0, b"SCYLLADB_SSTABLE_V1\x00")], min_header_len: 20, priority: 50,
+        evidence_code: "rule.scylladb_sstable.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "lmdb_data_mdb", category: "database", container_id: None, recommended_ext: "mdb_lmdb", accepted_exts: &["mdb_lmdb"],
+        patterns: &[MagicPattern::new(0, b"\xde\xc0\xef\xbe\x00\x00\x00\x00")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.lmdb_data_mdb.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "leveldb_log", category: "database", container_id: None, recommended_ext: "ldblog", accepted_exts: &["ldblog"],
+        patterns: &[MagicPattern::new(0, b"LEVELDB_RECORD_LOG_V1\x00")], min_header_len: 22, priority: 50,
+        evidence_code: "rule.leveldb_log.magic", verification: Verification::Signature, validator: None,
+    },
+];

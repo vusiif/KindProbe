@@ -1,0 +1,70 @@
+use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::model::Verification;
+
+pub static RETRO_GAMING_AND_EMULATORS_RULES: &[SignatureRule] = &[
+    SignatureRule {
+        format_id: "amiga_hdf_hardfile", category: "emulation", container_id: None, recommended_ext: "hdf_amiga", accepted_exts: &["hdf_amiga"],
+        patterns: &[MagicPattern::new(0, b"DOS\x03\x00\x00\x00\x00")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.amiga_hdf_hardfile.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "vectrex_game_rom", category: "emulation", container_id: None, recommended_ext: "vec", accepted_exts: &["vec"],
+        patterns: &[MagicPattern::new(0, b"g GCE 198")], min_header_len: 9, priority: 50,
+        evidence_code: "rule.vectrex_game_rom.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "wonderswan_wsc_rom", category: "emulation", container_id: None, recommended_ext: "wsc", accepted_exts: &["wsc"],
+        patterns: &[MagicPattern::new(0, b"WONDERSWAN_COLOR_ROM_V1")], min_header_len: 23, priority: 50,
+        evidence_code: "rule.wonderswan_wsc_rom.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "neogeo_pocket_ngp", category: "emulation", container_id: None, recommended_ext: "ngp", accepted_exts: &["ngp"],
+        patterns: &[MagicPattern::new(0, b"SNK NeoGeo Pocket ROM\x00")], min_header_len: 22, priority: 50,
+        evidence_code: "rule.neogeo_pocket_ngp.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "dreamcast_gdi", category: "emulation", container_id: None, recommended_ext: "gdi", accepted_exts: &["gdi"],
+        patterns: &[MagicPattern::new(0, b"3\n1 0 4 2352 \"track01.bin\" 0\n")], min_header_len: 30, priority: 50,
+        evidence_code: "rule.dreamcast_gdi.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sega_saturn_cue", category: "emulation", container_id: None, recommended_ext: "cue_saturn", accepted_exts: &["cue_saturn"],
+        patterns: &[MagicPattern::new(0, b"FILE \"saturn.bin\" BINARY\n  TRACK 01 MODE1/2048\n")], min_header_len: 48, priority: 50,
+        evidence_code: "rule.sega_saturn_cue.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gamecube_iso_gcm", category: "emulation", container_id: None, recommended_ext: "gcm", accepted_exts: &["gcm"],
+        patterns: &[MagicPattern::new(0, b"GAMECUBE_GCM_DISC_IMAGE_V1\x00")], min_header_len: 28, priority: 50,
+        evidence_code: "rule.gamecube_iso_gcm.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "wii_iso_wbfs", category: "emulation", container_id: None, recommended_ext: "wbfs", accepted_exts: &["wbfs"],
+        patterns: &[MagicPattern::new(0, b"WBFS\x00\x00\x00\x00")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.wii_iso_wbfs.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "ps2_npo_memory_card", category: "emulation", container_id: None, recommended_ext: "npo", accepted_exts: &["npo"],
+        patterns: &[MagicPattern::new(0, b"PS2_NPO_MEMORY_CARD\x00")], min_header_len: 20, priority: 50,
+        evidence_code: "rule.ps2_npo_memory_card.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "gamecube_gcm_raw", category: "emulation", container_id: None, recommended_ext: "gcm_raw", accepted_exts: &["gcm_raw"],
+        patterns: &[MagicPattern::new(0, b"GAMECUBE_GCM_RAW_DISC_IMAGE\x00")], min_header_len: 28, priority: 50,
+        evidence_code: "rule.gamecube_gcm_raw.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "msx_rom_cas", category: "emulation", container_id: None, recommended_ext: "cas_msx_tape", accepted_exts: &["cas_msx_tape"],
+        patterns: &[MagicPattern::new(0, b"\x1f\xa6\xde\xba\xcc\x13\x7d\x74")], min_header_len: 8, priority: 50,
+        evidence_code: "rule.msx_rom_cas.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "zx81_p_tape", category: "emulation", container_id: None, recommended_ext: "p81", accepted_exts: &["p81"],
+        patterns: &[MagicPattern::new(0, b"ZX81_P_FILE_TAPE_IMAGE\x00")], min_header_len: 23, priority: 50,
+        evidence_code: "rule.zx81_p_tape.magic", verification: Verification::Signature, validator: None,
+    },
+    SignatureRule {
+        format_id: "sharp_x68000_xdf", category: "emulation", container_id: None, recommended_ext: "xdf_x68k", accepted_exts: &["xdf_x68k"],
+        patterns: &[MagicPattern::new(0, b"X68K_XDF_DISK_V1\x00")], min_header_len: 17, priority: 50,
+        evidence_code: "rule.sharp_x68000_xdf.magic", verification: Verification::Signature, validator: None,
+    },
+];
