@@ -65,9 +65,16 @@ pub fn detect_cfb<R: Read + Seek>(
 
     report.evidence.push(EvidenceItem::new("cfb.directory"));
 
-    // Check CFB entries budget and count inspected entries
+    // Check CFB entries budget and discover root streams in a single walk pass
     let mut entries_count = 0;
-    for _ in comp.walk() {
+    let mut word_doc = None::<(PathBuf, u64)>;
+    let mut xls_doc = None::<(PathBuf, u64)>;
+    let mut ppt_doc = None::<(PathBuf, u64)>;
+    let mut table_0 = None::<PathBuf>;
+    let mut table_1 = None::<PathBuf>;
+    let mut has_current_user = false;
+
+    for entry in comp.walk() {
         entries_count += 1;
         if entries_count > options.max_entries {
             report.stats.entries_inspected = entries_count;
@@ -81,20 +88,8 @@ pub fn detect_cfb<R: Read + Seek>(
             ));
             return Ok(report);
         }
-    }
-    report.stats.entries_inspected = entries_count;
 
-    // Scan top-level entries under root storage
-    let mut word_doc = None::<(PathBuf, u64)>;
-    let mut xls_doc = None::<(PathBuf, u64)>;
-    let mut ppt_doc = None::<(PathBuf, u64)>;
-    let mut has_current_user = false;
-
-    if let Ok(root_entries) = comp.read_storage("/") {
-        for entry in root_entries {
-            if !entry.is_stream() {
-                continue;
-            }
+        if entry.is_stream() && entry.path().parent() == Some(std::path::Path::new("/")) {
             let name = entry.name();
             if name.eq_ignore_ascii_case("WordDocument") {
                 word_doc = Some((entry.path().to_path_buf(), entry.len()));
@@ -104,13 +99,26 @@ pub fn detect_cfb<R: Read + Seek>(
                 ppt_doc = Some((entry.path().to_path_buf(), entry.len()));
             } else if name.eq_ignore_ascii_case("Current User") {
                 has_current_user = true;
+            } else if name.eq_ignore_ascii_case("0Table") {
+                table_0 = Some(entry.path().to_path_buf());
+            } else if name.eq_ignore_ascii_case("1Table") {
+                table_1 = Some(entry.path().to_path_buf());
             }
         }
     }
+    report.stats.entries_inspected = entries_count;
 
     // 1. Try Word Document verification if WordDocument stream exists
     if let Some((path, len)) = word_doc {
-        if verify_cfb_doc(&mut comp, &path, len, &budget_handle, &mut report)? {
+        if verify_cfb_doc(
+            &mut comp,
+            &path,
+            len,
+            table_0.as_deref(),
+            table_1.as_deref(),
+            &budget_handle,
+            &mut report,
+        )? {
             return Ok(report);
         }
     }

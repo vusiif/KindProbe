@@ -43,9 +43,10 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     };
 
     // Pre-check ZIP End of Central Directory and Central Directory Headers
-    if precheck_zip_central_directory(reader, options, &mut report)?.is_none() {
-        return Ok(report);
-    }
+    let cd_check = match precheck_zip_central_directory(reader, options, &mut report)? {
+        Some(res) => res,
+        None => return Ok(report),
+    };
 
     // Rewind back to start before calling ZipArchive
     if let Err(e) = reader.seek(SeekFrom::Start(0)) {
@@ -116,28 +117,10 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     report.stats.entries_inspected = archive.len();
     report.evidence.push(EvidenceItem::new("zip.central_directory"));
 
-    // Check for OOXML indicators
-    let mut has_content_types = false;
-    let mut has_rels = false;
-    let mut has_ooxml_subdirs = false;
-
-    for i in 0..archive.len() {
-        if let Ok(entry) = archive.by_index_raw(i) {
-            let name = entry.name();
-            if name == "[Content_Types].xml" {
-                has_content_types = true;
-            } else if name == "_rels/.rels" {
-                has_rels = true;
-            } else if name.starts_with("word/")
-                || name.starts_with("xl/")
-                || name.starts_with("ppt/")
-                || name.starts_with("customXml/")
-                || name.starts_with("docProps/")
-            {
-                has_ooxml_subdirs = true;
-            }
-        }
-    }
+    // Check for OOXML indicators (already collected during central directory pre-check)
+    let has_content_types = cd_check.has_content_types;
+    let has_rels = cd_check.has_rels;
+    let has_ooxml_subdirs = cd_check.has_ooxml_subdirs;
 
     // Pure ZIP confirmation: no OOXML characteristics
     if !has_content_types && !has_rels && !has_ooxml_subdirs {
@@ -166,6 +149,9 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         return Ok(report);
     }
 
+    // Reusable decompression buffer for XML parts (_rels/.rels, [Content_Types].xml, main part)
+    let mut xml_buf = Vec::with_capacity(4096);
+
     // Parse _rels/.rels to locate main officeDocument part
     let main_rel_target = {
         let rels_entry = match archive.by_name("_rels/.rels") {
@@ -193,8 +179,8 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         }
 
         let mut limit_reader = DecompressLimitReader::new(rels_entry, allowed);
-        let mut xml_data = Vec::new();
-        if let Err(e) = limit_reader.read_to_end(&mut xml_data) {
+        xml_buf.clear();
+        if let Err(e) = limit_reader.read_to_end(&mut xml_buf) {
             report.stats.decompressed_bytes += limit_reader.bytes_read();
             if limit_reader.is_exceeded() {
                 report.inspection = Inspection::Limited;
@@ -216,7 +202,7 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         }
         report.stats.decompressed_bytes += limit_reader.bytes_read();
 
-        match parse_package_relationships(&xml_data) {
+        match parse_package_relationships(&xml_buf) {
             Ok(Some(target)) => target,
             Ok(None) => {
                 report.warnings.push(WarningItem::new(
@@ -272,8 +258,8 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         }
 
         let mut limit_reader = DecompressLimitReader::new(ct_entry, allowed);
-        let mut xml_data = Vec::new();
-        if let Err(e) = limit_reader.read_to_end(&mut xml_data) {
+        xml_buf.clear();
+        if let Err(e) = limit_reader.read_to_end(&mut xml_buf) {
             report.stats.decompressed_bytes += limit_reader.bytes_read();
             if limit_reader.is_exceeded() {
                 report.inspection = Inspection::Limited;
@@ -288,7 +274,7 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         }
         report.stats.decompressed_bytes += limit_reader.bytes_read();
 
-        match parse_content_types(&xml_data, &normalized_target) {
+        match parse_content_types(&xml_buf, &normalized_target) {
             Ok(Some(ct)) => ct,
             Ok(None) => {
                 report.warnings.push(WarningItem::new(
@@ -344,8 +330,8 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     }
 
     let mut limit_reader = DecompressLimitReader::new(main_entry, allowed);
-    let mut xml_data = Vec::new();
-    if let Err(e) = limit_reader.read_to_end(&mut xml_data) {
+    xml_buf.clear();
+    if let Err(e) = limit_reader.read_to_end(&mut xml_buf) {
         report.stats.decompressed_bytes += limit_reader.bytes_read();
         if limit_reader.is_exceeded() {
             report.inspection = Inspection::Limited;
@@ -367,7 +353,7 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     }
     report.stats.decompressed_bytes += limit_reader.bytes_read();
 
-    match verify_main_part_xml(&xml_data, format_kind, options.max_xml_depth) {
+    match verify_main_part_xml(&xml_buf, format_kind, options.max_xml_depth) {
         Ok(MainPartXmlOutcome::Valid(kind)) => {
             report.identification = Identification::Format;
             report.format_id = Some(kind.format_id().to_string());

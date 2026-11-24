@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader as XmlReader;
 use crate::model::WarningItem;
@@ -8,9 +7,42 @@ pub const TRANSITIONAL_REL_OFFICE_DOC: &str =
 pub const STRICT_REL_OFFICE_DOC: &str =
     "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument";
 
+fn is_normalized_opc_path(raw: &str) -> bool {
+    if raw.is_empty() {
+        return true;
+    }
+    let b = raw.as_bytes();
+    if b[0] == b'/' || b[0] == b'\\' || b[0].is_ascii_whitespace() {
+        return false;
+    }
+    let last = b[b.len() - 1];
+    if last == b'/' || last == b'\\' || last.is_ascii_whitespace() {
+        return false;
+    }
+    let mut prev = 0u8;
+    for &c in b {
+        if c == b'\\' || c.is_ascii_whitespace() {
+            return false;
+        }
+        if c == b'/' && prev == b'/' {
+            return false;
+        }
+        prev = c;
+    }
+    for seg in raw.split('/') {
+        if seg == "." || seg == ".." {
+            return false;
+        }
+    }
+    true
+}
+
 /// Normalizes an OPC relative or absolute path relative to package root.
 /// Returns normalized path without leading slash, e.g. "word/document.xml".
 pub fn normalize_opc_path(raw: &str) -> String {
+    if is_normalized_opc_path(raw) {
+        return raw.to_string();
+    }
     let s = raw.trim().replace('\\', "/");
     let parts = s.split('/');
     let mut stack = Vec::new();
@@ -27,6 +59,16 @@ pub fn normalize_opc_path(raw: &str) -> String {
         }
     }
     stack.join("/")
+}
+
+/// Normalizes an OPC relative or absolute path, returning a borrowed `Cow`
+/// if already clean to avoid heap allocations.
+pub fn normalize_opc_path_cow<'a>(raw: &'a str) -> std::borrow::Cow<'a, str> {
+    if is_normalized_opc_path(raw) {
+        std::borrow::Cow::Borrowed(raw)
+    } else {
+        std::borrow::Cow::Owned(normalize_opc_path(raw))
+    }
 }
 
 /// Resolves a target relative to a base directory within an OPC package.
@@ -66,22 +108,29 @@ pub fn parse_package_relationships(xml_bytes: &[u8]) -> Result<Option<String>, W
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
                 if e.name().as_ref() == b"Relationship" {
-                    let mut rel_type = String::new();
-                    let mut rel_target = String::new();
+                    let mut is_office_doc = false;
+                    let mut rel_target = None;
 
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"Type" {
-                            rel_type = String::from_utf8_lossy(&attr.value).to_string();
+                            let val = attr.value.as_ref();
+                            if val == TRANSITIONAL_REL_OFFICE_DOC.as_bytes()
+                                || val == STRICT_REL_OFFICE_DOC.as_bytes()
+                            {
+                                is_office_doc = true;
+                            }
                         } else if attr.key.as_ref() == b"Target" {
-                            rel_target = String::from_utf8_lossy(&attr.value).to_string();
+                            rel_target = Some(attr.value);
                         }
                     }
 
-                    if (rel_type == TRANSITIONAL_REL_OFFICE_DOC || rel_type == STRICT_REL_OFFICE_DOC)
-                        && !rel_target.is_empty()
-                    {
-                        target_val = Some(rel_target);
-                        break;
+                    if is_office_doc {
+                        if let Some(target_bytes) = rel_target {
+                            if !target_bytes.is_empty() {
+                                target_val = Some(String::from_utf8_lossy(&target_bytes).to_string());
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -109,41 +158,55 @@ pub fn parse_content_types(
     reader.config_mut().trim_text(true);
 
     let target_part_name = format!("/{}", normalized_target).to_ascii_lowercase();
+    let target_part_bytes = target_part_name.as_bytes();
     let target_ext = normalized_target.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    let target_ext_bytes = target_ext.as_bytes();
 
-    let mut overrides = HashMap::new();
-    let mut defaults = HashMap::new();
+    let mut matched_override: Option<String> = None;
+    let mut matched_default: Option<String> = None;
 
     let mut buf = Vec::new();
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
+                if matched_override.is_some() {
+                    buf.clear();
+                    continue;
+                }
                 let name = e.name();
                 if name.as_ref() == b"Override" {
-                    let mut part_name = String::new();
-                    let mut content_type = String::new();
+                    let mut matches = false;
+                    let mut ct_bytes = None;
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"PartName" {
-                            part_name = String::from_utf8_lossy(&attr.value).to_ascii_lowercase();
+                            if attr.value.eq_ignore_ascii_case(target_part_bytes) {
+                                matches = true;
+                            }
                         } else if attr.key.as_ref() == b"ContentType" {
-                            content_type = String::from_utf8_lossy(&attr.value).to_string();
+                            ct_bytes = Some(attr.value);
                         }
                     }
-                    if !part_name.is_empty() && !content_type.is_empty() {
-                        overrides.insert(part_name, content_type);
+                    if matches && matched_override.is_none() {
+                        if let Some(val) = ct_bytes {
+                            matched_override = Some(String::from_utf8_lossy(&val).to_string());
+                        }
                     }
                 } else if name.as_ref() == b"Default" {
-                    let mut ext = String::new();
-                    let mut content_type = String::new();
+                    let mut matches = false;
+                    let mut ct_bytes = None;
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"Extension" {
-                            ext = String::from_utf8_lossy(&attr.value).to_ascii_lowercase();
+                            if attr.value.eq_ignore_ascii_case(target_ext_bytes) {
+                                matches = true;
+                            }
                         } else if attr.key.as_ref() == b"ContentType" {
-                            content_type = String::from_utf8_lossy(&attr.value).to_string();
+                            ct_bytes = Some(attr.value);
                         }
                     }
-                    if !ext.is_empty() && !content_type.is_empty() {
-                        defaults.insert(ext, content_type);
+                    if matches && matched_default.is_none() {
+                        if let Some(val) = ct_bytes {
+                            matched_default = Some(String::from_utf8_lossy(&val).to_string());
+                        }
                     }
                 }
             }
@@ -159,11 +222,11 @@ pub fn parse_content_types(
         buf.clear();
     }
 
-    if let Some(ct) = overrides.get(&target_part_name) {
-        return Ok(Some(ct.clone()));
+    if let Some(ct) = matched_override {
+        return Ok(Some(ct));
     }
-    if let Some(ct) = defaults.get(&target_ext) {
-        return Ok(Some(ct.clone()));
+    if let Some(ct) = matched_default {
+        return Ok(Some(ct));
     }
 
     Ok(None)

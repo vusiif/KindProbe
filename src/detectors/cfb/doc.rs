@@ -16,6 +16,8 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
     comp: &mut CompoundFile<R>,
     stream_path: &Path,
     word_stream_len: u64,
+    table_0_path: Option<&Path>,
+    table_1_path: Option<&Path>,
     budget_handle: &AtomicBool,
     report: &mut DetectionReport,
 ) -> Result<bool, DetectError> {
@@ -109,27 +111,31 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
     let is_1table = (flags & 0x0200) != 0;
     let required_table_name = if is_1table { "1Table" } else { "0Table" };
 
-    let mut table_stream_path = None;
-    if let Ok(root_entries) = comp.read_storage("/") {
-        for entry in root_entries {
-            if entry.name().eq_ignore_ascii_case(required_table_name) && entry.is_stream() {
-                table_stream_path = Some(entry.path().to_path_buf());
-                break;
+    let table_hint = if is_1table { table_1_path } else { table_0_path };
+    let actual_table_path = if let Some(p) = table_hint {
+        p.to_path_buf()
+    } else {
+        let mut found = None;
+        if let Ok(root_entries) = comp.read_storage("/") {
+            for entry in root_entries {
+                if entry.name().eq_ignore_ascii_case(required_table_name) && entry.is_stream() {
+                    found = Some(entry.path().to_path_buf());
+                    break;
+                }
             }
         }
-    }
-
-    let actual_table_path = match table_stream_path {
-        Some(p) => p,
-        None => {
-            report.warnings.push(WarningItem::new(
-                "cfb.table_stream_missing",
-                format!(
-                    "Required table stream '{}' indicated by fWhichTblStm is missing",
-                    required_table_name
-                ),
-            ));
-            return Ok(false);
+        match found {
+            Some(p) => p,
+            None => {
+                report.warnings.push(WarningItem::new(
+                    "cfb.table_stream_missing",
+                    format!(
+                        "Required table stream '{}' indicated by fWhichTblStm is missing",
+                        required_table_name
+                    ),
+                ));
+                return Ok(false);
+            }
         }
     };
 
