@@ -420,8 +420,15 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         _ => (),
     }
 
-    // 2. High-offset signatures gated by length and byte checks
-    if header.len() >= 262 && (&header[257..262] == b"ustar" || &header[257..262] == b"GNUtar") {
+    // 2. Bounded non-zero offset signature probes
+    if header.len() >= 8 && &header[4..8] == b"ftyp" {
+        match probe_media_signatures(header) {
+            MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
+            MediaMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
+            MediaMatch::None => (),
+        }
+    }
+    if header.len() >= 262 && &header[257..262] == b"ustar" {
         match probe_archive_signatures(header) {
             ArchiveMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
             ArchiveMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),

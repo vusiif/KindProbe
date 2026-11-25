@@ -73,15 +73,15 @@ pub fn probe_archive_signatures_core(header: &[u8]) -> ArchiveMatchCore {
     }
 
     // 5. XZ / Zstandard
-    if header.len() < 6 && !header.is_empty() {
-        if header.starts_with(b"\xFD7z") {
-            return ArchiveMatchCore::Truncated("xz");
-        } else if header.starts_with(&[0x28, 0xB5]) {
-            return ArchiveMatchCore::Truncated("zstd");
-        }
-    }
     if let Some(xz_zstd_core) = probe_xz_zstd_core(header) {
         return ArchiveMatchCore::Confirmed(xz_zstd_core);
+    }
+    if !header.is_empty() {
+        if header.len() < 6 && xz_zstd::XZ_MAGIC.starts_with(header) {
+            return ArchiveMatchCore::Truncated("xz");
+        } else if header.len() < 4 && xz_zstd::ZSTD_MAGIC.starts_with(header) {
+            return ArchiveMatchCore::Truncated("zstd");
+        }
     }
 
     // 6. Tar (POSIX ustar)

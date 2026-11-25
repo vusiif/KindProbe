@@ -40,7 +40,7 @@ pub fn make_sqlite_core(is_gpkg: bool, verification: Verification) -> DetectionC
             verification,
             inspection: Inspection::Complete,
             recommended_extension: Some("sqlite3"),
-            accepted_extensions: &["sqlite3", "db", "sqlite"],
+            accepted_extensions: &["sqlite3", "sqlite", "db", "db3"],
             primary_evidence: Some("sig.sqlite.header"),
             secondary_evidence: if verification == Verification::Structure {
                 Some("sig.sqlite.page_size")

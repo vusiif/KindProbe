@@ -163,22 +163,29 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 ## 3. Rust API 快速上手
 
 ```rust
-use kindprobe::{detect_path, detect_bytes, detect_reader, DetectOptions};
+use kindprobe::{
+    compare_extension_core, detect_bytes, detect_bytes_core, detect_path, detect_path_core,
+    detect_reader, detect_reader_core, DetectOptions,
+};
+use std::ffi::OsStr;
 use std::path::Path;
 
-// 1. 路径探测（安全打开句柄 + fstat 校验普通文件 + 独立扩展名诊断）
+// 1. 完整报表 API（安全打开句柄 + fstat 校验普通文件 + 独立扩展名诊断）
 let options = DetectOptions::default();
 let report = detect_path(Path::new("tests/sample.docx"), &options)?;
 assert_eq!(report.format_id.as_deref(), Some("docx"));
 assert_eq!(report.schema_version, 1);
 
-// 2. 内存切片探测
+// 2. 高吞吐零堆分配核心 API（纯栈 Copy 结构体 DetectionCore）
 let bytes = b"\x89PNG\r\n\x1a\n...";
-let report_bytes = detect_bytes(bytes, &options)?;
+let core = detect_bytes_core(bytes, &options)?;
+assert_eq!(core.format_id, Some("png"));
+let ext_status = compare_extension_core(&core, Some(OsStr::new("png")));
 
-// 3. Read + Seek 流探测
+// 3. Read + Seek 流探测与路径核心探测
 let mut cursor = std::io::Cursor::new(bytes);
 let report_stream = detect_reader(&mut cursor, &options)?;
+let core_path = detect_path_core(Path::new("tests/sample.docx"), &options)?;
 ```
 
 ---

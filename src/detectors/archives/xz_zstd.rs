@@ -76,18 +76,8 @@ pub fn probe_xz_zstd_core(header: &[u8]) -> Option<DetectionCore> {
 
 /// Probes XZ and Zstandard compressed archive formats.
 pub fn probe_xz_zstd(header: &[u8]) -> XzZstdMatch {
-    // 1. XZ format probe
-    if header.len() < 6 {
-        if !header.is_empty()
-            && (header.starts_with(b"\xFD7z") || header.starts_with(&[0x28, 0xB5]))
-        {
-            return XzZstdMatch::Truncated(if header.starts_with(b"\xFD7z") {
-                "xz".to_string()
-            } else {
-                "zstd".to_string()
-            });
-        }
-    } else if header.starts_with(XZ_MAGIC) {
+    // 1. XZ format probe (must check 6-byte magic before Zstd to keep truncation clean)
+    if header.starts_with(XZ_MAGIC) {
         let mut evidence = vec![EvidenceItem::new("sig.xz.magic")];
         let verification = if header.len() >= 12 {
             let flags = &header[6..8];
@@ -120,7 +110,7 @@ pub fn probe_xz_zstd(header: &[u8]) -> XzZstdMatch {
         }));
     }
 
-    // 2. Zstandard format probe
+    // 2. Zstandard format probe (4-byte magic)
     if header.len() >= 4 && header.starts_with(ZSTD_MAGIC) {
         return XzZstdMatch::Confirmed(Box::new(DetectionReport {
             schema_version: 1,
@@ -138,6 +128,14 @@ pub fn probe_xz_zstd(header: &[u8]) -> XzZstdMatch {
             stats: Default::default(),
             candidates: None,
         }));
+    }
+
+    // 3. Truncated XZ / Zstd prefixes
+    if !header.is_empty() && header.len() < 6 && XZ_MAGIC.starts_with(header) {
+        return XzZstdMatch::Truncated("xz".to_string());
+    }
+    if !header.is_empty() && header.len() < 4 && ZSTD_MAGIC.starts_with(header) {
+        return XzZstdMatch::Truncated("zstd".to_string());
     }
 
     XzZstdMatch::None

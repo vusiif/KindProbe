@@ -83,6 +83,39 @@ pub fn make_avi_core() -> DetectionCore {
     }
 }
 
+fn has_wave_fmt_chunk(header: &[u8]) -> bool {
+    let scan_limit = header.len().min(512);
+    if scan_limit < 16 {
+        return false;
+    }
+
+    let mut offset = 12usize;
+    while offset + 8 <= scan_limit {
+        let chunk_id = &header[offset..offset + 4];
+        if chunk_id == b"fmt " {
+            return true;
+        }
+        let chunk_size = u32::from_le_bytes([
+            header[offset + 4],
+            header[offset + 5],
+            header[offset + 6],
+            header[offset + 7],
+        ]) as usize;
+        if chunk_size > scan_limit {
+            break;
+        }
+        let Some(padded_size) = chunk_size.checked_add(1).map(|v| v & !1) else {
+            break;
+        };
+        let Some(next_offset) = offset.checked_add(8).and_then(|v| v.checked_add(padded_size)) else {
+            break;
+        };
+        offset = next_offset;
+    }
+
+    false
+}
+
 pub fn probe_riff_core(header: &[u8]) -> RiffMatchCore {
     if header.len() < 4 {
         if header.len() >= 2 && header.starts_with(b"RI") {
@@ -103,30 +136,7 @@ pub fn probe_riff_core(header: &[u8]) -> RiffMatchCore {
 
     // 1. WAV audio (form_type == b"WAVE")
     if form_type == b"WAVE" {
-        let scan_limit = header.len().min(512);
-        let mut has_fmt = false;
-
-        if scan_limit >= 16 {
-            let mut offset = 12;
-            while offset + 8 <= scan_limit {
-                let chunk_id = &header[offset..offset + 4];
-                let chunk_size = u32::from_le_bytes([
-                    header[offset + 4],
-                    header[offset + 5],
-                    header[offset + 6],
-                    header[offset + 7],
-                ]) as usize;
-
-                if chunk_id == b"fmt " {
-                    has_fmt = true;
-                    break;
-                }
-                // Word-aligned chunk advance
-                offset += 8 + ((chunk_size + 1) & !1);
-            }
-        }
-
-        return RiffMatchCore::Confirmed(make_wav_core(has_fmt));
+        return RiffMatchCore::Confirmed(make_wav_core(has_wave_fmt_chunk(header)));
     }
 
     // 2. WebP image (form_type == b"WEBP")
@@ -170,28 +180,7 @@ pub fn probe_riff(header: &[u8]) -> RiffMatch {
     // 1. WAV audio (form_type == b"WAVE")
     if form_type == b"WAVE" {
         evidence.push(EvidenceItem::new("sig.wav.wave_header"));
-        let scan_limit = header.len().min(512);
-        let mut has_fmt = false;
-
-        if scan_limit >= 16 {
-            let mut offset = 12;
-            while offset + 8 <= scan_limit {
-                let chunk_id = &header[offset..offset + 4];
-                let chunk_size = u32::from_le_bytes([
-                    header[offset + 4],
-                    header[offset + 5],
-                    header[offset + 6],
-                    header[offset + 7],
-                ]) as usize;
-
-                if chunk_id == b"fmt " {
-                    has_fmt = true;
-                    break;
-                }
-                // Word-aligned chunk advance
-                offset += 8 + ((chunk_size + 1) & !1);
-            }
-        }
+        let has_fmt = has_wave_fmt_chunk(header);
 
         let verification = if has_fmt {
             evidence.push(EvidenceItem::new("sig.wav.fmt_chunk"));

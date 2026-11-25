@@ -6,7 +6,7 @@ pub fn extract_pe_metadata(header: &[u8], pe_offset: usize) -> (bool, Vec<Eviden
     let mut is_dll = false;
 
     // COFF Header starts at pe_offset + 4 (length: 20 bytes)
-    if pe_offset + 24 <= header.len() {
+    if let Some(opt_start) = pe_offset.checked_add(24).filter(|&end| end <= header.len()) {
         let machine = u16::from_le_bytes([header[pe_offset + 4], header[pe_offset + 5]]);
         if let Some(arch_ev) = match_pe_machine(machine) {
             items.push(arch_ev);
@@ -16,9 +16,8 @@ pub fn extract_pe_metadata(header: &[u8], pe_offset: usize) -> (bool, Vec<Eviden
         is_dll = (characteristics & 0x2000) != 0; // IMAGE_FILE_DLL
 
         let size_of_opt = u16::from_le_bytes([header[pe_offset + 20], header[pe_offset + 21]]) as usize;
-        let opt_start = pe_offset + 24;
 
-        if size_of_opt >= 2 && opt_start + 2 <= header.len() {
+        if size_of_opt >= 2 && opt_start.checked_add(2).is_some_and(|end| end <= header.len()) {
             let opt_magic = u16::from_le_bytes([header[opt_start], header[opt_start + 1]]);
             if opt_magic == 0x010B {
                 items.push(EvidenceItem::with_desc("sig.pe.opt.pe32", "PE32 (32-bit address space)"));
@@ -27,7 +26,7 @@ pub fn extract_pe_metadata(header: &[u8], pe_offset: usize) -> (bool, Vec<Eviden
             }
         }
 
-        if size_of_opt >= 70 && opt_start + 70 <= header.len() {
+        if size_of_opt >= 70 && opt_start.checked_add(70).is_some_and(|end| end <= header.len()) {
             let subsystem = u16::from_le_bytes([header[opt_start + 68], header[opt_start + 69]]);
             match subsystem {
                 2 => items.push(EvidenceItem::with_desc("sig.pe.subsystem.gui", "Windows GUI Subsystem")),

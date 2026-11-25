@@ -306,7 +306,10 @@ impl DetectionCore {
 
     /// Constructs a DetectionCore from an existing DetectionReport.
     pub fn from_report(rep: &DetectionReport) -> Self {
-        let format_id: Option<&'static str> = rep.format_id.as_deref().and_then(crate::extension::find_registered_format);
+        let format_id: Option<&'static str> = rep
+            .format_id
+            .as_deref()
+            .and_then(|fid| static_format_id(fid).or_else(|| crate::extension::find_registered_format(fid)));
         let category: &'static str = match rep.category.as_str() {
             "image" => "image",
             "video" => "video",
@@ -323,6 +326,8 @@ impl DetectionCore {
             "model" => "model",
             "configuration" => "configuration",
             "container" => "container",
+            "package" => "package",
+            "capture" => "capture",
             _ => "unknown",
         };
         let container_id: Option<&'static str> = rep.container_id.as_deref().and_then(|cid| {
@@ -331,12 +336,39 @@ impl DetectionCore {
                 "cfb" => Some("cfb"),
                 "xml" => Some("xml"),
                 "json" => Some("json"),
+                "zip" => Some("zip"),
+                "tar" => Some("tar"),
+                "gzip" => Some("gzip"),
+                "bzip2" => Some("bzip2"),
+                "xz" => Some("xz"),
+                "zstd" => Some("zstd"),
+                "7z" => Some("7z"),
+                "rar" => Some("rar"),
+                "isobmff" => Some("isobmff"),
+                "matroska" => Some("matroska"),
+                "palmdoc" => Some("palmdoc"),
+                "sqlite3" => Some("sqlite3"),
+                "ar" => Some("ar"),
+                "ogg" => Some("ogg"),
                 _ => None,
             })
         });
 
         let primary_evidence = rep.evidence.first().and_then(|e| find_static_evidence(&e.code));
         let secondary_evidence = rep.evidence.get(1).and_then(|e| find_static_evidence(&e.code));
+        let accepted_extensions = format_id.map(static_accepted_extensions).unwrap_or(&[]);
+        let recommended_extension = format_id.and_then(|fid| {
+            rep.recommended_extension
+                .as_deref()
+                .and_then(|rec| if rec == fid { Some(fid) } else { static_recommended_extension(fid) })
+                .or(Some(fid))
+        });
+        let warning = rep.warnings.first().and_then(|w| find_static_warning(&w.code));
+        let candidate = rep
+            .candidates
+            .as_ref()
+            .and_then(|c| c.first())
+            .and_then(|s| static_format_id(s).or_else(|| crate::extension::find_registered_format(s)));
 
         Self {
             format_id,
@@ -345,12 +377,12 @@ impl DetectionCore {
             identification: rep.identification,
             verification: rep.verification,
             inspection: rep.inspection,
-            recommended_extension: format_id,
-            accepted_extensions: &[],
+            recommended_extension,
+            accepted_extensions,
             primary_evidence,
             secondary_evidence,
-            warning: None,
-            candidate: None,
+            warning,
+            candidate,
         }
     }
 }
@@ -452,6 +484,181 @@ pub fn find_static_evidence(code: &str) -> Option<&'static str> {
         "ooxml.spreadsheet_macro_main_part" => Some("ooxml.spreadsheet_macro_main_part"),
         "ooxml.presentation_main_part" => Some("ooxml.presentation_main_part"),
         "ooxml.presentation_macro_main_part" => Some("ooxml.presentation_macro_main_part"),
+        _ => None,
+    }
+}
+
+fn static_format_id(fid: &str) -> Option<&'static str> {
+    match fid {
+        "docx" => Some("docx"),
+        "xlsx" => Some("xlsx"),
+        "pptx" => Some("pptx"),
+        "docm" => Some("docm"),
+        "xlsm" => Some("xlsm"),
+        "pptm" => Some("pptm"),
+        "doc" => Some("doc"),
+        "xls" => Some("xls"),
+        "ppt" => Some("ppt"),
+        "zip" => Some("zip"),
+        "apk" => Some("apk"),
+        "ipa" => Some("ipa"),
+        "jar" => Some("jar"),
+        "kmz" => Some("kmz"),
+        "epub" => Some("epub"),
+        "odt" => Some("odt"),
+        "ods" => Some("ods"),
+        "odp" => Some("odp"),
+        "iso" => Some("iso"),
+        "macho" => Some("macho"),
+        "sqlite3" => Some("sqlite3"),
+        "gpkg" => Some("gpkg"),
+        "tar.gz" => Some("tar.gz"),
+        "svgz" => Some("svgz"),
+        _ => None,
+    }
+}
+
+fn static_recommended_extension(fid: &str) -> Option<&'static str> {
+    match fid {
+        "jpeg" => Some("jpg"),
+        "gzip" => Some("gz"),
+        "bzip2" => Some("bz2"),
+        "zstd" => Some("zst"),
+        "macho" => Some("dylib"),
+        _ => None,
+    }
+}
+
+fn static_accepted_extensions(fid: &str) -> &'static [&'static str] {
+    match fid {
+        "docx" => &["docx"],
+        "xlsx" => &["xlsx"],
+        "pptx" => &["pptx"],
+        "docm" => &["docm"],
+        "xlsm" => &["xlsm"],
+        "pptm" => &["pptm"],
+        "doc" => &["doc", "dot"],
+        "xls" => &["xls", "xlt"],
+        "ppt" => &["ppt", "pps"],
+        "zip" => &["zip"],
+        "apk" => &["apk", "xapk"],
+        "ipa" => &["ipa"],
+        "jar" => &["jar", "war", "ear"],
+        "kmz" => &["kmz", "kml"],
+        "epub" => &["epub"],
+        "odt" => &["odt"],
+        "ods" => &["ods"],
+        "odp" => &["odp"],
+        "iso" => &["iso", "img"],
+        "png" => &["png"],
+        "jpeg" => &["jpg", "jpeg"],
+        "gif" => &["gif"],
+        "pdf" => &["pdf"],
+        "7z" => &["7z"],
+        "rar" => &["rar"],
+        "gzip" => &["gz", "gzip", "tgz"],
+        "bzip2" => &["bz2", "bzip2", "tbz2", "tbz"],
+        "xz" => &["xz", "txz"],
+        "zstd" => &["zst", "zstd", "tzst"],
+        "tar" => &["tar"],
+        "tar.gz" => &["tar.gz", "tgz", "gz"],
+        "svgz" => &["svgz", "svg", "gz"],
+        "elf" => &["elf", "so", "o", "bin"],
+        "pe" => &["exe", "dll", "sys", "efi"],
+        "wasm" => &["wasm"],
+        "macho" => &["dylib", "bundle", "so", "bin"],
+        "class" => &["class"],
+        "sqlite3" => &["sqlite3", "sqlite", "db", "db3"],
+        "gpkg" => &["gpkg", "sqlite3", "db"],
+        "pcap" => &["pcap", "cap", "dmp"],
+        "pcapng" => &["pcapng", "ntar"],
+        "parquet" => &["parquet"],
+        "avro" => &["avro"],
+        "qcow2" => &["qcow2", "qcow", "img"],
+        "vmdk" => &["vmdk"],
+        "vhd" => &["vhd"],
+        "vhdx" => &["vhdx"],
+        "mobi" => &["mobi", "azw", "prc"],
+        "mp4" => &["mp4", "m4v", "m4a"],
+        "mov" => &["mov", "qt"],
+        "m4a" => &["m4a", "mp4"],
+        "webm" => &["webm"],
+        "mkv" => &["mkv", "mka"],
+        "wav" => &["wav", "wave"],
+        "webp" => &["webp"],
+        "avi" => &["avi"],
+        "mp3" => &["mp3"],
+        "ttf" => &["ttf"],
+        "otf" => &["otf"],
+        "woff" => &["woff"],
+        "woff2" => &["woff2"],
+        "json" => &["json"],
+        "geojson" => &["geojson", "json"],
+        "xml" => &["xml"],
+        "html" => &["html", "htm"],
+        "svg" => &["svg"],
+        "yaml" => &["yaml", "yml"],
+        "toml" => &["toml"],
+        "csv" => &["csv"],
+        "tsv" => &["tsv", "tab"],
+        "txt" => &["txt", "text", "log"],
+        _ => &[],
+    }
+}
+
+fn find_static_warning(code: &str) -> Option<(&'static str, &'static str)> {
+    match code {
+        "input.empty" => Some(("input.empty", "Input file has 0 bytes")),
+        "format.unknown" => Some(("format.unknown", "No matching signature or structural evidence found")),
+        "input.truncated" => Some(("input.truncated", "Input header matches truncated signature")),
+        "budget.source_read_exceeded" => Some((
+            "budget.source_read_exceeded",
+            "Total source read budget exceeded during detection",
+        )),
+        "budget.zip_directory_window_exceeded" => Some((
+            "budget.zip_directory_window_exceeded",
+            "ZIP central directory read window exceeded budget limit",
+        )),
+        "budget.entries_exceeded" => Some((
+            "budget.entries_exceeded",
+            "Container entry count exceeded budget limit",
+        )),
+        "budget.xml_output_exceeded" => Some((
+            "budget.xml_output_exceeded",
+            "Decompressed XML output exceeded single XML limit",
+        )),
+        "budget.total_decompressed_exceeded" => Some((
+            "budget.total_decompressed_exceeded",
+            "Cumulative decompressed byte budget exceeded",
+        )),
+        "budget.xml_depth_exceeded" => Some((
+            "budget.xml_depth_exceeded",
+            "XML element depth exceeded allowed maximum",
+        )),
+        "zip.conflicting_entries" => Some((
+            "zip.conflicting_entries",
+            "Conflicting or duplicate ZIP entries detected",
+        )),
+        "zip.truncated_or_corrupted" => Some((
+            "zip.truncated_or_corrupted",
+            "Failed to parse ZIP central directory or archive",
+        )),
+        "ooxml.content_types_missing" => Some((
+            "ooxml.content_types_missing",
+            "OOXML package structure incomplete: [Content_Types].xml missing",
+        )),
+        "ooxml.required_relationship_missing" => Some((
+            "ooxml.required_relationship_missing",
+            "No officeDocument core relationship found in _rels/.rels",
+        )),
+        "ooxml.main_part_missing" => Some((
+            "ooxml.main_part_missing",
+            "Failed to open main document part in package",
+        )),
+        "cfb.corrupted_or_invalid_chain" => Some((
+            "cfb.corrupted_or_invalid_chain",
+            "Failed to open compound document",
+        )),
         _ => None,
     }
 }

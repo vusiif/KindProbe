@@ -72,12 +72,30 @@
 2. **PDF 窗口 SWAR / 首字符跳进扫描 (`src/detectors/signatures.rs`)**：
    - 优化 PDF 1024 字节窗口滑动检测，采用 SIMD 友好的 `iter().position(|&b| b == b'%')` 步进跳转，消除数百次无谓的 5 字节滑动窗口比较。
 
+### 1.10 全项目审查与 P0/P1/P2/P3 全面加固修复
+1. **P0 溢出与 CI 阻断修复**：
+   - 修复 `tests/test_fresh_large_dataset_bench.rs` 中随机样本生成在 Debug 模式下的整数溢出 Panic（改用 `wrapping_mul`/`wrapping_add`）；
+   - 修复 `src/detectors/media/riff.rs` WAV chunk 推进算术的潜在溢出风险（加入 `scan_limit` 与 `checked_add` 并抽离共享 `has_wave_fmt_chunk`）；
+   - 加固 `src/detectors/executables/pe.rs` 与 `pe_meta.rs` 偏移计算（`checked_add` 防 32 位平台溢出）。
+2. **P1 双路径语义分叉与真·零分配核心完善**：
+   - 新增 `detect_stream_core` 与 `probe_fast_path_core`，打通 `detect_reader_core` 与 `detect_path_core` 的真·零分配流路径；
+   - 完善 `DetectionCore::from_report` 对全量分类、容器 `accepted_extensions`、静态 `warning` 及 `candidate` 的保真映射，修复容器路径上 `compare_extension_core` 误返 `Undetermined` 问题；
+   - 修复 `archives/mod.rs` 与 `xz_zstd.rs` 中 4~5 字节合法 Zstd 魔数误判截断的问题；
+   - 统一 RAR5 `make_rar5_core` (`Verification::Structure` + 双证据) 与 SQLite `accepted_extensions` (`db3`)；
+   - 补全 `signatures.rs` 中非零偏移 `ftyp` 双路径一致分支并清除 `&header[257..262] == b"GNUtar"` 死分支。
+3. **P2 性能优化与 P3 去重/CI 升级**：
+   - 修复 `>= 4 KiB` 非容器内存切片强制回退 `detect_stream` 的性能损失（在 `detect_bytes_non_container*` 中直接覆盖 ISO 内存窗口检查、文本与 unknown）；
+   - 消除 `resolve_path_extension`（`src/lib.rs`）与 `parse_content_types`（`src/detectors/zip_ooxml/opc.rs`）冗余 `to_ascii_lowercase()` 堆分配；
+   - 加固 `fast_path.rs` PDF SIMD gate 并扩展 Fast-Path 格式覆盖；限定 `probe_json_core` GeoJSON 扫描窗口；
+   - 抽取 `extension/mod.rs`、`zip_ooxml/cd_check.rs` 与 `zip_ooxml/mod.rs` 重复逻辑；
+   - 升级 `.github/workflows/ci.yml` Clippy 门禁至 `--all-targets --all-features -- -D warnings`，同步更新 `README.md` 与 `tests/test_detection_core.rs` 回归测试。
+
 ---
 
 ## 2. [当前状态] (Current State)
 
 - **本地测试状态**：
-  - 全套 51 个测试套件，**196+ 个测试用例全部通过 (196+/196+ PASS)**；
+  - 全量 54 个测试二进制（含 52 个集成测试套件与 `lib`/`main` 2 个单元测试）在 Debug 与 Release 下 **100% 全部通过 (54/54 PASS)**；
   - `cargo clippy --all-targets --all-features -- -D warnings` **0 警告，0 错误**；
   - `src/lib.rs` 强约束 `#![forbid(unsafe_code)]`；
   - `src/` 全代码库保持 0 `unwrap()` / 0 `expect()` / 0 `panic!()`。
@@ -116,5 +134,5 @@
 
 ## 3. [待办与下一步] (Next Steps)
 
-1. 当前全部既定性能优化路线、七大签名域原生内核化、256 分桶索引、词法首词分发与阶段归档已全部高质量达成；
-2. 等待人类指示下一阶段开发任务或发布版本（如 CI/CD、CLI 打包或跨平台集成）。
+1. 本轮完整代码审查发现的 P0/P1/P2/P3 问题已全部修复并通过全量测试 + Clippy 严格门禁 + Release 性能复验；
+2. 待人类审查变更并确认后，可随时提交并推送最新修复至 `origin/main`。

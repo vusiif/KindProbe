@@ -20,6 +20,28 @@ pub struct ZipCdPreCheckResult {
     pub has_epub_container: bool,
 }
 
+fn find_eocd_in_slice(slice: &[u8]) -> Option<(usize, usize, u64)> {
+    for i in (0..=slice.len().saturating_sub(22)).rev() {
+        if &slice[i..i + 4] == b"PK\x05\x06" {
+            let total_ent = u16::from_le_bytes([slice[i + 10], slice[i + 11]]) as usize;
+            let size = u32::from_le_bytes([
+                slice[i + 12],
+                slice[i + 13],
+                slice[i + 14],
+                slice[i + 15],
+            ]) as usize;
+            let offset = u32::from_le_bytes([
+                slice[i + 16],
+                slice[i + 17],
+                slice[i + 18],
+                slice[i + 19],
+            ]) as u64;
+            return Some((total_ent, size, offset));
+        }
+    }
+    None
+}
+
 /// Pre-checks ZIP End of Central Directory and Central Directory Headers
 /// to enforce max_zip_directory_window, max_entries, and detect duplicate/conflicting members.
 pub fn precheck_zip_central_directory<R: Read + Seek>(
@@ -56,31 +78,13 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         if reader.seek(SeekFrom::Start(fast_seek_pos)).is_ok()
             && reader.read_exact(&mut fast_buf[..fast_probe_len]).is_ok()
         {
-            let slice = &fast_buf[..fast_probe_len];
-                for i in (0..=slice.len().saturating_sub(22)).rev() {
-                    if &slice[i..i + 4] == b"PK\x05\x06" {
-                        let total_ent =
-                            u16::from_le_bytes([slice[i + 10], slice[i + 11]]) as usize;
-                        let size = u32::from_le_bytes([
-                            slice[i + 12],
-                            slice[i + 13],
-                            slice[i + 14],
-                            slice[i + 15],
-                        ]) as usize;
-                        let offset = u32::from_le_bytes([
-                            slice[i + 16],
-                            slice[i + 17],
-                            slice[i + 18],
-                            slice[i + 19],
-                        ]) as u64;
-                        cd_total_entries = total_ent;
-                        cd_size = size;
-                        cd_offset = offset;
-                        eocd_found = true;
-                        break;
-                    }
-                }
+            if let Some((total_ent, size, offset)) = find_eocd_in_slice(&fast_buf[..fast_probe_len]) {
+                cd_total_entries = total_ent;
+                cd_size = size;
+                cd_offset = offset;
+                eocd_found = true;
             }
+        }
 
         // If not found in the last 1024 bytes and file is larger, fall back to full tail search
         if !eocd_found && file_len > 1024 {
@@ -88,29 +92,11 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             if reader.seek(SeekFrom::Start(seek_pos)).is_ok() {
                 let mut tail_buf = vec![0u8; tail_search_len];
                 if reader.read_exact(&mut tail_buf).is_ok() {
-                    // Scan backwards for PK\x05\x06
-                    for i in (0..=tail_buf.len().saturating_sub(22)).rev() {
-                        if &tail_buf[i..i + 4] == b"PK\x05\x06" {
-                            let total_ent =
-                                u16::from_le_bytes([tail_buf[i + 10], tail_buf[i + 11]]) as usize;
-                            let size = u32::from_le_bytes([
-                                tail_buf[i + 12],
-                                tail_buf[i + 13],
-                                tail_buf[i + 14],
-                                tail_buf[i + 15],
-                            ]) as usize;
-                            let offset = u32::from_le_bytes([
-                                tail_buf[i + 16],
-                                tail_buf[i + 17],
-                                tail_buf[i + 18],
-                                tail_buf[i + 19],
-                            ]) as u64;
-                            cd_total_entries = total_ent;
-                            cd_size = size;
-                            cd_offset = offset;
-                            eocd_found = true;
-                            break;
-                        }
+                    if let Some((total_ent, size, offset)) = find_eocd_in_slice(&tail_buf) {
+                        cd_total_entries = total_ent;
+                        cd_size = size;
+                        cd_offset = offset;
+                        eocd_found = true;
                     }
                 }
             }

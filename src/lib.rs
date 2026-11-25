@@ -20,14 +20,14 @@ pub use model::{
 
 fn resolve_path_extension(path: &Path) -> Option<&OsStr> {
     if let Some(file_name) = path.file_name().and_then(|s| s.to_str()) {
-        let lower = file_name.to_ascii_lowercase();
-        if lower.ends_with(".tar.gz") {
+        let b = file_name.as_bytes();
+        if b.len() >= 7 && b[b.len() - 7..].eq_ignore_ascii_case(b".tar.gz") {
             return Some(OsStr::new("tar.gz"));
-        } else if lower.ends_with(".tar.bz2") {
+        } else if b.len() >= 8 && b[b.len() - 8..].eq_ignore_ascii_case(b".tar.bz2") {
             return Some(OsStr::new("tar.bz2"));
-        } else if lower.ends_with(".tar.xz") {
+        } else if b.len() >= 7 && b[b.len() - 7..].eq_ignore_ascii_case(b".tar.xz") {
             return Some(OsStr::new("tar.xz"));
-        } else if lower.ends_with(".tar.zst") {
+        } else if b.len() >= 8 && b[b.len() - 8..].eq_ignore_ascii_case(b".tar.zst") {
             return Some(OsStr::new("tar.zst"));
         }
     }
@@ -95,10 +95,7 @@ pub fn detect_bytes_core(
         return Ok(core);
     }
 
-    let header_len = bytes.len().min(options.initial_window_size);
-    let header = &bytes[..header_len];
-
-    match detectors::detect_slice_non_container_core(header, options)? {
+    match detectors::detect_bytes_non_container_core(bytes, options)? {
         Some(core) => {
             if let Err(inv) = core.validate_invariants() {
                 return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
@@ -107,9 +104,7 @@ pub fn detect_bytes_core(
         }
         None => {
             let mut cursor = Cursor::new(bytes);
-            let mut budget_reader = BudgetReader::new(&mut cursor, options.max_source_bytes_read);
-            let rep = detectors::detect_stream(&mut budget_reader, options)?;
-            Ok(DetectionCore::from_report(&rep))
+            detect_reader_core(&mut cursor, options)
         }
     }
 }
@@ -142,10 +137,7 @@ pub fn detect_bytes(
         return Ok(report);
     }
 
-    let header_len = bytes.len().min(options.initial_window_size);
-    let header = &bytes[..header_len];
-
-    let mut report = match detectors::detect_slice_non_container(header, options)? {
+    let mut report = match detectors::detect_bytes_non_container(bytes, options)? {
         Some(rep) => rep,
         None => {
             let mut cursor = Cursor::new(bytes);
@@ -183,8 +175,23 @@ pub fn detect_reader_core<R: Read + Seek>(
     reader: &mut R,
     options: &DetectOptions,
 ) -> Result<DetectionCore, DetectError> {
-    let rep = detect_reader(reader, options)?;
-    Ok(DetectionCore::from_report(&rep))
+    let mut budget_reader = BudgetReader::new(reader, options.max_source_bytes_read);
+    let mut core = detectors::detect_stream_core(&mut budget_reader, options)?;
+
+    if budget_reader.is_budget_exceeded() {
+        core.inspection = Inspection::Limited;
+        if core.warning.is_none() {
+            core.warning = Some((
+                "budget.source_read_exceeded",
+                "Total source read budget exceeded during detection",
+            ));
+        }
+    }
+
+    if let Err(inv) = core.validate_invariants() {
+        return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+    }
+    Ok(core)
 }
 
 /// Lightweight detection for a file path returning zero-allocation DetectionCore.
@@ -192,8 +199,32 @@ pub fn detect_path_core(
     path: &Path,
     options: &DetectOptions,
 ) -> Result<DetectionCore, DetectError> {
-    let rep = detect_path(path, options)?;
-    Ok(DetectionCore::from_report(&rep))
+    let mut file = match File::open(path) {
+        Ok(f) => f,
+        Err(e) => {
+            if let Ok(meta) = path.metadata() {
+                if !meta.is_file() {
+                    return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
+                }
+            }
+            return Err(DetectError::Io(e));
+        }
+    };
+
+    let meta = file.metadata().map_err(DetectError::Io)?;
+    if !meta.is_file() {
+        return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
+    }
+
+    if options.extension_hint.is_none() {
+        if let Some(ext) = resolve_path_extension(path).and_then(|s| s.to_str()) {
+            let mut local_opts = options.clone();
+            local_opts.extension_hint = Some(ext.to_string());
+            return detect_reader_core(&mut file, &local_opts);
+        }
+    }
+
+    detect_reader_core(&mut file, options)
 }
 
 /// Detects the format of a seekable reader using content-first structural analysis.

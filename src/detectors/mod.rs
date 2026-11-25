@@ -22,7 +22,211 @@ use crate::model::{
 use signatures::{probe_signatures, probe_signatures_core, SignatureMatch, SignatureMatchCore};
 use zip_ooxml::detect_zip_ooxml;
 use cfb::{detect_cfb, CFB_MAGIC};
-use fast_path::probe_fast_path;
+use fast_path::{probe_fast_path, probe_fast_path_core, FastPathCoreOutcome};
+
+fn truncated_candidate_str(fmt: std::borrow::Cow<'static, str>) -> &'static str {
+    match fmt {
+        std::borrow::Cow::Borrowed(s) => s,
+        std::borrow::Cow::Owned(ref s) => match s.as_str() {
+            "pe" => "pe",
+            "elf" => "elf",
+            "wasm" => "wasm",
+            "macho" => "macho",
+            "7z" => "7z",
+            "rar" => "rar",
+            "zip" => "zip",
+            "cfb" => "cfb",
+            "tar" => "tar",
+            "gzip" => "gzip",
+            "bzip2" => "bzip2",
+            "xz" => "xz",
+            "zstd" => "zstd",
+            "sqlite" | "sqlite3" => "sqlite3",
+            "pcap" => "pcap",
+            "pcapng" => "pcapng",
+            "parquet" => "parquet",
+            "avro" => "avro",
+            "mp3" => "mp3",
+            "mp4" => "mp4",
+            "webm" => "webm",
+            "mkv" => "mkv",
+            "wav" => "wav",
+            "webp" => "webp",
+            "avi" => "avi",
+            "iso" => "iso",
+            "qcow2" => "qcow2",
+            "vmdk" => "vmdk",
+            "vhd" => "vhd",
+            "vhdx" => "vhdx",
+            "mobi" => "mobi",
+            "palmdoc" => "palmdoc",
+            "ttf" => "ttf",
+            "otf" => "otf",
+            "woff" => "woff",
+            "woff2" => "woff2",
+            _ => crate::extension::find_registered_format(s).unwrap_or("unknown"),
+        },
+    }
+}
+
+/// Evaluates an in-memory buffer for non-container formats (including ISO at offset 32768 when full buffer is provided).
+/// Returns Ok(None) only if the input starts with a container signature (ZIP / CFB) and needs stream parsing.
+pub fn detect_bytes_non_container_core(
+    bytes: &[u8],
+    options: &DetectOptions,
+) -> Result<Option<DetectionCore>, DetectError> {
+    let header_len = bytes.len().min(options.initial_window_size);
+    let header = &bytes[..header_len];
+
+    if header.is_empty() {
+        return Ok(Some(DetectionCore::empty()));
+    }
+
+    if let Some(core) = fast_path::probe_fast_path_slice_core(header, options)? {
+        return Ok(Some(core));
+    }
+
+    match probe_signatures_core(header) {
+        SignatureMatchCore::Confirmed(core) => return Ok(Some(core)),
+        SignatureMatchCore::Truncated(fmt) => {
+            return Ok(Some(DetectionCore::truncated(truncated_candidate_str(fmt))));
+        }
+        SignatureMatchCore::None => (),
+    }
+
+    if (header.len() >= 2 && header.starts_with(b"PK")) && header.len() < 4 {
+        return Ok(Some(DetectionCore::truncated("zip")));
+    }
+
+    if header.len() >= 2 && header.starts_with(&[0xD0, 0xCF]) && header.len() < 8 {
+        return Ok(Some(DetectionCore::truncated("cfb")));
+    }
+
+    if (header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
+        || (header.len() >= 8 && header.starts_with(CFB_MAGIC))
+    {
+        return Ok(None);
+    }
+
+    if bytes.len() >= (disks::iso::ISO_OFFSET as usize) + 6
+        && options.max_source_bytes_read >= (disks::iso::ISO_OFFSET as usize) + 6
+    {
+        if let Some(iso_core) = disks::probe_iso_buffer_core(bytes) {
+            return Ok(Some(iso_core));
+        }
+    }
+
+    if let Some(core) = text::probe_text_core(header) {
+        return Ok(Some(core));
+    }
+
+    Ok(Some(DetectionCore::unknown()))
+}
+
+/// Evaluates an in-memory buffer for non-container formats returning an owned DetectionReport.
+/// Returns Ok(None) only if the input starts with a container signature (ZIP / CFB) and needs stream parsing.
+pub fn detect_bytes_non_container(
+    bytes: &[u8],
+    options: &DetectOptions,
+) -> Result<Option<DetectionReport>, DetectError> {
+    let header_len = bytes.len().min(options.initial_window_size);
+    let header = &bytes[..header_len];
+
+    if header.is_empty() {
+        return Ok(Some(DetectionCore::empty().to_report(
+            Default::default(),
+            ExtensionStatus::Undetermined,
+        )));
+    }
+
+    if let Some(mut rep) = fast_path::probe_fast_path_slice(header, options)? {
+        rep.stats.source_bytes_read = header.len();
+        return Ok(Some(rep));
+    }
+
+    match probe_signatures(header) {
+        SignatureMatch::Confirmed(mut rep) => {
+            rep.stats.source_bytes_read = header.len();
+            return Ok(Some(*rep));
+        }
+        SignatureMatch::Truncated(fmt) => {
+            return Ok(Some(DetectionReport {
+                schema_version: 1,
+                format_id: None,
+                category: "unknown".to_string(),
+                container_id: None,
+                identification: Identification::Unknown,
+                verification: Verification::None,
+                inspection: Inspection::Complete,
+                recommended_extension: None,
+                accepted_extensions: Vec::new(),
+                extension_status: ExtensionStatus::Undetermined,
+                evidence: Vec::new(),
+                warnings: vec![WarningItem::new(
+                    "input.truncated",
+                    format!("Input header matches truncated signature for {}", fmt),
+                )],
+                stats: crate::model::DetectionStats {
+                    source_bytes_read: header.len(),
+                    seek_count: 0,
+                    entries_inspected: 0,
+                    decompressed_bytes: 0,
+                    duration_micros: 0,
+                },
+                candidates: Some(vec![fmt]),
+            }));
+        }
+        SignatureMatch::None => (),
+    }
+
+    if (header.len() >= 2 && header.starts_with(b"PK")) && header.len() < 4 {
+        return Ok(Some(DetectionCore::truncated("zip").to_report(
+            crate::model::DetectionStats {
+                source_bytes_read: header.len(),
+                ..Default::default()
+            },
+            ExtensionStatus::Undetermined,
+        )));
+    }
+
+    if header.len() >= 2 && header.starts_with(&[0xD0, 0xCF]) && header.len() < 8 {
+        return Ok(Some(DetectionCore::truncated("cfb").to_report(
+            crate::model::DetectionStats {
+                source_bytes_read: header.len(),
+                ..Default::default()
+            },
+            ExtensionStatus::Undetermined,
+        )));
+    }
+
+    if (header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
+        || (header.len() >= 8 && header.starts_with(CFB_MAGIC))
+    {
+        return Ok(None);
+    }
+
+    if bytes.len() >= (disks::iso::ISO_OFFSET as usize) + 6
+        && options.max_source_bytes_read >= (disks::iso::ISO_OFFSET as usize) + 6
+    {
+        if let disks::IsoMatch::Confirmed(mut rep) = disks::probe_iso_buffer(bytes) {
+            rep.stats.source_bytes_read = header.len();
+            return Ok(Some(*rep));
+        }
+    }
+
+    if let Some(mut rep) = text::probe_text(header) {
+        rep.stats.source_bytes_read = header.len();
+        return Ok(Some(rep));
+    }
+
+    Ok(Some(DetectionCore::unknown().to_report(
+        crate::model::DetectionStats {
+            source_bytes_read: header.len(),
+            ..Default::default()
+        },
+        ExtensionStatus::Undetermined,
+    )))
+}
 
 /// Direct in-memory slice detection returning zero-allocation DetectionCore.
 /// Returns Ok(None) if the slice requires seekable container stream detection (ZIP, CFB, ISO).
@@ -30,95 +234,23 @@ pub fn detect_slice_non_container_core(
     header: &[u8],
     options: &DetectOptions,
 ) -> Result<Option<DetectionCore>, DetectError> {
-    if header.is_empty() {
-        return Ok(Some(DetectionCore::empty()));
-    }
-
-    // Fast path for non-container
-    if let Some(core) = fast_path::probe_fast_path_slice_core(header, options)? {
-        return Ok(Some(core));
-    }
-
-    // Signatures and rules
-    match probe_signatures_core(header) {
-        SignatureMatchCore::Confirmed(core) => {
+    if header.len() >= options.initial_window_size {
+        if header.is_empty() {
+            return Ok(Some(DetectionCore::empty()));
+        }
+        if let Some(core) = fast_path::probe_fast_path_slice_core(header, options)? {
             return Ok(Some(core));
         }
-        SignatureMatchCore::Truncated(fmt) => {
-            let cand = match fmt {
-                std::borrow::Cow::Borrowed(s) => s,
-                std::borrow::Cow::Owned(ref s) => {
-                    match s.as_str() {
-                        "pe" => "pe",
-                        "elf" => "elf",
-                        "wasm" => "wasm",
-                        "macho" => "macho",
-                        "7z" => "7z",
-                        "rar" => "rar",
-                        "zip" => "zip",
-                        "cfb" => "cfb",
-                        "tar" => "tar",
-                        "gzip" => "gzip",
-                        "bzip2" => "bzip2",
-                        "xz" => "xz",
-                        "zstd" => "zstd",
-                        "sqlite" => "sqlite",
-                        "pcap" => "pcap",
-                        "pcapng" => "pcapng",
-                        "parquet" => "parquet",
-                        "avro" => "avro",
-                        "mp3" => "mp3",
-                        "mp4" => "mp4",
-                        "webm" => "webm",
-                        "mkv" => "mkv",
-                        "wav" => "wav",
-                        "webp" => "webp",
-                        "avi" => "avi",
-                        "iso" => "iso",
-                        "qcow2" => "qcow2",
-                        "vmdk" => "vmdk",
-                        "vhd" => "vhd",
-                        "vhdx" => "vhdx",
-                        "mobi" => "mobi",
-                        "palmdoc" => "palmdoc",
-                        "ttf" => "ttf",
-                        "otf" => "otf",
-                        "woff" => "woff",
-                        "woff2" => "woff2",
-                        _ => crate::extension::find_registered_format(s).unwrap_or("unknown"),
-                    }
-                }
-            };
-            return Ok(Some(DetectionCore::truncated(cand)));
+        match probe_signatures_core(header) {
+            SignatureMatchCore::Confirmed(core) => return Ok(Some(core)),
+            SignatureMatchCore::Truncated(fmt) => {
+                return Ok(Some(DetectionCore::truncated(truncated_candidate_str(fmt))));
+            }
+            SignatureMatchCore::None => (),
         }
-        SignatureMatchCore::None => (),
-    }
-
-    // Truncated ZIP
-    if (header.len() >= 2 && header.starts_with(b"PK")) && header.len() < 4 {
-        return Ok(Some(DetectionCore::truncated("zip")));
-    }
-
-    // Truncated CFB
-    if header.len() >= 2 && header.starts_with(&[0xD0, 0xCF]) && header.len() < 8 {
-        return Ok(Some(DetectionCore::truncated("cfb")));
-    }
-
-    // If matches full container signature, delegate to stream detector
-    if (header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
-        || (header.len() >= 8 && header.starts_with(CFB_MAGIC))
-        || (header.len() >= options.initial_window_size)
-    {
         return Ok(None);
     }
-
-    // Text formats
-    if let Some(core) = text::probe_text_core(header) {
-        return Ok(Some(core));
-    }
-
-    // Unknown format
-    Ok(Some(DetectionCore::unknown()))
+    detect_bytes_non_container_core(header, options)
 }
 
 /// Direct in-memory slice detection for non-container formats.
@@ -237,6 +369,104 @@ pub fn detect_slice_non_container(
     )))
 }
 
+enum HeaderReadOutcome {
+    Ready(usize),
+    BudgetExceeded,
+}
+
+fn read_stream_header_and_rewind<R: Read + Seek>(
+    reader: &mut BudgetReader<R>,
+    header_buf: &mut [u8],
+) -> Result<HeaderReadOutcome, DetectError> {
+    let mut total_read = 0;
+    while total_read < header_buf.len() {
+        match reader.read(&mut header_buf[total_read..]) {
+            Ok(0) => break, // True EOF reached
+            Ok(bytes) => total_read += bytes,
+            Err(e) => {
+                if reader.is_budget_exceeded() {
+                    return Ok(HeaderReadOutcome::BudgetExceeded);
+                }
+                return Err(DetectError::Io(e));
+            }
+        }
+    }
+
+    if let Err(e) = reader.seek(SeekFrom::Start(0)) {
+        if reader.is_budget_exceeded() {
+            return Ok(HeaderReadOutcome::BudgetExceeded);
+        }
+        return Err(DetectError::Io(e));
+    }
+
+    Ok(HeaderReadOutcome::Ready(total_read))
+}
+
+/// Zero-allocation stream detector returning DetectionCore directly for all non-ZIP/non-CFB formats.
+pub fn detect_stream_core<R: Read + Seek>(
+    reader: &mut BudgetReader<R>,
+    options: &DetectOptions,
+) -> Result<DetectionCore, DetectError> {
+    let mut stack_buf = [0u8; 4096];
+    let mut heap_buf;
+    let header_buf: &mut [u8] = if options.initial_window_size <= 4096 {
+        &mut stack_buf[..options.initial_window_size]
+    } else {
+        heap_buf = vec![0u8; options.initial_window_size];
+        &mut heap_buf[..]
+    };
+
+    let total_read = match read_stream_header_and_rewind(reader, header_buf)? {
+        HeaderReadOutcome::Ready(n) => n,
+        HeaderReadOutcome::BudgetExceeded => return Ok(DetectionCore::budget_exceeded()),
+    };
+    let header = &header_buf[..total_read];
+
+    if header.is_empty() {
+        return Ok(DetectionCore::empty());
+    }
+
+    match probe_fast_path_core(reader, header, options)? {
+        FastPathCoreOutcome::Core(core) => return Ok(core),
+        FastPathCoreOutcome::Report(rep) => return Ok(DetectionCore::from_report(&rep)),
+        FastPathCoreOutcome::None => (),
+    }
+
+    match probe_signatures_core(header) {
+        SignatureMatchCore::Confirmed(core) => return Ok(core),
+        SignatureMatchCore::Truncated(fmt) => {
+            return Ok(DetectionCore::truncated(truncated_candidate_str(fmt)));
+        }
+        SignatureMatchCore::None => (),
+    }
+
+    if header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")) {
+        let rep = detect_zip_ooxml(reader, options)?;
+        return Ok(DetectionCore::from_report(&rep));
+    } else if (header.len() >= 2 && header.starts_with(b"PK")) && header.len() < 4 {
+        return Ok(DetectionCore::truncated("zip"));
+    }
+
+    if header.len() >= 8 && header.starts_with(CFB_MAGIC) {
+        let rep = detect_cfb(reader, options)?;
+        return Ok(DetectionCore::from_report(&rep));
+    } else if header.len() >= 2 && header.starts_with(&[0xD0, 0xCF]) && header.len() < 8 {
+        return Ok(DetectionCore::truncated("cfb"));
+    }
+
+    if header.len() >= options.initial_window_size {
+        if let Some(core) = disks::probe_iso_stream_core(reader) {
+            return Ok(core);
+        }
+    }
+
+    if let Some(core) = text::probe_text_core(header) {
+        return Ok(core);
+    }
+
+    Ok(DetectionCore::unknown())
+}
+
 pub fn detect_stream<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
     options: &DetectOptions,
@@ -250,66 +480,14 @@ pub fn detect_stream<R: Read + Seek>(
         heap_buf = vec![0u8; options.initial_window_size];
         &mut heap_buf[..]
     };
-    let mut total_read = 0;
-    while total_read < header_buf.len() {
-        match reader.read(&mut header_buf[total_read..]) {
-            Ok(0) => break, // True EOF reached
-            Ok(bytes) => total_read += bytes,
-            Err(e) => {
-                if reader.is_budget_exceeded() {
-                    return Ok(DetectionReport {
-                        schema_version: 1,
-                        format_id: None,
-                        category: "unknown".to_string(),
-                        container_id: None,
-                        identification: Identification::Unknown,
-                        verification: Verification::None,
-                        inspection: Inspection::Limited,
-                        recommended_extension: None,
-                        accepted_extensions: Vec::new(),
-                        extension_status: ExtensionStatus::Undetermined,
-                        evidence: Vec::new(),
-                        warnings: vec![WarningItem::new(
-                            "budget.source_read_exceeded",
-                            "Total source read budget exceeded during detection",
-                        )],
-                        stats: Default::default(),
-                        candidates: None,
-                    });
-                } else {
-                    return Err(DetectError::Io(e));
-                }
-            }
+    let total_read = match read_stream_header_and_rewind(reader, header_buf)? {
+        HeaderReadOutcome::Ready(n) => n,
+        HeaderReadOutcome::BudgetExceeded => {
+            return Ok(DetectionCore::budget_exceeded()
+                .to_report(Default::default(), ExtensionStatus::Undetermined));
         }
-    }
+    };
     let header = &header_buf[..total_read];
-
-    // Rewind back to start for full structural parsing
-    if let Err(e) = reader.seek(SeekFrom::Start(0)) {
-        if reader.is_budget_exceeded() {
-            return Ok(DetectionReport {
-                schema_version: 1,
-                format_id: None,
-                category: "unknown".to_string(),
-                container_id: None,
-                identification: Identification::Unknown,
-                verification: Verification::None,
-                inspection: Inspection::Limited,
-                recommended_extension: None,
-                accepted_extensions: Vec::new(),
-                extension_status: ExtensionStatus::Undetermined,
-                evidence: Vec::new(),
-                warnings: vec![WarningItem::new(
-                    "budget.source_read_exceeded",
-                    "Total source read budget exceeded during detection",
-                )],
-                stats: Default::default(),
-                candidates: None,
-            });
-        } else {
-            return Err(DetectError::Io(e));
-        }
-    }
 
     // If stream is completely empty
     if header.is_empty() {

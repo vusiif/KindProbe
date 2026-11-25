@@ -4,7 +4,7 @@ pub mod vhd;
 pub mod vmdk;
 
 use crate::model::{DetectionCore, DetectionReport};
-pub use iso::{probe_iso_buffer, probe_iso_buffer_core, probe_iso_stream, IsoMatch};
+pub use iso::{probe_iso_buffer, probe_iso_buffer_core, probe_iso_stream, probe_iso_stream_core, IsoMatch};
 use qcow::{probe_qcow, probe_qcow_core, QcowMatch};
 use vhd::{probe_vhd, probe_vhd_core, VhdMatch};
 use vmdk::{probe_vmdk, probe_vmdk_core, VmdkMatch};

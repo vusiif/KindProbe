@@ -170,10 +170,8 @@ pub fn parse_content_types(
     reader.config_mut().trim_text(false);
     reader.config_mut().check_comments = false;
 
-    let target_part_name = format!("/{}", normalized_target).to_ascii_lowercase();
-    let target_part_bytes = target_part_name.as_bytes();
-    let target_ext = normalized_target.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
-    let target_ext_bytes = target_ext.as_bytes();
+    let target_part_bytes = normalized_target.as_bytes();
+    let target_ext_bytes = normalized_target.rsplit('.').next().unwrap_or("").as_bytes();
 
     let mut matched_override: Option<String> = None;
     let mut matched_default: Option<String> = None;
@@ -192,7 +190,9 @@ pub fn parse_content_types(
                     let mut ct_bytes = None;
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"PartName" {
-                            if attr.value.eq_ignore_ascii_case(target_part_bytes) {
+                            let val = attr.value.as_ref();
+                            let trimmed_val = val.strip_prefix(b"/").unwrap_or(val);
+                            if trimmed_val.eq_ignore_ascii_case(target_part_bytes) {
                                 matches = true;
                             }
                         } else if attr.key.as_ref() == b"ContentType" {

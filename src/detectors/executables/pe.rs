@@ -38,7 +38,11 @@ pub fn probe_pe_core(header: &[u8]) -> Option<DetectionCore> {
 
     let (verification, is_dll) = if header.len() >= 0x40 {
         let pe_offset = u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
-        if pe_offset >= 0x40 && pe_offset + 4 <= header.len() && &header[pe_offset..pe_offset + 4] == b"PE\0\0" {
+        let pe_sig_end = pe_offset.checked_add(4);
+        if pe_offset >= 0x40
+            && pe_sig_end.is_some_and(|end| end <= header.len())
+            && &header[pe_offset..pe_offset + 4] == b"PE\0\0"
+        {
             let (dll_flag, _) = extract_pe_metadata(header, pe_offset);
             (Verification::Structure, dll_flag)
         } else {
@@ -67,7 +71,10 @@ pub fn probe_pe(header: &[u8]) -> PeMatch {
     let mut evidence = vec![EvidenceItem::new("sig.pe.mz_header")];
     let (verification, is_dll) = if header.len() >= 0x40 {
         let pe_offset = u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
-        if pe_offset >= 0x40 && pe_offset + 4 <= header.len() && &header[pe_offset..pe_offset + 4] == b"PE\0\0" {
+        if pe_offset >= 0x40
+            && pe_offset.checked_add(4).is_some_and(|end| end <= header.len())
+            && &header[pe_offset..pe_offset + 4] == b"PE\0\0"
+        {
             evidence.push(EvidenceItem::new("sig.pe.signature"));
             let (dll_flag, meta_items) = extract_pe_metadata(header, pe_offset);
             evidence.extend(meta_items);

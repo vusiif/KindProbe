@@ -728,13 +728,13 @@ fn get_all_samples() -> Vec<BenchmarkSample> {
             id: "random_noise_4k",
             filename: "random_4k.bin",
             category: "binary",
-            data: (0..4096u16).map(|i| ((i * 109 + 89) % 256) as u8).collect(),
+            data: (0..4096u32).map(|i| (i.wrapping_mul(109).wrapping_add(89) % 256) as u8).collect(),
         },
         BenchmarkSample {
             id: "random_noise_64k",
             filename: "random_64k.bin",
             category: "binary",
-            data: (0..65536u32).map(|i| ((i * 104729 + 123) % 256) as u8).collect(),
+            data: (0..65536u32).map(|i| (i.wrapping_mul(104729).wrapping_add(123) % 256) as u8).collect(),
         },
     ]
 }

@@ -41,6 +41,16 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         return None;
     }
 
+    let geo_window = if text.len() > 4096 {
+        let mut end = 4096;
+        while !text.is_char_boundary(end) {
+            end -= 1;
+        }
+        &text[..end]
+    } else {
+        text
+    };
+
     let (fmt, cat, cont, rec, exts, ev): (
         &'static str,
         &'static str,
@@ -48,9 +58,9 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         &'static str,
         &'static [&'static str],
         &'static str,
-    ) = if text.contains("\"FeatureCollection\"")
-        || text.contains("\"GeometryCollection\"")
-        || (text.contains("\"Feature\"") && text.contains("\"geometry\""))
+    ) = if geo_window.contains("\"FeatureCollection\"")
+        || geo_window.contains("\"GeometryCollection\"")
+        || (geo_window.contains("\"Feature\"") && geo_window.contains("\"geometry\""))
     {
         ("geojson", "geospatial", Some("json"), "geojson", &["geojson", "json"], "sig.text.geojson")
     } else {
