@@ -20,6 +20,43 @@ pub struct ZipCdPreCheckResult {
     pub has_epub_container: bool,
 }
 
+enum FastNameSet<T: Eq + std::hash::Hash> {
+    Small(Vec<T>),
+    Large(HashSet<T>),
+}
+
+impl<T: Eq + std::hash::Hash> FastNameSet<T> {
+    fn with_expected_len(expected: usize) -> Self {
+        if expected <= 32 {
+            Self::Small(Vec::with_capacity(expected))
+        } else {
+            Self::Large(HashSet::with_capacity(expected))
+        }
+    }
+
+    fn insert(&mut self, val: T) -> bool {
+        match self {
+            Self::Small(vec) => {
+                if vec.iter().any(|existing| existing == &val) {
+                    return false;
+                }
+                if vec.len() >= 32 {
+                    let mut set = HashSet::with_capacity(vec.len() * 2);
+                    for item in vec.drain(..) {
+                        set.insert(item);
+                    }
+                    set.insert(val);
+                    *self = Self::Large(set);
+                } else {
+                    vec.push(val);
+                }
+                true
+            }
+            Self::Large(set) => set.insert(val),
+        }
+    }
+}
+
 fn find_eocd_in_slice(slice: &[u8]) -> Option<(usize, usize, u64)> {
     for i in (0..=slice.len().saturating_sub(22)).rev() {
         if &slice[i..i + 4] == b"PK\x05\x06" {
@@ -188,9 +225,9 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
     }
 
     let mut pos = 0;
-    let mut seen_raw_names: HashSet<&[u8]> = HashSet::with_capacity(cd_total_entries);
-    let mut seen_normalized_names: HashSet<std::borrow::Cow<str>> =
-        HashSet::with_capacity(cd_total_entries);
+    let mut seen_raw_names: FastNameSet<&[u8]> = FastNameSet::with_expected_len(cd_total_entries);
+    let mut seen_normalized_names: FastNameSet<std::borrow::Cow<str>> =
+        FastNameSet::with_expected_len(cd_total_entries);
     let mut duplicate_entry: Option<String> = None;
     let mut conflicting_norm: Option<String> = None;
 

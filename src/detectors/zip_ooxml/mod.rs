@@ -18,7 +18,7 @@ use cd_check::precheck_zip_central_directory;
 use epub::check_epub_or_odf;
 use packages::check_zip_packages;
 use opc::{parse_content_types, parse_package_relationships, resolve_target_path};
-use schemas::classify_ooxml_content_type;
+use schemas::{classify_ooxml_content_type, OoxmlFormatKind};
 use xml::{verify_main_part_xml, MainPartXmlOutcome};
 
 struct XmlPartSpec<'a> {
@@ -29,21 +29,13 @@ struct XmlPartSpec<'a> {
     read_err_code: &'static str,
 }
 
-fn read_zip_xml_bounded<R: Read + Seek>(
-    archive: &mut ZipArchive<&mut BudgetReader<R>>,
+fn read_limited_xml_into_buf<E: Read>(
+    entry_reader: E,
     spec: &XmlPartSpec<'_>,
     options: &DetectOptions,
     report: &mut DetectionReport,
     xml_buf: &mut Vec<u8>,
 ) -> bool {
-    let entry = match archive.by_name(spec.entry_name) {
-        Ok(e) => e,
-        Err(_) => {
-            report.warnings.push(WarningItem::new(spec.missing_code, spec.missing_msg));
-            return false;
-        }
-    };
-
     let remaining_total = options
         .max_total_decompressed_bytes
         .saturating_sub(report.stats.decompressed_bytes);
@@ -57,7 +49,7 @@ fn read_zip_xml_bounded<R: Read + Seek>(
         return false;
     }
 
-    let mut limit_reader = DecompressLimitReader::new(entry, allowed);
+    let mut limit_reader = DecompressLimitReader::new(entry_reader, allowed);
     xml_buf.clear();
     if let Err(e) = limit_reader.read_to_end(xml_buf) {
         report.stats.decompressed_bytes += limit_reader.bytes_read();
@@ -78,6 +70,85 @@ fn read_zip_xml_bounded<R: Read + Seek>(
     }
     report.stats.decompressed_bytes += limit_reader.bytes_read();
     true
+}
+
+fn read_zip_xml_bounded<R: Read + Seek>(
+    archive: &mut ZipArchive<&mut BudgetReader<R>>,
+    spec: &XmlPartSpec<'_>,
+    options: &DetectOptions,
+    report: &mut DetectionReport,
+    xml_buf: &mut Vec<u8>,
+) -> bool {
+    let entry = match archive.by_name(spec.entry_name) {
+        Ok(e) => e,
+        Err(_) => {
+            report.warnings.push(WarningItem::new(spec.missing_code, spec.missing_msg));
+            return false;
+        }
+    };
+
+    read_limited_xml_into_buf(entry, spec, options, report, xml_buf)
+}
+
+fn finalize_ooxml_main_part(
+    xml_buf: &[u8],
+    format_kind: OoxmlFormatKind,
+    options: &DetectOptions,
+    report: &mut DetectionReport,
+) {
+    match verify_main_part_xml(xml_buf, format_kind, options.max_xml_depth) {
+        Ok(MainPartXmlOutcome::Valid(kind)) => {
+            report.identification = Identification::Format;
+            report.format_id = Some(kind.format_id().to_string());
+            report.category = "document".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some(kind.recommended_extension().to_string());
+            report.accepted_extensions = vec![kind.recommended_extension().to_string()];
+            report.evidence.push(EvidenceItem::new(kind.evidence_code()));
+        }
+        Ok(MainPartXmlOutcome::DepthExceededValidRoot(kind)) => {
+            report.identification = Identification::Format;
+            report.format_id = Some(kind.format_id().to_string());
+            report.category = "document".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Limited;
+            report.recommended_extension = Some(kind.recommended_extension().to_string());
+            report.accepted_extensions = vec![kind.recommended_extension().to_string()];
+            report.evidence.push(EvidenceItem::new(kind.evidence_code()));
+            report.warnings.push(WarningItem::new(
+                "budget.xml_depth_exceeded",
+                format!(
+                    "XML element depth ({}) exceeded allowed maximum ({})",
+                    options.max_xml_depth + 1,
+                    options.max_xml_depth
+                ),
+            ));
+        }
+        Ok(MainPartXmlOutcome::DepthExceededInvalidRoot) => {
+            report.inspection = Inspection::Limited;
+            report.warnings.push(WarningItem::new(
+                "ooxml.invalid_root_element",
+                "Main part XML does not have valid root element for the detected content type",
+            ));
+            report.warnings.push(WarningItem::new(
+                "budget.xml_depth_exceeded",
+                format!(
+                    "XML element depth ({}) exceeded allowed maximum ({})",
+                    options.max_xml_depth + 1,
+                    options.max_xml_depth
+                ),
+            ));
+        }
+        Ok(MainPartXmlOutcome::InvalidRoot(msg)) => {
+            report.warnings.push(WarningItem::new("ooxml.invalid_root_element", msg));
+        }
+        Err(warn) => {
+            report.warnings.push(warn);
+        }
+    }
 }
 
 pub fn detect_zip_ooxml<R: Read + Seek>(
@@ -401,59 +472,7 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         return Ok(report);
     }
 
-    match verify_main_part_xml(&xml_buf, format_kind, options.max_xml_depth) {
-        Ok(MainPartXmlOutcome::Valid(kind)) => {
-            report.identification = Identification::Format;
-            report.format_id = Some(kind.format_id().to_string());
-            report.category = "document".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some(kind.recommended_extension().to_string());
-            report.accepted_extensions = vec![kind.recommended_extension().to_string()];
-            report.evidence.push(EvidenceItem::new(kind.evidence_code()));
-        }
-        Ok(MainPartXmlOutcome::DepthExceededValidRoot(kind)) => {
-            report.identification = Identification::Format;
-            report.format_id = Some(kind.format_id().to_string());
-            report.category = "document".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Limited;
-            report.recommended_extension = Some(kind.recommended_extension().to_string());
-            report.accepted_extensions = vec![kind.recommended_extension().to_string()];
-            report.evidence.push(EvidenceItem::new(kind.evidence_code()));
-            report.warnings.push(WarningItem::new(
-                "budget.xml_depth_exceeded",
-                format!(
-                    "XML element depth ({}) exceeded allowed maximum ({})",
-                    options.max_xml_depth + 1,
-                    options.max_xml_depth
-                ),
-            ));
-        }
-        Ok(MainPartXmlOutcome::DepthExceededInvalidRoot) => {
-            report.inspection = Inspection::Limited;
-            report.warnings.push(WarningItem::new(
-                "ooxml.invalid_root_element",
-                "Main part XML does not have valid root element for the detected content type",
-            ));
-            report.warnings.push(WarningItem::new(
-                "budget.xml_depth_exceeded",
-                format!(
-                    "XML element depth ({}) exceeded allowed maximum ({})",
-                    options.max_xml_depth + 1,
-                    options.max_xml_depth
-                ),
-            ));
-        }
-        Ok(MainPartXmlOutcome::InvalidRoot(msg)) => {
-            report.warnings.push(WarningItem::new("ooxml.invalid_root_element", msg));
-        }
-        Err(warn) => {
-            report.warnings.push(warn);
-        }
-    }
+    finalize_ooxml_main_part(&xml_buf, format_kind, options, &mut report);
 
     Ok(report)
 }

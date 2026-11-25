@@ -1,138 +1,21 @@
-# KindProbe 架构与工程交接文档 (HANDOFF)
+# KindProbe Handoff
 
-> **单一真实信源 (Single Source of Truth - SSOT)**  
-> **更新时间**：2026-11-24  
-> **当前版本**：v0.1.0 (完成阶段 8 到阶段 16 全系列系统级深度优化；全套 51 个测试套件、196+ 测试用例 100% 绿标，Clippy 0 警告，严格遵循 `#![forbid(unsafe_code)]` 与零 Panic 核心宪法；阶段构建二进制已在 `target/phase_binaries/` 完整物理归档)  
-> **远端分支**：`origin/main`
+## [已完成] (Completed)
+- **Phase 18 Performance Optimizations**:
+  - `src/detectors/zip_ooxml/cd_check.rs`: Replaced unconditional dual `HashSet` heap allocations with `FastNameSet` (inline linear `Vec` for `<= 32` entries, automatic promotion to `HashSet` above 32).
+  - `src/detectors/zip_ooxml/mod.rs`: Extracted shared `read_limited_xml_into_buf` and `finalize_ooxml_main_part` helpers (removed duplicated XML verification logic); retained `ZipArchive::new` after benchmarking proved direct local-header deflation regressed small OOXML latency.
+  - `src/detectors/text/gateway.rs`: Added safe-Rust 8-byte SWAR ASCII / NUL / control-byte fast scan (`as_chunks::<8>()`) with shared `scan_ascii_slice` fallback.
+- **Anti-Overfitting Benchmark & Binary Archival**:
+  - Created `tests/test_phase18_ooxml_and_text_bench.rs` covering diverse OOXML (Deflated/Stored, custom targets, 6..58 entries), non-OOXML ZIP short-circuits, and 8K–16K ASCII/UTF-8/JSON/Rust/near-miss-binary payloads.
+  - Archived pre-Phase 18 and Phase 18 release binaries in `target/phase_binaries/` (`kindprobe_{pre_phase18,phase18}.exe`, `test_performance_bench_{pre_phase18,phase18}.exe`, `test_anti_overfitting_bench_{pre_phase18,phase18}.exe`, `test_phase18_ooxml_and_text_bench_phase18.exe`).
 
----
+## [当前状态] (Current State)
+- `cargo clippy --all-targets --all-features -- -D warnings`: **0 warnings**.
+- `cargo test --release --all-targets`: **All 55 test binaries passed** (including `test_phase18_ooxml_and_text_bench`).
+- Note on debug run: `test_codex_acceptance_regression` debug exe experienced `os error 32` (locked by Kaspersky AV), while its Release counterpart passed in `cargo test --release --all-targets`.
+- Side-by-side Phase 18 Release speedup:
+  - `test_anti_overfitting_bench`: Mixed-Stream +28.3% (`951.37 ns` -> `741.34 ns`); Java `-34.8%`, C++ `-32.2%`, Verilog `-42.6%`, Rust `-26.0%`.
+  - `test_performance_bench`: Plain ZIP `0.82 μs` -> `0.71 μs` (+15.7%), DOCX `26.03 μs` -> `20.12 μs` (+29.4%).
 
-## 1. [已完成] (Completed)
-
-### 1.1 性能优化阶段 8：安全与契约加固 (Phase 8 - P0 Security & Contract Hardening)
-1. **UTF-8 字符边界安全切片 (`src/detectors/text/source_code.rs`)**：彻底修复多字节字符边界切片运行时崩溃隐患。
-2. **流式 Short-Read 循环读取缓冲保障 (`src/detectors/mod.rs` & `cd_check.rs`)**：修复套接字/管道碎片化读取导致的误判。
-3. **切片内存检测与 BudgetReader 预算契约统一 (`src/lib.rs`)**：保证切片与流式 Reader 输出完全相同的预算超出诊断。
-4. **消除错误扩展名 Hint 触发的双重容器完整解析 (`src/detectors/fast_path.rs`)**：直接复用容器确认的解析报表。
-5. **落地专属 P0 回归测试套件 (`tests/test_p0_security_fixes.rs`)**：4 大专项测试 100% 通过。
-
-### 1.2 性能优化阶段 9：核心探测引擎与 DetectionCore 零分配延迟物化 (Phase 9 - DetectionCore Engine)
-1. **定义零堆分配内部紧凑结果 `DetectionCore` (`src/model.rs`)**：纯栈分配、100% `Copy` 语义、0 堆分配。
-2. **暴露高性能轻量级公共 API (`src/lib.rs`)**：`detect_bytes_core`, `detect_reader_core`, `detect_path_core`, `compare_extension_core`。
-3. **全探测链路零分配内核化**：规则引擎、图像引擎、文本引擎、签名跳表全面下沉。
-4. **差分等价契约保证**：新增专属测试套件 `tests/test_detection_core.rs`。
-
-### 1.3 性能优化阶段 10：非零偏移规则静态索引与文本单趟扫描 (Phase 10 - Static OffsetGroup)
-1. **非零偏移规则 `OffsetGroup` 决策表 (`src/detectors/rules/dispatch.rs`)**：34 条非零偏移规则按偏移预分组为 17 个递增决策组，长度门禁直接截断。
-2. **源码按行特征收集 (`src/detectors/text/source_code.rs`)**：重构 30+ 次对 4KB 窗口重复全表扫描，命中确定性语法早停。
-
-### 1.4 性能优化阶段 11：ZIP / OOXML 容器元数据复用与极速短路 (Phase 11 - ZIP & OOXML)
-1. **Central Directory 单趟全元数据提取 (`src/detectors/zip_ooxml/cd_check.rs`)**：派生包指标与损坏检查单趟收集。
-2. **纯 ZIP 极速短路 (`src/detectors/zip_ooxml/mod.rs`)**：免去第二次 EOCD 扫描与哈希表分配，纯 ZIP 解码加速超 25x (0.93 μs)。
-3. **OPC 路径静态借用与 XML 解析加速 (`src/detectors/zip_ooxml/opc.rs` & `xml.rs`)**。
-
-### 1.5 性能优化阶段 12：文本网关融合与单趟标量快速通道 (Phase 12 - Text Gateway Fusion)
-1. **融合 NUL 检查、ASCII 判定与控制字符统计 (`src/detectors/text/gateway.rs`)**：合并 4 次独立内存遍历为单趟标量扫描。
-2. **文本检测链路全面加速**：C 源码检测压入 200 ns 级，Python Shebang 压入 140 ns 级。
-
-### 1.6 性能优化阶段 13：CFB 复合文档只读遍历轻量化与零堆分配路径 (Phase 13 - CFB Zero-Alloc)
-1. **根目录流路径静态借用 (`src/detectors/cfb/mod.rs`)**：标准流名采用 `Cow::Borrowed`，彻底消除根目录遍历的 `PathBuf` 堆分配。
-2. **Table 依赖流就地借用 (`src/detectors/cfb/doc.rs`)**：消除冗余克隆。
-
-### 1.7 性能优化阶段 14：微分配根除与 256 分桶扩展名索引 (Phase 14 - Micro-Allocations & 256-Bucket Registry)
-1. **256 分桶静态索引加速扩展名查询 (`src/extension/registry.rs`)**：
-   - 建立编译期 `EXTENSION_BUCKETS: [(u16, u16); 256]`，按首字符直接 O(1) 锁定范围；
-   - 1006 项注册表二分查找平均范围从 1006 缩小至 ~38 项；
-   - 查找延迟从 **140.29 ns** 骤降至 **29.89~31.65 ns** (~4.5x 加速，吞吐量超 **3300 万 lookups/sec**)。
-2. **XML / HTML 零堆分配纯栈扫描 (`src/detectors/text/xml_html.rs`)**：
-   - 消除 `take(256).collect::<String>().to_ascii_lowercase()` 连续两次堆内存分配；
-   - 替换为 `[u8; 256]` 纯栈定长缓冲区与原地 ASCII 小写转换，0 堆分配。
-3. **CSV 栈数组定长采样 (`src/detectors/text/csv.rs`)**：
-   - 消除 `take(5).collect::<Vec<&str>>()` 堆向量分配，替换为 `[&str; 5]` 栈数组。
-4. **扩展名诊断 ASCII 小写免分配快速通道 (`src/extension/mod.rs`)**：
-   - 对已是全小写的扩展名直接切片借用比较，消除小写临时字符串分配。
-
-### 1.8 性能优化阶段 15：七大签名域原生内核化支撑 (Phase 15 - Seven Signature Domains Native Core Underpinning)
-1. **七大专业检测域彻底消除 `DetectionCore::from_report` 堆分配折叠**：
-   - **Archives (归档)**：7z, RAR4, RAR5, Gzip, Nested Gzip, Bzip2, XZ, Zstd, Tar 原生下沉 `probe_archive_signatures_core`。
-   - **Executables (可执行)**：ELF, PE, WASM, Mach-O, Java Class 原生下沉 `probe_executable_signatures_core`。
-   - **Fonts (字体)**：TTF, OTF, WOFF, WOFF2 原生下沉 `probe_font_signatures_core`。
-   - **Databases (数据与捕包)**：SQLite3, PCAP, PCAPNG, Parquet, Avro 原生下沉 `probe_database_signatures_core`。
-   - **Disks (虚拟磁盘与镜像)**：QCOW2, VMDK (Sparse/Descriptor), VHD, VHDX, ISO9660 原生下沉 `probe_disk_signatures_core`。
-   - **Ebooks (电子书)**：MOBI / PalmDOC 原生下沉 `probe_ebook_signatures_core`。
-   - **Media (多媒体)**：MP4, QuickTime MOV, M4A, WebM, MKV, WAV, WebP, AVI, MP3 原生下沉 `probe_media_signatures_core`。
-2. **Fast-Path 核心分发补全 (`src/detectors/fast_path.rs`)**：
-   - 在 `probe_by_fid_core` 中直接接入七大域原生核心探测函数，使带有扩展名提示的文件全部走零堆分配极速通道。
-
-### 1.9 性能优化阶段 16：源码词法分发与 SWAR / 前缀扫描 (Phase 16 - Token Dispatch & Scanning)
-1. **源码探测器首词 Token 单分发与早停 (`src/detectors/text/source_code.rs`)**：
-   - 替换逐行 20+ 次低效 `contains()` 全文子串搜索，引入 `first_word` 词法单分发跳转表；
-   - 命中确定性语法标记（如 `fn main(`, `use std::`, `public class`, `endmodule`）直接即刻早停退出；
-   - Verilog 零分配耗时从 603 ns 大幅下降至 **379 ns**，C 源码与 Python 脚本均保持在 200~300 ns 级别。
-2. **PDF 窗口 SWAR / 首字符跳进扫描 (`src/detectors/signatures.rs`)**：
-   - 优化 PDF 1024 字节窗口滑动检测，采用 SIMD 友好的 `iter().position(|&b| b == b'%')` 步进跳转，消除数百次无谓的 5 字节滑动窗口比较。
-
-### 1.10 全项目审查与 P0/P1/P2/P3 全面加固修复
-1. **P0 溢出与 CI 阻断修复**：
-   - 修复 `tests/test_fresh_large_dataset_bench.rs` 中随机样本生成在 Debug 模式下的整数溢出 Panic（改用 `wrapping_mul`/`wrapping_add`）；
-   - 修复 `src/detectors/media/riff.rs` WAV chunk 推进算术的潜在溢出风险（加入 `scan_limit` 与 `checked_add` 并抽离共享 `has_wave_fmt_chunk`）；
-   - 加固 `src/detectors/executables/pe.rs` 与 `pe_meta.rs` 偏移计算（`checked_add` 防 32 位平台溢出）。
-2. **P1 双路径语义分叉与真·零分配核心完善**：
-   - 新增 `detect_stream_core` 与 `probe_fast_path_core`，打通 `detect_reader_core` 与 `detect_path_core` 的真·零分配流路径；
-   - 完善 `DetectionCore::from_report` 对全量分类、容器 `accepted_extensions`、静态 `warning` 及 `candidate` 的保真映射，修复容器路径上 `compare_extension_core` 误返 `Undetermined` 问题；
-   - 修复 `archives/mod.rs` 与 `xz_zstd.rs` 中 4~5 字节合法 Zstd 魔数误判截断的问题；
-   - 统一 RAR5 `make_rar5_core` (`Verification::Structure` + 双证据) 与 SQLite `accepted_extensions` (`db3`)；
-   - 补全 `signatures.rs` 中非零偏移 `ftyp` 双路径一致分支并清除 `&header[257..262] == b"GNUtar"` 死分支。
-3. **P2 性能优化与 P3 去重/CI 升级**：
-   - 修复 `>= 4 KiB` 非容器内存切片强制回退 `detect_stream` 的性能损失（在 `detect_bytes_non_container*` 中直接覆盖 ISO 内存窗口检查、文本与 unknown）；
-   - 消除 `resolve_path_extension`（`src/lib.rs`）与 `parse_content_types`（`src/detectors/zip_ooxml/opc.rs`）冗余 `to_ascii_lowercase()` 堆分配；
-   - 加固 `fast_path.rs` PDF SIMD gate 并扩展 Fast-Path 格式覆盖；限定 `probe_json_core` GeoJSON 扫描窗口；
-   - 抽取 `extension/mod.rs`、`zip_ooxml/cd_check.rs` 与 `zip_ooxml/mod.rs` 重复逻辑；
-   - 升级 `.github/workflows/ci.yml` Clippy 门禁至 `--all-targets --all-features -- -D warnings`，同步更新 `README.md` 与 `tests/test_detection_core.rs` 回归测试。
-
----
-
-## 2. [当前状态] (Current State)
-
-- **本地测试状态**：
-  - 全量 54 个测试二进制（含 52 个集成测试套件与 `lib`/`main` 2 个单元测试）在 Debug 与 Release 下 **100% 全部通过 (54/54 PASS)**；
-  - `cargo clippy --all-targets --all-features -- -D warnings` **0 警告，0 错误**；
-  - `src/lib.rs` 强约束 `#![forbid(unsafe_code)]`；
-  - `src/` 全代码库保持 0 `unwrap()` / 0 `expect()` / 0 `panic!()`。
-- **物理归档二进制文件 (`target/phase_binaries/`)**：
-  - `kindprobe_phase13.exe` (1,058 KB) & `test_performance_bench_phase13.exe` (1,606 KB)
-  - `kindprobe_phase14.exe` (1,046 KB) & `test_performance_bench_phase14.exe` (1,606 KB)
-  - `kindprobe_phase15.exe` (1,054 KB) & `test_performance_bench_phase15.exe` (1,930 KB)
-  - `kindprobe_phase16.exe` (1,054 KB) & `test_performance_bench_phase16.exe` (1,929 KB)
-  - `test_anti_overfitting_bench_phase16.exe` (1,881 KB)
-  - `test_fresh_large_dataset_bench_phase16.exe` (1,677 KB)
-- **全新大样本跨阶段横向对比实测 (`test_fresh_large_dataset_bench`)**：
-  - **测试集规模**：80 种全新真实格式与载荷（不与往期微基准重叠，覆盖图像、音视频、归档、可执行、数据库、虚拟磁盘、源码配置及高熵对抗噪声）；
-  - **百万级内存压力测试 (Phase 16 Engine)**：1,000,000 次交织随机探测，Full Report 吞吐量 136.6 万 ops/s (731 ns)，Zero-Alloc Core 吞吐量 **255.1 万 ops/s (391 ns, 1.87x 加速)**；
-  - **跨阶段二进制实测横向对比 (80 个真实文件磁盘调用)**：
-    - Phase 13 (基线)：总耗时 182,230 μs (平均 2,277.88 μs / file)
-    - Phase 14 (分桶)：总耗时 14,508 μs (平均 181.35 μs / file, **12.56x 加速**)
-    - Phase 15 (7 域)：总耗时 13,924 μs (平均 174.05 μs / file, **13.09x 加速**)
-    - Phase 16 (最新)：总耗时 12,998 μs (平均 162.47 μs / file, **14.02x 加速**，墙上耗时 1663 ms 最快)
-    - **一致性验证**：全部 80/80 个文件在 4 个阶段二进制上 100% 达成判定一致，0 崩溃，0 误判。
-    - **关于 Phase 16 vs 15 细粒度根因定位与修复**：修复了 PDF 扫描缺失 `slice.contains(&b'%')` AVX2 快速门禁的问题，并升级源码 Token 为纯字节切片提取，彻底消除了非目标二进制文件在窗口扫描上的无效循环开销，使 Phase 16 在单文件引擎耗时与总墙上时间上均全面反超 Phase 15。
-- **多阶段统一基准横向对比实测 (Phase 13 vs Phase 16)**：
-  - **Extension Lookup (1006 条)**: Phase 13 (282条): 47.17 ns -> Phase 16 (1006条): **29.89 ns** (条目增加 3.5 倍，查询反超 **37%**)
-  - **PNG Image**: Phase 13: 840.83 ns -> Phase 16 Full: 411.60 ns -> Phase 16 Core: **36.17 ns** (**23.2x 加速**, 2765 万 ops/s)
-  - **JPEG Image**: Phase 13: 960.54 ns -> Phase 16 Full: 596.83 ns -> Phase 16 Core: **28.54 ns** (**33.7x 加速**, 3503 万 ops/s)
-  - **PDF Document**: Phase 13: 1749.38 ns -> Phase 16 Full: 554.96 ns -> Phase 16 Core: **70.91 ns** (**24.7x 加速**, 1410 万 ops/s)
-  - **HDF5 Scientific**: Phase 13: 2141.14 ns -> Phase 16 Full: 548.54 ns -> Phase 16 Core: **42.19 ns** (**50.7x 加速**, 2370 万 ops/s)
-  - **Unknown Binary**: Phase 13: 1290.78 ns -> Phase 16 Full: 443.83 ns -> Phase 16 Core: **77.03 ns** (**16.8x 加速**, 1298 万 ops/s)
-  - **Verilog HDL**: Phase 13: 2524.03 ns -> Phase 16 Core: **379.91~606.22 ns** (**4.2x 加速**)
-  - **DOCX (OOXML)**: Phase 13: 54.24 μs -> Phase 16: **21.46~44.76 μs**
-  - **DOC (CFB)**: Phase 13: 11.45 μs -> Phase 16: **8.17~15.90 μs**
-- **防过拟合基准测试 (`test_anti_overfitting_bench`)**：
-  - 55 种格式交织随机混合流 (112,000 次探测)：1.44 μs / detection (**69.3 万 files/s**，完全粉碎分支预测与缓存拟合)；
-  - 边界 Near-Miss 拒绝测试矩阵：8 大伪装格式 100% 拒绝，0 假阳性，拒绝吞吐量超 **200 万次/秒**。
-
----
-
-## 3. [待办与下一步] (Next Steps)
-
-1. 本轮完整代码审查发现的 P0/P1/P2/P3 问题已全部修复并通过全量测试 + Clippy 严格门禁 + Release 性能复验；
-2. 待人类审查变更并确认后，可随时提交并推送最新修复至 `origin/main`。
+## [待办与阻塞] (Blockers & Next Steps)
+- Working tree has uncommitted Phase 18 changes (`src/detectors/zip_ooxml/cd_check.rs`, `src/detectors/zip_ooxml/mod.rs`, `src/detectors/text/gateway.rs`, `tests/test_phase18_ooxml_and_text_bench.rs`, `.agents/HANDOFF.md`). Awaiting user confirmation before `git commit` / `git push`.

@@ -22,26 +22,63 @@ pub fn examine_text_gateway(bytes: &[u8]) -> Option<&str> {
         return None;
     }
 
-    // 2. Single-pass unified ASCII / NUL / control character scan
+    #[inline]
+fn scan_ascii_slice(
+    slice: &[u8],
+    base_idx: usize,
+    control_count: &mut usize,
+    max_controls: usize,
+    ascii_end: &mut usize,
+) -> bool {
+    for (offset, &b) in slice.iter().enumerate() {
+        if b == 0 {
+            return false;
+        }
+        if b >= 0x80 {
+            *ascii_end = base_idx + offset;
+            return true;
+        }
+        if (b < 0x20 && b != b'\t' && b != b'\n' && b != b'\r') || b == 0x7F {
+            *control_count += 1;
+            if *control_count > max_controls {
+                return false;
+            }
+        }
+    }
+    true
+}
+    // 2. Single-pass unified ASCII / NUL / control character scan (SWAR 8-byte fast path)
     let total_len = raw.len();
     let max_controls = total_len / 100;
     let mut control_count = 0usize;
     let mut ascii_end = raw.len();
 
-    for (i, &b) in raw.iter().enumerate() {
-        if b == 0 {
+    let mut idx = 0usize;
+    let (chunks, remainder) = raw.as_chunks::<8>();
+    for chunk in chunks {
+        let w = u64::from_ne_bytes(*chunk);
+        let has_non_ascii = (w & 0x8080_8080_8080_8080) != 0;
+        let has_lt_0x20 =
+            (w.wrapping_sub(0x2020_2020_2020_2020) & !w & 0x8080_8080_8080_8080) != 0;
+        let x7f = w ^ 0x7F7F_7F7F_7F7F_7F7F;
+        let has_0x7f =
+            (x7f.wrapping_sub(0x0101_0101_0101_0101) & !x7f & 0x8080_8080_8080_8080) != 0;
+
+        if (has_non_ascii || has_lt_0x20 || has_0x7f)
+            && !scan_ascii_slice(chunk, idx, &mut control_count, max_controls, &mut ascii_end)
+        {
             return None;
         }
-        if b >= 0x80 {
-            ascii_end = i;
+        if ascii_end != raw.len() {
             break;
         }
-        if (b < 0x20 && b != b'\t' && b != b'\n' && b != b'\r') || b == 0x7F {
-            control_count += 1;
-            if control_count > max_controls {
-                return None;
-            }
-        }
+        idx += 8;
+    }
+
+    if ascii_end == raw.len()
+        && !scan_ascii_slice(remainder, idx, &mut control_count, max_controls, &mut ascii_end)
+    {
+        return None;
     }
 
     // Pure ASCII fast path: guaranteed 100% valid UTF-8, no NULs, and valid control ratio
