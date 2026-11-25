@@ -1,3 +1,4 @@
+use std::io::BufRead;
 use quick_xml::events::Event;
 use quick_xml::reader::NsReader;
 use crate::model::WarningItem;
@@ -13,12 +14,12 @@ pub enum MainPartXmlOutcome {
 
 /// Verifies that the main document/workbook/presentation part XML has a valid
 /// root element corresponding to the expected OOXML format kind and adheres to max_depth.
-pub fn verify_main_part_xml(
-    xml_bytes: &[u8],
+pub fn verify_main_part_xml<R: BufRead>(
+    reader: R,
     expected_kind: OoxmlFormatKind,
     max_depth: usize,
 ) -> Result<MainPartXmlOutcome, WarningItem> {
-    let mut reader = NsReader::from_reader(xml_bytes);
+    let mut reader = NsReader::from_reader(reader);
     reader.config_mut().trim_text(false);
     reader.config_mut().check_comments = false;
 

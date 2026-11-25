@@ -1,21 +1,20 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- **Phase 18 Performance Optimizations**:
-  - `src/detectors/zip_ooxml/cd_check.rs`: Replaced unconditional dual `HashSet` heap allocations with `FastNameSet` (inline linear `Vec` for `<= 32` entries, automatic promotion to `HashSet` above 32).
-  - `src/detectors/zip_ooxml/mod.rs`: Extracted shared `read_limited_xml_into_buf` and `finalize_ooxml_main_part` helpers (removed duplicated XML verification logic); retained `ZipArchive::new` after benchmarking proved direct local-header deflation regressed small OOXML latency.
-  - `src/detectors/text/gateway.rs`: Added safe-Rust 8-byte SWAR ASCII / NUL / control-byte fast scan (`as_chunks::<8>()`) with shared `scan_ascii_slice` fallback.
-- **Anti-Overfitting Benchmark & Binary Archival**:
-  - Created `tests/test_phase18_ooxml_and_text_bench.rs` covering diverse OOXML (Deflated/Stored, custom targets, 6..58 entries), non-OOXML ZIP short-circuits, and 8K–16K ASCII/UTF-8/JSON/Rust/near-miss-binary payloads.
-  - Archived pre-Phase 18 and Phase 18 release binaries in `target/phase_binaries/` (`kindprobe_{pre_phase18,phase18}.exe`, `test_performance_bench_{pre_phase18,phase18}.exe`, `test_anti_overfitting_bench_{pre_phase18,phase18}.exe`, `test_phase18_ooxml_and_text_bench_phase18.exe`).
+- **Phase 17 Security Hardening**:
+  - `src/detectors/zip_ooxml/{opc.rs, xml.rs, mod.rs}`: Converted `parse_package_relationships`, `parse_content_types`, and `verify_main_part_xml` to generic `R: BufRead` streaming APIs; `mod.rs` now wraps `DecompressLimitReader` in `BufReader::with_capacity(4096, ...)` and streams XML events directly without allocating a 256 KiB decompression buffer.
+  - `src/detectors/cfb/ppt.rs`: Added `[MS-PPT]` `RecordHeader` validation (`recType` in `0x03E8..=0x3000`, non-zero `recLen` for non-container records) and `CurrentUserAtom` validation (`recType == 0x0FF6`, `headerToken == 0xE391_C05F | 0xF3D1_C4DF`). Updated test fixtures in `tests/test_cfb_extended.rs` and `tests/test_anti_overfitting_bench.rs`.
+  - `src/detectors/zip_ooxml/cd_check.rs`: Added ZIP local file header & compressed payload out-of-bounds / CD overlap guard (`lfh_off >= cd_offset` or `lfh_off + 30 + fn_len + compressed_size > cd_offset`).
+  - `src/budget.rs`: Added `io::ErrorKind::Interrupted` retry loops in `BudgetReader::read` and `DecompressLimitReader::read`.
+  - `tests/test_phase17_security_hardening.rs`: Added 4 regression tests covering `EINTR` retry, streaming XML budget exhaustion, ZIP overlap rejection, and forged PPT `Current User` atom rejection.
+  - Archived `*_pre_phase17.exe` and `*_phase17.exe` binaries in `target/phase_binaries/`.
 
 ## [当前状态] (Current State)
 - `cargo clippy --all-targets --all-features -- -D warnings`: **0 warnings**.
-- `cargo test --release --all-targets`: **All 55 test binaries passed** (including `test_phase18_ooxml_and_text_bench`).
-- Note on debug run: `test_codex_acceptance_regression` debug exe experienced `os error 32` (locked by Kaspersky AV), while its Release counterpart passed in `cargo test --release --all-targets`.
-- Side-by-side Phase 18 Release speedup:
-  - `test_anti_overfitting_bench`: Mixed-Stream +28.3% (`951.37 ns` -> `741.34 ns`); Java `-34.8%`, C++ `-32.2%`, Verilog `-42.6%`, Rust `-26.0%`.
-  - `test_performance_bench`: Plain ZIP `0.82 μs` -> `0.71 μs` (+15.7%), DOCX `26.03 μs` -> `20.12 μs` (+29.4%).
+- `cargo test --release --all-targets`: **All 56 test binaries passed** (including `test_phase17_security_hardening` and `test_phase18_ooxml_and_text_bench`).
+- Side-by-side Performance Parity (`pre_phase17` vs `phase17`):
+  - `test_anti_overfitting_bench`: Transitional DOCX `20.06 μs` -> `19.75 μs` (`50,631 docs/s`), MS-PPT `39.89 μs` -> `33.26 μs` (`30,064 docs/s`).
+  - `test_phase18_ooxml_and_text_bench`: TOTAL `0.110 s` -> `0.116 s` (OOXML `28,047` -> `25,528 ops/s` due to `BufReader` + `&mut dyn BufRead` streaming trade-off for 0-256 KiB peak memory).
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Working tree has uncommitted Phase 18 changes (`src/detectors/zip_ooxml/cd_check.rs`, `src/detectors/zip_ooxml/mod.rs`, `src/detectors/text/gateway.rs`, `tests/test_phase18_ooxml_and_text_bench.rs`, `.agents/HANDOFF.md`). Awaiting user confirmation before `git commit` / `git push`.
+- Working tree has uncommitted Phase 17 changes (`src/budget.rs`, `src/detectors/cfb/ppt.rs`, `src/detectors/zip_ooxml/{cd_check.rs,mod.rs,opc.rs,xml.rs}`, `tests/{test_anti_overfitting_bench.rs,test_cfb_extended.rs,test_phase17_security_hardening.rs}`, `.agents/HANDOFF.md`). Awaiting user confirmation before `git commit` / `git push`.

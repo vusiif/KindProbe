@@ -29,12 +29,21 @@ fn create_cfb_ppt(has_current_user: bool) -> Vec<u8> {
     let cursor = Cursor::new(Vec::new());
     let mut comp = cfb::CompoundFile::create(cursor).expect("create cfb");
     {
+        let mut ppt_data = vec![0xAAu8; 64];
+        ppt_data[0..2].copy_from_slice(&0x000Fu16.to_le_bytes());
+        ppt_data[2..4].copy_from_slice(&0x03E8u16.to_le_bytes());
+        ppt_data[4..8].copy_from_slice(&56u32.to_le_bytes());
         let mut stream = comp.create_stream("/PowerPoint Document").expect("create stream");
-        stream.write_all(&[0xAAu8; 64]).expect("write ppt");
+        stream.write_all(&ppt_data).expect("write ppt");
     }
     if has_current_user {
+        let mut cu = [0u8; 24];
+        cu[2..4].copy_from_slice(&0x0FF6u16.to_le_bytes());
+        cu[4..8].copy_from_slice(&20u32.to_le_bytes());
+        cu[8..12].copy_from_slice(&20u32.to_le_bytes());
+        cu[12..16].copy_from_slice(&0xE391_C05Fu32.to_le_bytes());
         let mut user = comp.create_stream("/Current User").expect("create user");
-        user.write_all(&[0u8; 24]).expect("write user");
+        user.write_all(&cu).expect("write user");
     }
     comp.into_inner().into_inner()
 }

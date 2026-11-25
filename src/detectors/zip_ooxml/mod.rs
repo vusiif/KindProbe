@@ -5,7 +5,7 @@ pub mod packages;
 pub mod schemas;
 pub mod xml;
 
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use zip::ZipArchive;
 
 use crate::budget::{BudgetReader, DecompressLimitReader, DetectOptions};
@@ -18,7 +18,7 @@ use cd_check::precheck_zip_central_directory;
 use epub::check_epub_or_odf;
 use packages::check_zip_packages;
 use opc::{parse_content_types, parse_package_relationships, resolve_target_path};
-use schemas::{classify_ooxml_content_type, OoxmlFormatKind};
+use schemas::classify_ooxml_content_type;
 use xml::{verify_main_part_xml, MainPartXmlOutcome};
 
 struct XmlPartSpec<'a> {
@@ -26,16 +26,26 @@ struct XmlPartSpec<'a> {
     missing_code: &'static str,
     missing_msg: &'static str,
     xml_limit_msg: &'static str,
-    read_err_code: &'static str,
 }
 
-fn read_limited_xml_into_buf<E: Read>(
-    entry_reader: E,
+fn stream_zip_xml_bounded<R: Read + Seek, T, F>(
+    archive: &mut ZipArchive<&mut BudgetReader<R>>,
     spec: &XmlPartSpec<'_>,
     options: &DetectOptions,
     report: &mut DetectionReport,
-    xml_buf: &mut Vec<u8>,
-) -> bool {
+    parse_fn: F,
+) -> Option<T>
+where
+    F: FnOnce(&mut dyn BufRead) -> Result<T, WarningItem>,
+{
+    let entry = match archive.by_name(spec.entry_name) {
+        Ok(e) => e,
+        Err(_) => {
+            report.warnings.push(WarningItem::new(spec.missing_code, spec.missing_msg));
+            return None;
+        }
+    };
+
     let remaining_total = options
         .max_total_decompressed_bytes
         .saturating_sub(report.stats.decompressed_bytes);
@@ -46,58 +56,45 @@ fn read_limited_xml_into_buf<E: Read>(
             "budget.total_decompressed_exceeded",
             "Cumulative decompressed byte budget exceeded",
         ));
-        return false;
+        return None;
     }
 
-    let mut limit_reader = DecompressLimitReader::new(entry_reader, allowed);
-    xml_buf.clear();
-    if let Err(e) = limit_reader.read_to_end(xml_buf) {
-        report.stats.decompressed_bytes += limit_reader.bytes_read();
-        if limit_reader.is_exceeded() {
-            report.inspection = Inspection::Limited;
-            if report.stats.decompressed_bytes >= options.max_total_decompressed_bytes {
-                report.warnings.push(WarningItem::new(
-                    "budget.total_decompressed_exceeded",
-                    "Cumulative decompressed byte budget exceeded",
-                ));
-            } else {
-                report.warnings.push(WarningItem::new("budget.xml_output_exceeded", spec.xml_limit_msg));
-            }
-        } else {
-            report.warnings.push(WarningItem::new(spec.read_err_code, e.to_string()));
-        }
-        return false;
-    }
-    report.stats.decompressed_bytes += limit_reader.bytes_read();
-    true
-}
-
-fn read_zip_xml_bounded<R: Read + Seek>(
-    archive: &mut ZipArchive<&mut BudgetReader<R>>,
-    spec: &XmlPartSpec<'_>,
-    options: &DetectOptions,
-    report: &mut DetectionReport,
-    xml_buf: &mut Vec<u8>,
-) -> bool {
-    let entry = match archive.by_name(spec.entry_name) {
-        Ok(e) => e,
-        Err(_) => {
-            report.warnings.push(WarningItem::new(spec.missing_code, spec.missing_msg));
-            return false;
-        }
+    let mut limit_reader = DecompressLimitReader::new(entry, allowed);
+    let result = {
+        let mut buf_reader = BufReader::with_capacity(4096, &mut limit_reader);
+        parse_fn(&mut buf_reader)
     };
+    report.stats.decompressed_bytes += limit_reader.bytes_read();
 
-    read_limited_xml_into_buf(entry, spec, options, report, xml_buf)
+    if limit_reader.is_exceeded() {
+        report.inspection = Inspection::Limited;
+        if report.stats.decompressed_bytes >= options.max_total_decompressed_bytes {
+            report.warnings.push(WarningItem::new(
+                "budget.total_decompressed_exceeded",
+                "Cumulative decompressed byte budget exceeded",
+            ));
+        } else {
+            report.warnings.push(WarningItem::new("budget.xml_output_exceeded", spec.xml_limit_msg));
+        }
+        return None;
+    }
+
+    match result {
+        Ok(val) => Some(val),
+        Err(warn) => {
+            report.warnings.push(warn);
+            None
+        }
+    }
 }
 
-fn finalize_ooxml_main_part(
-    xml_buf: &[u8],
-    format_kind: OoxmlFormatKind,
+fn finalize_ooxml_outcome(
+    outcome: MainPartXmlOutcome,
     options: &DetectOptions,
     report: &mut DetectionReport,
 ) {
-    match verify_main_part_xml(xml_buf, format_kind, options.max_xml_depth) {
-        Ok(MainPartXmlOutcome::Valid(kind)) => {
+    match outcome {
+        MainPartXmlOutcome::Valid(kind) => {
             report.identification = Identification::Format;
             report.format_id = Some(kind.format_id().to_string());
             report.category = "document".to_string();
@@ -108,7 +105,7 @@ fn finalize_ooxml_main_part(
             report.accepted_extensions = vec![kind.recommended_extension().to_string()];
             report.evidence.push(EvidenceItem::new(kind.evidence_code()));
         }
-        Ok(MainPartXmlOutcome::DepthExceededValidRoot(kind)) => {
+        MainPartXmlOutcome::DepthExceededValidRoot(kind) => {
             report.identification = Identification::Format;
             report.format_id = Some(kind.format_id().to_string());
             report.category = "document".to_string();
@@ -127,7 +124,7 @@ fn finalize_ooxml_main_part(
                 ),
             ));
         }
-        Ok(MainPartXmlOutcome::DepthExceededInvalidRoot) => {
+        MainPartXmlOutcome::DepthExceededInvalidRoot => {
             report.inspection = Inspection::Limited;
             report.warnings.push(WarningItem::new(
                 "ooxml.invalid_root_element",
@@ -142,11 +139,8 @@ fn finalize_ooxml_main_part(
                 ),
             ));
         }
-        Ok(MainPartXmlOutcome::InvalidRoot(msg)) => {
+        MainPartXmlOutcome::InvalidRoot(msg) => {
             report.warnings.push(WarningItem::new("ooxml.invalid_root_element", msg));
-        }
-        Err(warn) => {
-            report.warnings.push(warn);
         }
     }
 }
@@ -372,33 +366,31 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         return Ok(report);
     }
 
-    // Reusable decompression buffer for XML parts (_rels/.rels, [Content_Types].xml, main part)
-    let mut xml_buf = Vec::with_capacity(4096);
-
-    // Parse _rels/.rels to locate main officeDocument part
+    // Parse _rels/.rels to locate main officeDocument part (streaming directly from compressed entry)
     let main_rel_target = {
         let rels_spec = XmlPartSpec {
             entry_name: "_rels/.rels",
             missing_code: "ooxml.required_relationship_missing",
             missing_msg: "Cannot open _rels/.rels entry in package",
             xml_limit_msg: "Decompressed size of _rels/.rels exceeded single XML limit",
-            read_err_code: "ooxml.rels_read_error",
         };
-        if !read_zip_xml_bounded(&mut archive, &rels_spec, options, &mut report, &mut xml_buf) {
-            return Ok(report);
-        }
-
-        match parse_package_relationships(&xml_buf) {
-            Ok(Some(target)) => target,
-            Ok(None) => {
+        let parsed = match stream_zip_xml_bounded(
+            &mut archive,
+            &rels_spec,
+            options,
+            &mut report,
+            |r| parse_package_relationships(r),
+        ) {
+            Some(p) => p,
+            None => return Ok(report),
+        };
+        match parsed {
+            Some(target) => target,
+            None => {
                 report.warnings.push(WarningItem::new(
                     "ooxml.required_relationship_missing",
                     "No officeDocument core relationship found in _rels/.rels",
                 ));
-                return Ok(report);
-            }
-            Err(warn) => {
-                report.warnings.push(warn);
                 return Ok(report);
             }
         }
@@ -417,30 +409,31 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         }
     };
 
-    // Parse [Content_Types].xml to verify target part content type
+    // Parse [Content_Types].xml to verify target part content type (streaming)
     let content_type = {
         let ct_spec = XmlPartSpec {
             entry_name: "[Content_Types].xml",
             missing_code: "ooxml.content_types_missing",
             missing_msg: "Cannot open [Content_Types].xml entry",
             xml_limit_msg: "Decompressed size of [Content_Types].xml exceeded single XML limit",
-            read_err_code: "ooxml.content_types_read_error",
         };
-        if !read_zip_xml_bounded(&mut archive, &ct_spec, options, &mut report, &mut xml_buf) {
-            return Ok(report);
-        }
-
-        match parse_content_types(&xml_buf, &normalized_target) {
-            Ok(Some(ct)) => ct,
-            Ok(None) => {
+        let parsed = match stream_zip_xml_bounded(
+            &mut archive,
+            &ct_spec,
+            options,
+            &mut report,
+            |r| parse_content_types(r, &normalized_target),
+        ) {
+            Some(p) => p,
+            None => return Ok(report),
+        };
+        match parsed {
+            Some(ct) => ct,
+            None => {
                 report.warnings.push(WarningItem::new(
                     "ooxml.content_type_not_found",
                     format!("No ContentType entry found for part '/{}'", normalized_target),
                 ));
-                return Ok(report);
-            }
-            Err(warn) => {
-                report.warnings.push(warn);
                 return Ok(report);
             }
         }
@@ -460,19 +453,25 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         }
     };
 
-    // Decompress and parse main part XML, verifying root tag and depth budget
+    // Stream-decompress and parse main part XML, verifying root tag and depth budget
     let main_spec = XmlPartSpec {
         entry_name: &normalized_target,
         missing_code: "ooxml.main_part_missing",
         missing_msg: "Failed to open main document part in package",
         xml_limit_msg: "Decompressed size of main part exceeded single XML limit",
-        read_err_code: "ooxml.main_part_read_error",
     };
-    if !read_zip_xml_bounded(&mut archive, &main_spec, options, &mut report, &mut xml_buf) {
-        return Ok(report);
-    }
+    let outcome = match stream_zip_xml_bounded(
+        &mut archive,
+        &main_spec,
+        options,
+        &mut report,
+        |r| verify_main_part_xml(r, format_kind, options.max_xml_depth),
+    ) {
+        Some(o) => o,
+        None => return Ok(report),
+    };
 
-    finalize_ooxml_main_part(&xml_buf, format_kind, options, &mut report);
+    finalize_ooxml_outcome(outcome, options, &mut report);
 
     Ok(report)
 }

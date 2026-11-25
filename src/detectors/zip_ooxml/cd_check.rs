@@ -230,17 +230,44 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         FastNameSet::with_expected_len(cd_total_entries);
     let mut duplicate_entry: Option<String> = None;
     let mut conflicting_norm: Option<String> = None;
+    let mut overlap_or_oob = false;
 
     while pos + 46 <= cd_bytes.len() {
         if &cd_bytes[pos..pos + 4] != b"PK\x01\x02" {
             break;
         }
+        let compressed_size = u32::from_le_bytes([
+            cd_bytes[pos + 20],
+            cd_bytes[pos + 21],
+            cd_bytes[pos + 22],
+            cd_bytes[pos + 23],
+        ]);
         let fn_len =
             u16::from_le_bytes([cd_bytes[pos + 28], cd_bytes[pos + 29]]) as usize;
         let extra_len =
             u16::from_le_bytes([cd_bytes[pos + 30], cd_bytes[pos + 31]]) as usize;
         let comment_len =
             u16::from_le_bytes([cd_bytes[pos + 32], cd_bytes[pos + 33]]) as usize;
+        let local_header_offset = u32::from_le_bytes([
+            cd_bytes[pos + 42],
+            cd_bytes[pos + 43],
+            cd_bytes[pos + 44],
+            cd_bytes[pos + 45],
+        ]);
+        if local_header_offset != u32::MAX && cd_offset > 0 {
+            let lfh_off = local_header_offset as u64;
+            if lfh_off >= cd_offset
+                || (compressed_size != u32::MAX
+                    && lfh_off
+                        .saturating_add(30)
+                        .saturating_add(fn_len as u64)
+                        .saturating_add(compressed_size as u64)
+                        > cd_offset)
+            {
+                overlap_or_oob = true;
+                break;
+            }
+        }
         let fn_start = pos + 46;
         let fn_end = fn_start + fn_len;
         if fn_end > cd_bytes.len() {
@@ -291,6 +318,15 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             conflicting_norm = Some(norm.into_owned());
         }
         pos = fn_end + extra_len + comment_len;
+    }
+
+    if overlap_or_oob {
+        report.inspection = Inspection::Limited;
+        report.warnings.push(WarningItem::new(
+            "zip.truncated_or_corrupted",
+            "ZIP local file header or compressed payload overlaps central directory",
+        ));
+        return Ok(None);
     }
 
     if let Some(dup) = duplicate_entry {

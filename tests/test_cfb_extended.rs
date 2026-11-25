@@ -30,15 +30,27 @@ fn create_cfb_ppt(has_current_user: bool, ppt_stream_len: usize) -> Vec<u8> {
     let cursor = Cursor::new(Vec::new());
     let mut comp = cfb::CompoundFile::create(cursor).expect("create cfb");
 
-    let ppt_data = vec![0xAAu8; ppt_stream_len];
+    let mut ppt_data = vec![0xAAu8; ppt_stream_len];
+    if ppt_data.len() >= 8 {
+        // MS-PPT DocumentContainer RecordHeader: recVer=0x0F, recInstance=0, recType=0x03E8
+        ppt_data[0..2].copy_from_slice(&0x000Fu16.to_le_bytes());
+        ppt_data[2..4].copy_from_slice(&0x03E8u16.to_le_bytes());
+        ppt_data[4..8].copy_from_slice(&((ppt_stream_len - 8) as u32).to_le_bytes());
+    }
     {
         let mut stream = comp.create_stream("/PowerPoint Document").expect("create ppt stream");
         stream.write_all(&ppt_data).expect("write ppt");
     }
 
     if has_current_user {
+        let mut cu = [0u8; 20];
+        cu[0..2].copy_from_slice(&0x0000u16.to_le_bytes());
+        cu[2..4].copy_from_slice(&0x0FF6u16.to_le_bytes()); // RT_CurrentUserAtom
+        cu[4..8].copy_from_slice(&20u32.to_le_bytes());
+        cu[8..12].copy_from_slice(&20u32.to_le_bytes());
+        cu[12..16].copy_from_slice(&0xE391_C05Fu32.to_le_bytes());
         let mut user_stream = comp.create_stream("/Current User").expect("create user stream");
-        user_stream.write_all(&[0u8; 20]).expect("write user");
+        user_stream.write_all(&cu).expect("write user");
     }
 
     let inner = comp.into_inner();
@@ -150,6 +162,22 @@ fn test_detect_xls_unsupported_biff_version() {
 fn test_detect_ppt_stream_too_short() {
     let data = create_cfb_ppt(false, 16); // < 32 bytes
     let rep = detect_bytes(&data, &DetectOptions::default()).expect("detect short ppt");
+
+    assert_eq!(rep.identification, Identification::ContainerOnly);
+    assert_eq!(rep.format_id, None);
+    assert!(rep.warnings.iter().any(|w| w.code == "cfb.invalid_powerpoint_stream"));
+}
+
+#[test]
+fn test_detect_ppt_forged_garbage_stream() {
+    let cursor = Cursor::new(Vec::new());
+    let mut comp = cfb::CompoundFile::create(cursor).expect("create cfb");
+    {
+        let mut stream = comp.create_stream("/PowerPoint Document").expect("create ppt");
+        stream.write_all(&[0xAAu8; 64]).expect("write garbage");
+    }
+    let data = comp.into_inner().into_inner();
+    let rep = detect_bytes(&data, &DetectOptions::default()).expect("detect forged ppt");
 
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.format_id, None);

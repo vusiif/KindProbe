@@ -1,3 +1,4 @@
+use std::io::BufRead;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader as XmlReader;
 use crate::model::WarningItem;
@@ -108,8 +109,8 @@ pub fn resolve_target_path(base_dir: &str, target: &str) -> Option<String> {
 }
 
 /// Parses `_rels/.rels` XML to find the officeDocument core relationship target.
-pub fn parse_package_relationships(xml_bytes: &[u8]) -> Result<Option<String>, WarningItem> {
-    let mut reader = XmlReader::from_reader(xml_bytes);
+pub fn parse_package_relationships<R: BufRead>(reader: R) -> Result<Option<String>, WarningItem> {
+    let mut reader = XmlReader::from_reader(reader);
     reader.config_mut().trim_text(false);
     reader.config_mut().check_comments = false;
 
@@ -162,11 +163,11 @@ pub fn parse_package_relationships(xml_bytes: &[u8]) -> Result<Option<String>, W
 }
 
 /// Parses `[Content_Types].xml` to locate the content type of the target part.
-pub fn parse_content_types(
-    xml_bytes: &[u8],
+pub fn parse_content_types<R: BufRead>(
+    reader: R,
     normalized_target: &str,
 ) -> Result<Option<String>, WarningItem> {
-    let mut reader = XmlReader::from_reader(xml_bytes);
+    let mut reader = XmlReader::from_reader(reader);
     reader.config_mut().trim_text(false);
     reader.config_mut().check_comments = false;
 

@@ -28,11 +28,11 @@ pub fn verify_cfb_ppt<R: Read + std::io::Seek>(
         return Ok(false);
     }
 
-    // Verify stream can be opened and read
+    // Verify stream can be opened and starts with a valid MS-PPT RecordHeader
     let mut probe_buf = [0u8; 8];
     match comp.open_stream(stream_path) {
         Ok(mut s) => {
-            if let Err(e) = s.read(&mut probe_buf) {
+            if let Err(e) = s.read_exact(&mut probe_buf) {
                 if budget_handle.load(Ordering::Relaxed) {
                     report.inspection = Inspection::Limited;
                     report.warnings.push(WarningItem::new(
@@ -56,6 +56,41 @@ pub fn verify_cfb_ppt<R: Read + std::io::Seek>(
             }
             report.warnings.push(WarningItem::new("cfb.stream_open_error", e.to_string()));
             return Ok(false);
+        }
+    }
+
+    let rec_ver_inst = u16::from_le_bytes([probe_buf[0], probe_buf[1]]);
+    let rec_ver = rec_ver_inst & 0x0F;
+    let rec_type = u16::from_le_bytes([probe_buf[2], probe_buf[3]]);
+    let rec_len = u32::from_le_bytes([probe_buf[4], probe_buf[5], probe_buf[6], probe_buf[7]]);
+    if !(0x03E8..=0x3000).contains(&rec_type) || (rec_len == 0 && rec_ver != 0x0F) {
+        report.warnings.push(WarningItem::new(
+            "cfb.invalid_powerpoint_stream",
+            format!(
+                "Invalid MS-PPT RecordHeader in PowerPoint Document stream (recType=0x{:04X}, recVer=0x{:X})",
+                rec_type, rec_ver
+            ),
+        ));
+        return Ok(false);
+    }
+
+    if has_current_user {
+        if let Ok(mut cu_stream) = comp.open_stream(Path::new("/Current User")) {
+            let mut cu_buf = [0u8; 16];
+            if cu_stream.read_exact(&mut cu_buf).is_ok() {
+                let cu_type = u16::from_le_bytes([cu_buf[2], cu_buf[3]]);
+                let header_token =
+                    u32::from_le_bytes([cu_buf[12], cu_buf[13], cu_buf[14], cu_buf[15]]);
+                if cu_type != 0x0FF6
+                    || (header_token != 0xE391_C05F && header_token != 0xF3D1_C4DF)
+                {
+                    report.warnings.push(WarningItem::new(
+                        "cfb.invalid_powerpoint_stream",
+                        "Invalid CurrentUserAtom header in Current User stream",
+                    ));
+                    return Ok(false);
+                }
+            }
         }
     }
 

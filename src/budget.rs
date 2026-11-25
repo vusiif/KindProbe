@@ -132,17 +132,20 @@ impl<R: Read> Read for BudgetReader<R> {
         }
 
         let to_read = buf.len().min(remaining);
-        match self.inner.read(&mut buf[..to_read]) {
-            Ok(n) => {
-                self.total_read_bytes += n;
-                if let Some((counter, _, active, _)) = &self.window_state {
-                    if active.load(Ordering::Relaxed) {
-                        counter.fetch_add(n, Ordering::Relaxed);
+        loop {
+            match self.inner.read(&mut buf[..to_read]) {
+                Ok(n) => {
+                    self.total_read_bytes += n;
+                    if let Some((counter, _, active, _)) = &self.window_state {
+                        if active.load(Ordering::Relaxed) {
+                            counter.fetch_add(n, Ordering::Relaxed);
+                        }
                     }
+                    return Ok(n);
                 }
-                Ok(n)
+                Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                Err(e) => return Err(e),
             }
-            Err(e) => Err(e),
         }
     }
 }
@@ -192,31 +195,37 @@ impl<R: Read> Read for DecompressLimitReader<R> {
             // Probe if the underlying reader actually has more bytes (real overflow),
             // or if it has reached normal EOF.
             let mut probe = [0u8; 1];
-            match self.inner.read(&mut probe) {
-                Ok(0) => {
-                    // Normal EOF: exactly reached limit, no overflow.
-                    return Ok(0);
+            loop {
+                match self.inner.read(&mut probe) {
+                    Ok(0) => {
+                        // Normal EOF: exactly reached limit, no overflow.
+                        return Ok(0);
+                    }
+                    Ok(_) => {
+                        // There are additional bytes beyond budget limit -> truly exceeded.
+                        self.exceeded = true;
+                        return Err(io::Error::new(
+                            io::ErrorKind::UnexpectedEof,
+                            "budget.xml_output_exceeded: decompressed output budget exceeded",
+                        ));
+                    }
+                    Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                    Err(e) => return Err(e),
                 }
-                Ok(_) => {
-                    // There are additional bytes beyond budget limit -> truly exceeded.
-                    self.exceeded = true;
-                    return Err(io::Error::new(
-                        io::ErrorKind::UnexpectedEof,
-                        "budget.xml_output_exceeded: decompressed output budget exceeded",
-                    ));
-                }
-                Err(e) => return Err(e),
             }
         }
 
         let remaining = self.max_single_bytes - self.current_read;
         let to_read = buf.len().min(remaining);
-        match self.inner.read(&mut buf[..to_read]) {
-            Ok(n) => {
-                self.current_read += n;
-                Ok(n)
+        loop {
+            match self.inner.read(&mut buf[..to_read]) {
+                Ok(n) => {
+                    self.current_read += n;
+                    return Ok(n);
+                }
+                Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                Err(e) => return Err(e),
             }
-            Err(e) => Err(e),
         }
     }
 }
