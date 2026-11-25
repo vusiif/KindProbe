@@ -200,7 +200,7 @@ mod win_console {
 mod win_console {
     pub fn is_dedicated_interactive_console() -> bool {
         // Test override for automated Linux verification of the interactive console branches
-        std::env::var_os("KINDPROBE_TEST_DEDICATED_CONSOLE").map_or(false, |v| v == "1")
+        std::env::var_os("KINDPROBE_TEST_DEDICATED_CONSOLE").is_some_and(|v| v == "1")
     }
 }
 
