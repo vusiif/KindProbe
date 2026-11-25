@@ -1,12 +1,12 @@
 use std::env;
 use std::ffi::{OsStr, OsString};
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::process;
 use std::time::Instant;
 
 use kindprobe::budget::DetectOptions;
-use kindprobe::detect_path;
+use kindprobe::{detect_path, detect_path_core, Identification};
 use kindprobe::model::{DetectError, ErrorDetails, ErrorEnvelope};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -217,14 +217,19 @@ fn print_help(lang: AppLanguage) {
 用法:
     kindprobe [OPTIONS] <FILE>
     kindprobe [OPTIONS] -- <FILE>
+    kindprobe --batch [-r] [--jsonl] <PATH>...
 
 参数:
     <FILE>    待检测文件的路径
+    <PATH>    批量模式下的文件或目录路径
 
 选项:
-    --json        向标准输出输出机器可读的 JSON v1
-    -h, --help    打印帮助信息
-    -V, --version 打印版本信息
+    --json           向标准输出输出机器可读的 JSON v1
+    --batch          启用批量模式（支持多文件/目录，使用零分配核心引擎）
+    -r, --recursive  递归遍历目录（自动启用批量模式）
+    --jsonl          以 JSON Lines 格式逐行输出结果（自动启用批量模式）
+    -h, --help       打印帮助信息
+    -V, --version    打印版本信息
 
 退出码:
     0    格式确认且检测完成
@@ -243,14 +248,19 @@ fn print_help(lang: AppLanguage) {
 USAGE:
     kindprobe [OPTIONS] <FILE>
     kindprobe [OPTIONS] -- <FILE>
+    kindprobe --batch [-r] [--jsonl] <PATH>...
 
 ARGS:
     <FILE>    Path to the file to inspect
+    <PATH>    File or directory paths in batch mode
 
 OPTIONS:
-    --json        Output machine-readable JSON v1 to stdout
-    -h, --help    Print help information
-    -V, --version Print version information
+    --json           Output machine-readable JSON v1 to stdout
+    --batch          Enable batch mode (multiple files/dirs via zero-alloc core)
+    -r, --recursive  Recursively traverse directories (implies --batch)
+    --jsonl          Output one JSON object per line (implies --batch)
+    -h, --help       Print help information
+    -V, --version    Print version information
 
 EXIT CODES:
     0    Format confirmed and inspection complete
@@ -595,24 +605,235 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
     }
 }
 
+#[derive(serde::Serialize)]
+struct BatchResultJson<'a> {
+    path: &'a str,
+    status: &'static str,
+    format_id: Option<&'static str>,
+    category: &'static str,
+    container_id: Option<&'static str>,
+    identification: Identification,
+    recommended_extension: Option<&'static str>,
+}
+
+#[derive(serde::Serialize)]
+struct BatchErrorJson<'a> {
+    path: &'a str,
+    status: &'static str,
+    error_code: &'static str,
+    message: String,
+}
+
+fn error_code_for_detect_error(err: &DetectError) -> &'static str {
+    match err {
+        DetectError::NotRegularFile(_) => "io.not_regular_file",
+        DetectError::InvalidParameter(_) => "arg.invalid_parameter",
+        DetectError::Io(io_err) => match io_err.kind() {
+            std::io::ErrorKind::NotFound => "io.not_found",
+            std::io::ErrorKind::PermissionDenied => "io.permission_denied",
+            _ => "io.read_error",
+        },
+    }
+}
+
+fn run_batch(
+    paths: &[PathBuf],
+    recursive: bool,
+    jsonl_mode: bool,
+    lang: AppLanguage,
+) -> i32 {
+    let start = Instant::now();
+    let options = DetectOptions::default();
+    let stdout = std::io::stdout();
+    let mut out = BufWriter::with_capacity(64 * 1024, stdout.lock());
+
+    let mut total_files: usize = 0;
+    let mut identified: usize = 0;
+    let mut unknown: usize = 0;
+    let mut errors: usize = 0;
+
+    // Explicit stack of (path, is_root_arg) so `--batch <dir>` scans 1 level even when !recursive
+    let mut work_stack: Vec<(PathBuf, bool)> =
+        paths.iter().rev().map(|p| (p.clone(), true)).collect();
+
+    while let Some((path, is_root)) = work_stack.pop() {
+        let meta = match std::fs::symlink_metadata(&path) {
+            Ok(m) => m,
+            Err(e) => {
+                total_files += 1;
+                errors += 1;
+                let path_str = path.to_string_lossy();
+                let code = error_code_for_detect_error(&DetectError::Io(
+                    std::io::Error::new(e.kind(), e.to_string()),
+                ));
+                if jsonl_mode {
+                    let _ = serde_json::to_writer(
+                        &mut out,
+                        &BatchErrorJson {
+                            path: &path_str,
+                            status: "error",
+                            error_code: code,
+                            message: e.to_string(),
+                        },
+                    );
+                    let _ = out.write_all(b"\n");
+                } else {
+                    eprintln!("Error [{}]: {} ({})", code, path_str, e);
+                }
+                continue;
+            }
+        };
+
+        if meta.is_dir() && (recursive || is_root) {
+            match std::fs::read_dir(&path) {
+                Ok(rd) => {
+                    let mut children: Vec<PathBuf> = rd
+                        .filter_map(|res| res.ok())
+                        .filter_map(|entry| {
+                            let ft = entry.file_type().ok()?;
+                            // Skip symlinked directories to avoid traversal cycles
+                            if ft.is_symlink() && ft.is_dir() {
+                                return None;
+                            }
+                            if !recursive && ft.is_dir() {
+                                return None;
+                            }
+                            Some(entry.path())
+                        })
+                        .collect();
+                    children.sort();
+                    for child in children.into_iter().rev() {
+                        work_stack.push((child, false));
+                    }
+                }
+                Err(e) => {
+                    total_files += 1;
+                    errors += 1;
+                    let path_str = path.to_string_lossy();
+                    if jsonl_mode {
+                        let _ = serde_json::to_writer(
+                            &mut out,
+                            &BatchErrorJson {
+                                path: &path_str,
+                                status: "error",
+                                error_code: "io.read_error",
+                                message: e.to_string(),
+                            },
+                        );
+                        let _ = out.write_all(b"\n");
+                    } else {
+                        eprintln!("Error [io.read_error]: {} ({})", path_str, e);
+                    }
+                }
+            }
+            continue;
+        }
+
+        total_files += 1;
+        let path_str = path.to_string_lossy();
+        match detect_path_core(&path, &options) {
+            Ok(core) => {
+                if core.identification == Identification::Format {
+                    identified += 1;
+                } else {
+                    unknown += 1;
+                }
+                if jsonl_mode {
+                    let _ = serde_json::to_writer(
+                        &mut out,
+                        &BatchResultJson {
+                            path: &path_str,
+                            status: "ok",
+                            format_id: core.format_id,
+                            category: core.category,
+                            container_id: core.container_id,
+                            identification: core.identification,
+                            recommended_extension: core.recommended_extension,
+                        },
+                    );
+                    let _ = out.write_all(b"\n");
+                } else {
+                    let fmt = core.format_id.unwrap_or("unknown");
+                    let _ = writeln!(out, "{} -> {} ({})", path_str, fmt, core.category);
+                }
+            }
+            Err(err) => {
+                errors += 1;
+                let code = error_code_for_detect_error(&err);
+                if jsonl_mode {
+                    let _ = serde_json::to_writer(
+                        &mut out,
+                        &BatchErrorJson {
+                            path: &path_str,
+                            status: "error",
+                            error_code: code,
+                            message: err.to_string(),
+                        },
+                    );
+                    let _ = out.write_all(b"\n");
+                } else {
+                    eprintln!("Error [{}]: {} ({})", code, path_str, err);
+                }
+            }
+        }
+    }
+
+    let _ = out.flush();
+    if !jsonl_mode {
+        let elapsed_ms = start.elapsed().as_secs_f64() * 1000.0;
+        let rate = if elapsed_ms > 0.0 {
+            (total_files as f64) / (elapsed_ms / 1000.0)
+        } else {
+            0.0
+        };
+        match lang {
+            AppLanguage::Chinese => eprintln!(
+                "已扫描 {} 个文件，耗时 {:.2} ms ({:.0} files/s)：已识别 {}，未知 {}，错误 {}",
+                total_files, elapsed_ms, rate, identified, unknown, errors
+            ),
+            AppLanguage::English => eprintln!(
+                "Scanned {} files in {:.2} ms ({:.0} files/s): {} identified, {} unknown, {} errors",
+                total_files, elapsed_ms, rate, identified, unknown, errors
+            ),
+        }
+    }
+
+    if errors > 0 && identified == 0 && unknown == 0 {
+        4
+    } else {
+        0
+    }
+}
+
 fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage) -> i32 {
     let cli_start = Instant::now();
 
-    let mut target_file: Option<PathBuf> = None;
+    let mut target_files: Vec<PathBuf> = Vec::new();
     let mut after_double_dash = false;
+    let mut batch_mode = false;
+    let mut recursive = false;
+    let mut jsonl_mode = false;
 
     let mut i = 1;
     while i < args.len() {
         let arg = &args[i];
         if after_double_dash {
-            if target_file.is_some() {
+            if !batch_mode && !target_files.is_empty() {
                 return print_arg_error(json_mode, lang, ArgErrorType::MultipleFiles);
             }
-            target_file = Some(PathBuf::from(arg));
+            target_files.push(PathBuf::from(arg));
         } else if arg == OsStr::new("--") {
             after_double_dash = true;
         } else if arg == OsStr::new("--json") {
-            // Handled in pre-scan
+            // Handled in pre-scan; in batch mode, --json emits JSONL
+        } else if arg == OsStr::new("--batch") {
+            batch_mode = true;
+        } else if arg == OsStr::new("-r") || arg == OsStr::new("--recursive") {
+            batch_mode = true;
+            recursive = true;
+        } else if arg == OsStr::new("--jsonl") {
+            batch_mode = true;
+            jsonl_mode = true;
         } else if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
             print_help(lang);
             return 0;
@@ -628,16 +849,23 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
                     ArgErrorType::UnrecognizedOption(s.into_owned()),
                 );
             } else {
-                if target_file.is_some() {
+                if !batch_mode && !target_files.is_empty() {
                     return print_arg_error(json_mode, lang, ArgErrorType::MultipleFiles);
                 }
-                target_file = Some(PathBuf::from(arg));
+                target_files.push(PathBuf::from(arg));
             }
         }
         i += 1;
     }
 
-    let file_path = match target_file {
+    if batch_mode {
+        if target_files.is_empty() {
+            return print_arg_error(json_mode, lang, ArgErrorType::MissingFile);
+        }
+        return run_batch(&target_files, recursive, jsonl_mode || json_mode, lang);
+    }
+
+    let file_path = match target_files.into_iter().next() {
         Some(f) => f,
         None => {
             if is_dedicated {
@@ -870,7 +1098,7 @@ fn main() {
         }
         if arg == OsStr::new("--") {
             saw_double_dash = true;
-        } else if arg == OsStr::new("--json") {
+        } else if arg == OsStr::new("--json") || arg == OsStr::new("--jsonl") {
             json_mode = true;
         }
     }
