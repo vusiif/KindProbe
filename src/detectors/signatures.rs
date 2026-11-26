@@ -113,6 +113,46 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
         }
     }
 
+    if header.len() >= 20
+        && header.starts_with(
+            b"\x4C\x00\x00\x00\x01\x14\x02\x00\x00\x00\x00\x00\xC0\x00\x00\x00\x00\x00\x00\x46",
+        )
+    {
+        return Some(DetectionCore {
+            format_id: Some("lnk"),
+            category: "system",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("lnk"),
+            accepted_extensions: &["lnk"],
+            primary_evidence: Some("sig.lnk.clsid"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    if header.len() >= 16
+        && header.starts_with(b"\x06\x0E\x2B\x34\x02\x05\x01\x01\x0D\x01\x02\x01\x01\x02")
+    {
+        return Some(DetectionCore {
+            format_id: Some("mxf"),
+            category: "video",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("mxf"),
+            accepted_extensions: &["mxf"],
+            primary_evidence: Some("sig.mxf.partition"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
     if header.len() >= 12 && header.starts_with(b"\x7FELF") && &header[8..11] == b"AI\x02" {
         return Some(DetectionCore {
             format_id: Some("appimage"),

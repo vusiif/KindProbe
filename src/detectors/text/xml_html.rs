@@ -63,6 +63,11 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     if head.starts_with(b"<!doctype plist") || head.starts_with(b"<plist") || (is_xml_head && contains_sub(b"<plist")) {
         return Some(make_core("plist", "configuration", Some("xml"), "plist", &["plist"], "sig.text.plist"));
     }
+    if (head.starts_with(b"<project") || (is_xml_head && contains_sub(b"<project")))
+        && (contains_sub(b"<propertygroup") || contains_sub(b"sdk="))
+    {
+        return Some(make_core("csproj", "text", Some("xml"), "csproj", &["csproj", "fsproj", "vbproj"], "sig.text.csproj"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head

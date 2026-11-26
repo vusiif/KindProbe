@@ -231,6 +231,44 @@ fn test_round5_raw_onnx_cs_swift_r_env_gitignore() {
 }
 
 #[test]
+fn test_round6_lnk_mxf_sln_csproj_tex_rst_adoc_gradle_nginx() {
+    let lnk = b"\x4C\x00\x00\x00\x01\x14\x02\x00\x00\x00\x00\x00\xC0\x00\x00\x00\x00\x00\x00\x46\x00\x00\x00\x00";
+    assert_both_paths(lnk, "lnk");
+
+    let mxf = b"\x06\x0E\x2B\x34\x02\x05\x01\x01\x0D\x01\x02\x01\x01\x02\x04\x00";
+    assert_both_paths(mxf, "mxf");
+
+    assert_both_paths(
+        b"Microsoft Visual Studio Solution File, Format Version 12.00\r\n# Visual Studio Version 17\r\n",
+        "sln",
+    );
+    assert_both_paths(
+        b"<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <TargetFramework>net8.0</TargetFramework>\n  </PropertyGroup>\n</Project>\n",
+        "csproj",
+    );
+    assert_both_paths(
+        b"\\documentclass{article}\n\\usepackage{amsmath}\n\\begin{document}\nHello\n\\end{document}\n",
+        "tex",
+    );
+    assert_both_paths(
+        b"Title\n=====\n\n.. code-block:: rust\n\n   fn main() {}\n",
+        "rst",
+    );
+    assert_both_paths(
+        b"= KindProbe Guide\n\n== Installation\n\n[source,bash]\n----\ncargo install kindprobe\n----\n",
+        "adoc",
+    );
+    assert_both_paths(
+        b"plugins {\n    id 'java'\n}\ndependencies {\n    implementation 'com.google.guava:guava:33.0.0-jre'\n}\n",
+        "gradle",
+    );
+    assert_both_paths(
+        b"server {\n    listen 80;\n    server_name example.com;\n    location / {\n        return 200 'ok';\n    }\n}\n",
+        "nginx",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

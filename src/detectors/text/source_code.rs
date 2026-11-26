@@ -48,6 +48,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     if window.starts_with("Windows Registry Editor Version 5.00") || window.starts_with("REGEDIT4") {
         return Some(make_source_core("reg", &["reg"], "sig.text.reg", Verification::Structure));
     }
+    if window.starts_with("Microsoft Visual Studio Solution File") {
+        return Some(make_source_core("sln", &["sln"], "sig.text.sln", Verification::Structure));
+    }
     if window.contains("@import(\"std\")") || (window.contains("pub fn ") && window.contains("@import(")) {
         return Some(make_source_core("zig", &["zig"], "sig.text.zig", Verification::Structure));
     }
@@ -71,6 +74,37 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         if window.starts_with("# ") && (window.contains("](") || window.contains("\n- ") || window.contains("\n```")) {
             return Some(make_source_core("md", &["md", "markdown"], "sig.text.markdown", Verification::Structure));
         }
+    }
+
+    // LaTeX (.tex), reStructuredText (.rst), AsciiDoc (.adoc) before code token scan
+    // so embedded code snippets inside docs do not hijack detection.
+    if window.contains("\\documentclass")
+        && (window.contains("\\begin{document}") || window.contains("\\usepackage"))
+    {
+        return Some(make_source_core(
+            "tex",
+            &["tex", "ltx", "sty"],
+            "sig.text.latex",
+            Verification::Structure,
+        ));
+    }
+    if window.contains(".. code-block::")
+        || (window.contains(".. note::") && window.contains("===="))
+    {
+        return Some(make_source_core(
+            "rst",
+            &["rst"],
+            "sig.text.rst",
+            Verification::Structure,
+        ));
+    }
+    if window.starts_with("= ") && (window.contains("\n== ") || window.contains("[source,")) {
+        return Some(make_source_core(
+            "adoc",
+            &["adoc", "asciidoc"],
+            "sig.text.adoc",
+            Verification::Structure,
+        ));
     }
 
     let mut has_v_module = false;
@@ -464,6 +498,32 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "env",
             &["env"],
             "sig.text.env",
+            Verification::Structure,
+        ));
+    }
+
+    // Gradle (.gradle) & Nginx (.conf)
+    if (window.contains("plugins {") || window.contains("dependencies {"))
+        && (window.contains("implementation")
+            || window.contains("testImplementation")
+            || window.contains("apply plugin:"))
+    {
+        return Some(make_source_core(
+            "gradle",
+            &["gradle"],
+            "sig.text.gradle",
+            Verification::Structure,
+        ));
+    }
+    if (window.contains("server {") || window.contains("http {"))
+        && (window.contains("listen ")
+            || window.contains("location ")
+            || window.contains("server_name "))
+    {
+        return Some(make_source_core(
+            "nginx",
+            &["conf"],
+            "sig.text.nginx",
             Verification::Structure,
         ));
     }
