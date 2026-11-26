@@ -2,7 +2,7 @@
 
 > 独立离线文件真实格式识别工具与 Rust 库（依据内容证据识别格式，推荐规范扩展名）。
 
-**当前开发阶段：P1-A（最小可发布版 API / JSON v1 / CLI / 预算 / 错误与诊断稳定契约）**  
+**当前版本：`v0.2.0`（支持 1006+ 格式扩展名索引、零分配 `DetectionCore`、流式 XML 与容器防欺骗校验、SWAR 文本快筛及多核并行批量 CLI）**  
 **项目许可证：GNU General Public License v3.0 或任何更新版本（SPDX：`GPL-3.0-or-later`），详见 [LICENSE](LICENSE)。第三方依赖与数据源保留各自许可证，见下文及 `research/`。**
 
 ---
@@ -154,9 +154,9 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 | **Xara 矢量绘图文档** | `xar` | `null` | **Supported (Codegen)** | `xar!` 4 字节魔数核验 |
 
 **支持平台验证状态**：
-- Linux x86_64 (`Debian trixie / Linux 6.6`): **Verified (PASS)**
-- Windows x86_64 (`Windows 10/11`): **Verified (PASS)**
-- macOS: **Not Verified (未验证)**
+- Linux x86_64 (`ubuntu-latest` CI / Debian): **Verified (PASS)**
+- Windows x86_64 (`windows-latest` CI / Windows 10/11): **Verified (PASS)**
+- macOS (`macos-latest` CI): **Verified (PASS)**
 
 ---
 
@@ -199,6 +199,10 @@ kindprobe document.docx
 
 # 机器可读 JSON v1 输出
 kindprobe --json document.docx
+
+# 多核并行批量扫描（支持多文件、-r 递归目录、--jsonl 逐行输出与 -j 并发数）
+kindprobe --batch -r --jsonl ./samples
+kindprobe --batch -r -j 4 ./samples
 
 # 支持 -- 安全分隔以处理前导连字符文件名
 kindprobe --json -- -document.docx

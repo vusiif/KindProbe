@@ -120,27 +120,25 @@ pub fn parse_package_relationships<R: BufRead>(reader: R) -> Result<Option<Strin
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
-                if e.name().as_ref() == b"Relationship" {
+                if e.name().as_ref() == "Relationship" {
                     let mut is_office_doc = false;
                     let mut rel_target = None;
 
                     for attr in e.attributes().flatten() {
-                        if attr.key.as_ref() == b"Type" {
+                        if attr.key.as_ref() == "Type" {
                             let val = attr.value.as_ref();
-                            if val == TRANSITIONAL_REL_OFFICE_DOC.as_bytes()
-                                || val == STRICT_REL_OFFICE_DOC.as_bytes()
-                            {
+                            if val == TRANSITIONAL_REL_OFFICE_DOC || val == STRICT_REL_OFFICE_DOC {
                                 is_office_doc = true;
                             }
-                        } else if attr.key.as_ref() == b"Target" {
+                        } else if attr.key.as_ref() == "Target" {
                             rel_target = Some(attr.value);
                         }
                     }
 
                     if is_office_doc {
-                        if let Some(target_bytes) = rel_target {
-                            if !target_bytes.is_empty() {
-                                target_val = Some(String::from_utf8_lossy(&target_bytes).to_string());
+                        if let Some(target_str) = rel_target {
+                            if !target_str.is_empty() {
+                                target_val = Some(target_str.into_owned());
                                 break;
                             }
                         }
@@ -171,8 +169,7 @@ pub fn parse_content_types<R: BufRead>(
     reader.config_mut().trim_text(false);
     reader.config_mut().check_comments = false;
 
-    let target_part_bytes = normalized_target.as_bytes();
-    let target_ext_bytes = normalized_target.rsplit('.').next().unwrap_or("").as_bytes();
+    let target_ext = normalized_target.rsplit('.').next().unwrap_or("");
 
     let mut matched_override: Option<String> = None;
     let mut matched_default: Option<String> = None;
@@ -186,40 +183,40 @@ pub fn parse_content_types<R: BufRead>(
                     continue;
                 }
                 let name = e.name();
-                if name.as_ref() == b"Override" {
+                if name.as_ref() == "Override" {
                     let mut matches = false;
-                    let mut ct_bytes = None;
+                    let mut ct_val = None;
                     for attr in e.attributes().flatten() {
-                        if attr.key.as_ref() == b"PartName" {
+                        if attr.key.as_ref() == "PartName" {
                             let val = attr.value.as_ref();
-                            let trimmed_val = val.strip_prefix(b"/").unwrap_or(val);
-                            if trimmed_val.eq_ignore_ascii_case(target_part_bytes) {
+                            let trimmed_val = val.strip_prefix('/').unwrap_or(val);
+                            if trimmed_val.eq_ignore_ascii_case(normalized_target) {
                                 matches = true;
                             }
-                        } else if attr.key.as_ref() == b"ContentType" {
-                            ct_bytes = Some(attr.value);
+                        } else if attr.key.as_ref() == "ContentType" {
+                            ct_val = Some(attr.value);
                         }
                     }
                     if matches && matched_override.is_none() {
-                        if let Some(val) = ct_bytes {
-                            matched_override = Some(String::from_utf8_lossy(&val).to_string());
+                        if let Some(val) = ct_val {
+                            matched_override = Some(val.into_owned());
                         }
                     }
-                } else if name.as_ref() == b"Default" {
+                } else if name.as_ref() == "Default" {
                     let mut matches = false;
-                    let mut ct_bytes = None;
+                    let mut ct_val = None;
                     for attr in e.attributes().flatten() {
-                        if attr.key.as_ref() == b"Extension" {
-                            if attr.value.eq_ignore_ascii_case(target_ext_bytes) {
+                        if attr.key.as_ref() == "Extension" {
+                            if attr.value.eq_ignore_ascii_case(target_ext) {
                                 matches = true;
                             }
-                        } else if attr.key.as_ref() == b"ContentType" {
-                            ct_bytes = Some(attr.value);
+                        } else if attr.key.as_ref() == "ContentType" {
+                            ct_val = Some(attr.value);
                         }
                     }
                     if matches && matched_default.is_none() {
-                        if let Some(val) = ct_bytes {
-                            matched_default = Some(String::from_utf8_lossy(&val).to_string());
+                        if let Some(val) = ct_val {
+                            matched_default = Some(val.into_owned());
                         }
                     }
                 }

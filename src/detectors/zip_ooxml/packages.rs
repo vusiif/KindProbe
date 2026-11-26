@@ -27,11 +27,12 @@ pub fn check_zip_packages<R: Read + Seek>(
     // 2. iOS Application Archive (IPA): Payload/*.app/Info.plist
     for i in 0..archive.len() {
         if let Ok(entry) = archive.by_index_raw(i) {
-            let name = entry.name();
-            if name.starts_with("Payload/") && name.ends_with(".app/Info.plist") {
-                apply_pkg(report, "ipa", "package", "ipa", &["ipa"]);
-                report.evidence.push(EvidenceItem::new("zip.ipa.payload"));
-                return true;
+            if let Ok(name) = entry.name() {
+                if name.starts_with("Payload/") && name.ends_with(".app/Info.plist") {
+                    apply_pkg(report, "ipa", "package", "ipa", &["ipa"]);
+                    report.evidence.push(EvidenceItem::new("zip.ipa.payload"));
+                    return true;
+                }
             }
         }
     }

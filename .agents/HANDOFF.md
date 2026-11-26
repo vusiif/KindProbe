@@ -1,16 +1,14 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- **Phase 20A (`45d21ac`)**: Committed and pushed parallel batch CLI (`std::thread::scope`, `-j/--jobs`) and RustSec CI audit.
-- **Phase 20B (Coverage-Guided Fuzzing & Differential Boundary Regression)**:
-  - `fuzz/Cargo.toml`: Standalone `cargo-fuzz` workspace manifest (isolated from root workspace).
-  - `fuzz/fuzz_targets/fuzz_detect_bytes.rs`: Differential `detect_bytes` vs `detect_bytes_core` libFuzzer target.
-  - `fuzz/fuzz_targets/fuzz_zip_cfb_containers.rs`: Container-prefixed (ZIP/CFB) libFuzzer target.
-  - `tests/test_phase20b_fuzz_regression.rs`: Deterministic differential & SWAR length-boundary regression suite (0..4097B boundaries + 1,500 container-prefixed chaos mutations).
+- **Phase 20B (`b05d23e`)**: Committed and pushed `fuzz/` targets and `test_phase20b_fuzz_regression`.
+- **Phase 20C (v0.2.0 Release Prep & Docs Sync)**:
+  - `Cargo.toml`: Bumped package version from `0.1.0` to `0.2.0`.
+  - `README.md`: Synced v0.2.0 summary, verified macOS CI status, and documented `--batch`, `-r`, `--jsonl`, and `-j` CLI flags.
+  - `CHANGELOG.md`: Created release notes covering `v0.2.0` performance, security, and engineering milestones.
 
 ## [当前状态] (Current State)
-- `cargo clippy --all-targets --all-features -- -D warnings`: **0 warnings**.
-- `cargo test --release --test test_phase20b_fuzz_regression --test test_adversarial_fuzzing`: All passed.
+- Verification running via `cargo clippy --all-targets --all-features -- -D warnings` + `cargo test --release --all-targets`.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Working tree has uncommitted Phase 20B changes (`fuzz/`, `tests/test_phase20b_fuzz_regression.rs`, `.agents/HANDOFF.md`). Awaiting user confirmation before `git commit` / `git push`.
+- Working tree has uncommitted Phase 20C changes (`Cargo.toml`, `Cargo.lock` if updated by Cargo, `README.md`, `CHANGELOG.md`, `.agents/HANDOFF.md`). Awaiting user confirmation before `git commit` / `git push` (and optional `v0.2.0` tag).

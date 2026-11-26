@@ -34,8 +34,8 @@ pub fn verify_main_part_xml<R: BufRead>(
 
     let mut buf = Vec::new();
     loop {
-        match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(ref e)) => {
+        match reader.read_resolved_event_into(&mut buf) {
+            Ok((resolve, Event::Start(ref e))) => {
                 current_depth += 1;
                 if current_depth > max_depth {
                     depth_exceeded = true;
@@ -44,10 +44,9 @@ pub fn verify_main_part_xml<R: BufRead>(
 
                 if !root_seen {
                     root_seen = true;
-                    let (resolve, local) = reader.resolve_element(e.name());
-                    if local.as_ref() == expected_local {
+                    if e.local_name().into_inner().as_bytes() == expected_local {
                         if let quick_xml::name::ResolveResult::Bound(quick_xml::name::Namespace(ns)) = resolve {
-                            if expected_kind.matches_namespace(ns) {
+                            if expected_kind.matches_namespace(ns.as_bytes()) {
                                 root_is_valid = true;
                             }
                         }
@@ -57,13 +56,12 @@ pub fn verify_main_part_xml<R: BufRead>(
                     break;
                 }
             }
-            Ok(Event::Empty(ref e)) => {
+            Ok((resolve, Event::Empty(ref e))) => {
                 if !root_seen {
                     root_seen = true;
-                    let (resolve, local) = reader.resolve_element(e.name());
-                    if local.as_ref() == expected_local {
+                    if e.local_name().into_inner().as_bytes() == expected_local {
                         if let quick_xml::name::ResolveResult::Bound(quick_xml::name::Namespace(ns)) = resolve {
-                            if expected_kind.matches_namespace(ns) {
+                            if expected_kind.matches_namespace(ns.as_bytes()) {
                                 root_is_valid = true;
                             }
                         }
@@ -74,7 +72,7 @@ pub fn verify_main_part_xml<R: BufRead>(
                     break;
                 }
             }
-            Ok(Event::End(_)) => {
+            Ok((_, Event::End(_))) => {
                 if current_depth > 0 {
                     current_depth -= 1;
                     if current_depth == 0 {
@@ -82,7 +80,7 @@ pub fn verify_main_part_xml<R: BufRead>(
                     }
                 }
             }
-            Ok(Event::Eof) => break,
+            Ok((_, Event::Eof)) => break,
             Err(e) => {
                 return Err(WarningItem::new(
                     "ooxml.main_part_xml_error",
