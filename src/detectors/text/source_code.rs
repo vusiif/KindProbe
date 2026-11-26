@@ -45,6 +45,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     if window.lines().next().map(|l| l.trim().eq_ignore_ascii_case("@echo off")).unwrap_or(false) {
         return Some(make_source_core("bat", &["bat", "cmd"], "sig.text.batch", Verification::Structure));
     }
+    if window.starts_with("Windows Registry Editor Version 5.00") || window.starts_with("REGEDIT4") {
+        return Some(make_source_core("reg", &["reg"], "sig.text.reg", Verification::Structure));
+    }
     if window.contains("@import(\"std\")") || (window.contains("pub fn ") && window.contains("@import(")) {
         return Some(make_source_core("zig", &["zig"], "sig.text.zig", Verification::Structure));
     }
@@ -390,6 +393,25 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "proto",
             &["proto"],
             "sig.text.proto",
+            Verification::Structure,
+        ));
+    }
+
+    // PowerShell (.ps1)
+    if (window.contains("[CmdletBinding(")
+        || window.contains("param(")
+        || window.contains("Param(")
+        || window.contains("$PSScriptRoot"))
+        && (window.contains("Write-Host")
+            || window.contains("Write-Output")
+            || window.contains("Get-ChildItem")
+            || window.contains("Set-ExecutionPolicy")
+            || w_bytes.contains(&b'$'))
+    {
+        return Some(make_source_core(
+            "ps1",
+            &["ps1", "psm1", "psd1"],
+            "sig.text.powershell",
             Verification::Structure,
         ));
     }

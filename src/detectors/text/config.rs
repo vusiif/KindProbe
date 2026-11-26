@@ -22,7 +22,12 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
             }
         }
         // 2. TOML detection: Section headers like [package]
-        if fl.starts_with('[') && fl.ends_with(']') && !fl.contains("://") && fl.len() >= 3 {
+        if fl.starts_with('[')
+            && fl.ends_with(']')
+            && !fl.contains("://")
+            && !fl.contains('(')
+            && fl.len() >= 3
+        {
             return Some(make_config_core("toml", &["toml"], "sig.text.toml"));
         }
     }

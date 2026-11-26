@@ -156,6 +156,40 @@ fn test_round3_appimage_php_proto_sql_lua_julia_nix_tsx_jsx() {
 }
 
 #[test]
+fn test_round4_dmg_utf16_reg_and_powershell() {
+    // DMG 512-byte koly trailer
+    let mut dmg = vec![0u8; 1024];
+    let t_off = dmg.len() - 512;
+    dmg[t_off..t_off + 4].copy_from_slice(b"koly");
+    dmg[t_off + 4..t_off + 8].copy_from_slice(&4u32.to_be_bytes());
+    assert_both_paths(&dmg, "dmg");
+    let mut cur = Cursor::new(dmg);
+    let rep_reader = kindprobe::detect_reader(&mut cur, &DetectOptions::default()).expect("dmg reader");
+    assert_eq!(rep_reader.format_id.as_deref(), Some("dmg"));
+
+    // UTF-16 LE BOM plain text
+    let mut utf16_txt = vec![0xFF, 0xFE];
+    for unit in "Hello UTF-16 World\r\nLine 2\r\n".encode_utf16() {
+        utf16_txt.extend_from_slice(&unit.to_le_bytes());
+    }
+    assert_both_paths(&utf16_txt, "txt");
+
+    // UTF-16 LE BOM Windows .reg
+    let mut utf16_reg = vec![0xFF, 0xFE];
+    for unit in "Windows Registry Editor Version 5.00\r\n\r\n[HKEY_CURRENT_USER\\Software\\KindProbe]\r\n".encode_utf16() {
+        utf16_reg.extend_from_slice(&unit.to_le_bytes());
+    }
+    assert_both_paths(&utf16_reg, "reg");
+
+    // ASCII REGEDIT4 & PowerShell
+    assert_both_paths(b"REGEDIT4\r\n\r\n[HKEY_LOCAL_MACHINE\\SOFTWARE\\Test]\r\n", "reg");
+    assert_both_paths(
+        b"[CmdletBinding()]\nparam([string]$Path = $PSScriptRoot)\nWrite-Host \"Scanning $Path\"\n",
+        "ps1",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

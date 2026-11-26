@@ -71,6 +71,48 @@ fn truncated_candidate_str(fmt: std::borrow::Cow<'static, str>) -> &'static str 
 
 /// Evaluates an in-memory buffer for non-container formats (including ISO at offset 32768 when full buffer is provided).
 /// Returns Ok(None) only if the input starts with a container signature (ZIP / CFB) and needs stream parsing.
+fn make_dmg_core() -> DetectionCore {
+    DetectionCore {
+        format_id: Some("dmg"),
+        category: "disk",
+        container_id: None,
+        identification: Identification::Format,
+        verification: Verification::Structure,
+        inspection: Inspection::Complete,
+        recommended_extension: Some("dmg"),
+        accepted_extensions: &["dmg"],
+        primary_evidence: Some("sig.dmg.koly"),
+        secondary_evidence: None,
+        warning: None,
+        candidate: None,
+    }
+}
+
+fn probe_dmg_slice_core(bytes: &[u8]) -> Option<DetectionCore> {
+    if bytes.len() < 512 {
+        return None;
+    }
+    let trailer = &bytes[bytes.len() - 512..bytes.len() - 504];
+    if &trailer[0..4] == b"koly" && u32::from_be_bytes([trailer[4], trailer[5], trailer[6], trailer[7]]) == 4 {
+        return Some(make_dmg_core());
+    }
+    None
+}
+
+fn probe_dmg_stream_core<R: Read + Seek>(reader: &mut BudgetReader<R>) -> Option<DetectionCore> {
+    if reader.seek(std::io::SeekFrom::End(-512)).is_err() {
+        return None;
+    }
+    let mut trailer = [0u8; 8];
+    if reader.read_exact(&mut trailer).is_ok()
+        && &trailer[0..4] == b"koly"
+        && u32::from_be_bytes([trailer[4], trailer[5], trailer[6], trailer[7]]) == 4
+    {
+        return Some(make_dmg_core());
+    }
+    None
+}
+
 pub fn detect_bytes_non_container_core(
     bytes: &[u8],
     options: &DetectOptions,
@@ -118,6 +160,10 @@ pub fn detect_bytes_non_container_core(
 
     if let Some(core) = text::probe_text_core(header) {
         return Ok(Some(core));
+    }
+
+    if let Some(dmg_core) = probe_dmg_slice_core(bytes) {
+        return Ok(Some(dmg_core));
     }
 
     Ok(Some(DetectionCore::unknown()))
@@ -217,6 +263,16 @@ pub fn detect_bytes_non_container(
     if let Some(mut rep) = text::probe_text(header) {
         rep.stats.source_bytes_read = header.len();
         return Ok(Some(rep));
+    }
+
+    if let Some(dmg_core) = probe_dmg_slice_core(bytes) {
+        return Ok(Some(dmg_core.to_report(
+            crate::model::DetectionStats {
+                source_bytes_read: header.len(),
+                ..Default::default()
+            },
+            ExtensionStatus::Undetermined,
+        )));
     }
 
     Ok(Some(DetectionCore::unknown().to_report(
@@ -464,6 +520,10 @@ pub fn detect_stream_core<R: Read + Seek>(
         return Ok(core);
     }
 
+    if let Some(dmg_core) = probe_dmg_stream_core(reader) {
+        return Ok(dmg_core);
+    }
+
     Ok(DetectionCore::unknown())
 }
 
@@ -601,6 +661,10 @@ pub fn detect_stream<R: Read + Seek>(
     // Step 5: Check structured and plain text formats (JSON, XML, HTML, YAML, TOML, CSV, TXT)
     if let Some(rep) = text::probe_text(header) {
         return Ok(rep);
+    }
+
+    if let Some(dmg_core) = probe_dmg_stream_core(reader) {
+        return Ok(dmg_core.to_report(Default::default(), ExtensionStatus::Undetermined));
     }
 
     // Step 6: Unknown format

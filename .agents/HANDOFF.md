@@ -1,17 +1,18 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- **Round 2 (`bb60694`)**: Committed and pushed 3GP/3G2/M4B/CR2/CR3/RAF/NPY/NPZ/ASAR/OVA/Vue/Svelte/DevOps/lang detectors.
-- **Active Format Expansion (Round 3)**:
-  - `src/detectors/signatures.rs`: Added Linux **`appimage`** Type 2 (`\x7FELF` + `AI\x02` at offset 8), checked before generic ELF.
-  - `src/detectors/text/xml_html.rs`: Added **`php`** (`<?php`).
-  - `src/detectors/text/{mod.rs, source_code.rs}`: Added **`proto`** (Protocol Buffers), **`sql`**, **`lua`**, **`jl`** (Julia), **`nix`** (with `{` fallback in `text/mod.rs`), **`tsx`**, and **`jsx`** (checked before Python `import` fallback).
-  - `src/extension/registry.rs`: Expanded sorted registry to **1,053** entries (including `snap` -> `squashfs`).
-  - `tests/test_modern_formats_expansion.rs`: Added `test_round3_appimage_php_proto_sql_lua_julia_nix_tsx_jsx`.
+- **Round 3 (`0c26968`)**: Committed and pushed AppImage, PHP, Proto, SQL, Lua, Julia, Nix, TSX, JSX, and Snap.
+- **Round 4 (DMG, UTF-16 BOM Text, REG, PowerShell & Release Workflow)**:
+  - `src/detectors/mod.rs`: Added macOS **`dmg`** (`koly` + v4 512-byte trailer) across both slice (`probe_dmg_slice_core`) and stream (`probe_dmg_stream_core`) paths.
+  - `src/detectors/text/mod.rs`: Added `probe_utf16_bom_text_core` supporting UTF-16 LE/BE BOM text (bounded 4 KiB decode, rejecting UTF-32 BOM, unpaired surrogates, NULs, and >1% control chars) and fallback `probe_source_code_core` under `[` dispatch.
+  - `src/detectors/text/{config.rs, source_code.rs}`: Added Windows **`.reg`** (`Windows Registry Editor Version 5.00` / `REGEDIT4`) and **PowerShell `.ps1`** (`[CmdletBinding()]`/`param(`/`$PSScriptRoot`), and prevented TOML `[section]` from matching `[CmdletBinding()]`.
+  - `src/extension/registry.rs`: Expanded sorted registry to **1,058** entries (`dmg`, `ps1`, `psd1`, `psm1`, `reg`).
+  - `.github/workflows/release.yml`: Added multi-platform Release build & SHA256 packaging workflow triggered on `v*` tags.
+  - `tests/test_modern_formats_expansion.rs`: Added `test_round4_dmg_utf16_reg_and_powershell`.
 
 ## [当前状态] (Current State)
 - `cargo clippy --all-targets --all-features -- -D warnings`: **0 warnings**.
 - `cargo test --release --all-targets`: **All 59 test binaries passed**.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Working tree has uncommitted Round 3 format changes. Awaiting user confirmation before `git commit` / `git push`.
+- Working tree has uncommitted Round 4 changes. Awaiting user confirmation before `git commit` / `git push`.
