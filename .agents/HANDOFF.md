@@ -1,18 +1,17 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- **Previous Batch (`31c8a93`)**: Committed and pushed AVIF/HEIC/HEIF/GGUF/Safetensors/TFLite/PST/AAB/EML/INI/Dockerfile/CSS.
-- **Active Format Expansion (Round 2)**:
-  - `src/detectors/media/mp4.rs`: Added `m4b`, `3gp`, `3g2`, and Canon `cr3` ISO-BMFF brands.
-  - `src/detectors/signatures.rs`: Added `raf` (`FUJIFILMCCD-RAW `), `cr2` (TIFF + `CR` at offset 8), `npy` (`\x93NUMPY`), `asar` (Chromium Pickle + `{"files":{`), and `ova` (TAR `ustar` with `.ovf` first entry).
-  - `src/detectors/zip_ooxml/{cd_check.rs, mod.rs}`: Added `npz` (`*.npy` inside ZIP).
-  - `src/detectors/text/{xml_html.rs, source_code.rs}`: Added `vue`, `svelte`, `cmake`, `makefile`, `hcl`/`tf`, `graphql`, `zig` (before Rust `pub fn main(` loop), `dart`, `kt`, `scala` (before Python `def`), and `scss` (before CSS).
-  - `src/extension/registry.rs`: Expanded sorted registry to **1,047** entries (including `pkg` -> `xar`).
-  - `tests/test_modern_formats_expansion.rs`: Added dual-path assertions for all new formats.
+- **Round 2 (`bb60694`)**: Committed and pushed 3GP/3G2/M4B/CR2/CR3/RAF/NPY/NPZ/ASAR/OVA/Vue/Svelte/DevOps/lang detectors.
+- **Active Format Expansion (Round 3)**:
+  - `src/detectors/signatures.rs`: Added Linux **`appimage`** Type 2 (`\x7FELF` + `AI\x02` at offset 8), checked before generic ELF.
+  - `src/detectors/text/xml_html.rs`: Added **`php`** (`<?php`).
+  - `src/detectors/text/{mod.rs, source_code.rs}`: Added **`proto`** (Protocol Buffers), **`sql`**, **`lua`**, **`jl`** (Julia), **`nix`** (with `{` fallback in `text/mod.rs`), **`tsx`**, and **`jsx`** (checked before Python `import` fallback).
+  - `src/extension/registry.rs`: Expanded sorted registry to **1,053** entries (including `snap` -> `squashfs`).
+  - `tests/test_modern_formats_expansion.rs`: Added `test_round3_appimage_php_proto_sql_lua_julia_nix_tsx_jsx`.
 
 ## [当前状态] (Current State)
 - `cargo clippy --all-targets --all-features -- -D warnings`: **0 warnings**.
 - `cargo test --release --all-targets`: **All 59 test binaries passed**.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Working tree has uncommitted Round 2 active format changes. Awaiting user confirmation before `git commit` / `git push`.
+- Working tree has uncommitted Round 3 format changes. Awaiting user confirmation before `git commit` / `git push`.

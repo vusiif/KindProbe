@@ -250,6 +250,34 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // React TSX / JSX (check before Python `import` fallback since JS/TS uses `import ... from '...'`)
+    if (window.contains("from 'react'")
+        || window.contains("from \"react\"")
+        || window.contains("import React")
+        || window.contains("export default function "))
+        && window.contains("return (")
+        && window.contains("</")
+    {
+        if window.contains("interface ")
+            || window.contains(": React.FC")
+            || window.contains(": string")
+            || window.contains(": number")
+        {
+            return Some(make_source_core(
+                "tsx",
+                &["tsx"],
+                "sig.text.tsx",
+                Verification::Structure,
+            ));
+        }
+        return Some(make_source_core(
+            "jsx",
+            &["jsx"],
+            "sig.text.jsx",
+            Verification::Structure,
+        ));
+    }
+
     if has_py_def || (has_import && (has_py_def || has_class_or_pub || has_py_from)) {
         return Some(make_source_core("py", &["py", "pyw"], "sig.text.python", Verification::Structure));
     }
@@ -350,6 +378,78 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "dart",
             &["dart"],
             "sig.text.dart",
+            Verification::Structure,
+        ));
+    }
+
+    // Protocol Buffers (.proto)
+    if (window.contains("syntax = \"proto3\"") || window.contains("syntax = \"proto2\""))
+        && window.contains("message ")
+    {
+        return Some(make_source_core(
+            "proto",
+            &["proto"],
+            "sig.text.proto",
+            Verification::Structure,
+        ));
+    }
+
+    // Nix expression (.nix)
+    if (window.contains("{ pkgs ?")
+        || window.contains("stdenv.mkDerivation")
+        || window.contains("pkgs.mkShell"))
+        && window.contains(';')
+    {
+        return Some(make_source_core(
+            "nix",
+            &["nix"],
+            "sig.text.nix",
+            Verification::Structure,
+        ));
+    }
+
+    // SQL (.sql)
+    let has_sql = ((window.contains("CREATE TABLE ") || window.contains("create table "))
+        && window.contains('('))
+        || ((window.contains("SELECT ") || window.contains("select "))
+            && (window.contains(" FROM ") || window.contains(" from "))
+            && window.contains(';'))
+        || ((window.contains("INSERT INTO ") || window.contains("insert into "))
+            && (window.contains("VALUES") || window.contains("values")));
+    if has_sql {
+        return Some(make_source_core(
+            "sql",
+            &["sql"],
+            "sig.text.sql",
+            Verification::Structure,
+        ));
+    }
+
+    // Lua (.lua)
+    if window.contains("local ")
+        && window.contains("function ")
+        && window.contains("end")
+        && !window.contains('{')
+        && !window.contains("using ")
+    {
+        return Some(make_source_core(
+            "lua",
+            &["lua"],
+            "sig.text.lua",
+            Verification::Structure,
+        ));
+    }
+
+    // Julia (.jl)
+    if window.contains("using ")
+        && window.contains("function ")
+        && window.contains("end")
+        && (window.contains("::") || window.contains("println(") || window.contains('@'))
+    {
+        return Some(make_source_core(
+            "jl",
+            &["jl"],
+            "sig.text.julia",
             Verification::Structure,
         ));
     }

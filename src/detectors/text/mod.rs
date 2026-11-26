@@ -33,6 +33,9 @@ pub fn probe_text_core(header: &[u8]) -> Option<DetectionCore> {
             if let Some(core) = probe_json_core(text) {
                 return Some(core);
             }
+            if let Some(core) = probe_source_code_core(text) {
+                return Some(core);
+            }
         }
         b'[' => {
             if let Some(core) = probe_json_core(text) {

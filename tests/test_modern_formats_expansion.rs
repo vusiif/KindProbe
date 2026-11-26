@@ -118,6 +118,44 @@ fn test_active_web_devops_and_language_formats() {
 }
 
 #[test]
+fn test_round3_appimage_php_proto_sql_lua_julia_nix_tsx_jsx() {
+    let mut appimage = vec![0u8; 64];
+    appimage[0..4].copy_from_slice(b"\x7FELF");
+    appimage[8..11].copy_from_slice(b"AI\x02");
+    assert_both_paths(&appimage, "appimage");
+
+    assert_both_paths(b"<?php\necho 'hello';\n", "php");
+    assert_both_paths(
+        b"syntax = \"proto3\";\npackage demo;\nmessage Item { string id = 1; }\n",
+        "proto",
+    );
+    assert_both_paths(
+        b"CREATE TABLE users (\n  id INT PRIMARY KEY,\n  name TEXT\n);\nSELECT id FROM users;\n",
+        "sql",
+    );
+    assert_both_paths(
+        b"local function greet(name)\n  print('hi ' .. name)\nend\n",
+        "lua",
+    );
+    assert_both_paths(
+        b"using LinearAlgebra\nfunction norm2(x::Float64)\n  println(x)\nend\n",
+        "jl",
+    );
+    assert_both_paths(
+        b"{ pkgs ? import <nixpkgs> {} }:\npkgs.mkShell {\n  buildInputs = [ pkgs.rustc ];\n}\n",
+        "nix",
+    );
+    assert_both_paths(
+        b"import React from 'react';\ninterface Props { name: string }\nexport default function App({ name }: Props) {\n  return (<div>{name}</div>);\n}\n",
+        "tsx",
+    );
+    assert_both_paths(
+        b"import React from 'react';\nexport default function App() {\n  return (<div>Hello</div>);\n}\n",
+        "jsx",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

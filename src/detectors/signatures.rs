@@ -113,6 +113,23 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
         }
     }
 
+    if header.len() >= 12 && header.starts_with(b"\x7FELF") && &header[8..11] == b"AI\x02" {
+        return Some(DetectionCore {
+            format_id: Some("appimage"),
+            category: "package",
+            container_id: Some("elf"),
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("appimage"),
+            accepted_extensions: &["appimage"],
+            primary_evidence: Some("sig.appimage.elf"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
     if header.len() >= 16 && header.starts_with(b"FUJIFILMCCD-RAW ") {
         return Some(DetectionCore {
             format_id: Some("raf"),
@@ -298,6 +315,12 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             }
         }
         0x7F | b'M' | 0xFE | 0xCE | 0xCF | 0xCA | 0xBE | 0xED => {
+            // AppImage (ELF + AI\x02)
+            if b0 == 0x7F {
+                if let Some(c) = probe_modern_binary_core(header) {
+                    return SignatureMatchCore::Confirmed(c);
+                }
+            }
             // ELF (0x7F), PE ('M'), Mach-O / Class (0xFE, 0xCE, 0xCF, 0xCA, 0xBE, 0xED)
             match probe_executable_signatures_core(header) {
                 ExecutableMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
@@ -533,6 +556,14 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
             }
         }
         0x7F | b'M' | 0xFE | 0xCE | 0xCF | 0xCA | 0xBE | 0xED => {
+            // AppImage (ELF + AI\x02)
+            if b0 == 0x7F {
+                if let Some(c) = probe_modern_binary_core(header) {
+                    return SignatureMatch::Confirmed(Box::new(
+                        c.to_report(Default::default(), ExtensionStatus::Undetermined),
+                    ));
+                }
+            }
             // ELF (0x7F), PE ('M'), Mach-O / Class (0xFE, 0xCE, 0xCF, 0xCA, 0xBE, 0xED)
             match probe_executable_signatures(header) {
                 ExecutableMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),

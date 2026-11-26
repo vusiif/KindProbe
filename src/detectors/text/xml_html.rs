@@ -22,7 +22,10 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
         head.windows(pattern.len()).any(|w| w == pattern)
     };
 
-    // 1. HTML detection
+    // 1. PHP & HTML detection
+    if head.starts_with(b"<?php") {
+        return Some(make_core("php", "text", None, "php", &["php", "phtml"], "sig.text.php"));
+    }
     if head.starts_with(b"<!doctype html")
         || head.starts_with(b"<html")
         || head.starts_with(b"<head")
