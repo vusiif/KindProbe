@@ -190,6 +190,47 @@ fn test_round4_dmg_utf16_reg_and_powershell() {
 }
 
 #[test]
+fn test_round5_raw_onnx_cs_swift_r_env_gitignore() {
+    let mut nef = b"II*\x00\x08\x00\x00\x00\x00\x00\x00\x00".to_vec();
+    nef.extend_from_slice(b"NIKON CORPORATION\x00NIKON D850");
+    assert_both_paths(&nef, "nef");
+
+    let mut arw = b"II*\x00\x08\x00\x00\x00\x00\x00\x00\x00".to_vec();
+    arw.extend_from_slice(b"SONY\x00ILCE-7M4");
+    assert_both_paths(&arw, "arw");
+
+    let mut dng = b"II*\x00\x08\x00\x00\x00\x00\x00\x00\x00".to_vec();
+    dng.extend_from_slice(b"Adobe DNG Converter");
+    assert_both_paths(&dng, "dng");
+
+    let mut onnx = vec![0x08, 0x09, 0x12, 0x07];
+    onnx.extend_from_slice(b"pytorch");
+    onnx.extend_from_slice(b"\x1a\x04onnx\x00\x00\x00\x00");
+    assert_both_paths(&onnx, "onnx");
+
+    assert_both_paths(
+        b"using System;\nnamespace Demo {\n  class Program { static void Main() {} }\n}\n",
+        "cs",
+    );
+    assert_both_paths(
+        b"import Foundation\nstruct User { let id: Int }\nfunc greet() {}\n",
+        "swift",
+    );
+    assert_both_paths(
+        b"library(ggplot2)\ndf <- data.frame(x = 1:10, y = 2:11)\n",
+        "r",
+    );
+    assert_both_paths(
+        b"DATABASE_URL=postgres://localhost/app\nPORT=8080\nRUST_LOG=info\n",
+        "env",
+    );
+    assert_both_paths(
+        b"target/\nnode_modules/\n.DS_Store\n*.log\n",
+        "gitignore",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

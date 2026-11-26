@@ -397,6 +397,102 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // C# (.cs)
+    if window.contains("using System")
+        && (window.contains("namespace ")
+            || window.contains("class ")
+            || window.contains("record "))
+    {
+        return Some(make_source_core(
+            "cs",
+            &["cs"],
+            "sig.text.csharp",
+            Verification::Structure,
+        ));
+    }
+
+    // Swift (.swift)
+    if (window.contains("import Foundation")
+        || window.contains("import SwiftUI")
+        || window.contains("import UIKit"))
+        && (window.contains("func ")
+            || window.contains("struct ")
+            || window.contains("class ")
+            || window.contains("let "))
+    {
+        return Some(make_source_core(
+            "swift",
+            &["swift"],
+            "sig.text.swift",
+            Verification::Structure,
+        ));
+    }
+
+    // R (.r)
+    if window.contains("<-")
+        && (window.contains("library(")
+            || window.contains("data.frame(")
+            || window.contains("ggplot("))
+    {
+        return Some(make_source_core(
+            "r",
+            &["r", "R"],
+            "sig.text.r",
+            Verification::Structure,
+        ));
+    }
+
+    // .env (dotenv)
+    let env_hits = window
+        .lines()
+        .take(20)
+        .filter(|l| {
+            let t = l.trim();
+            if let Some((k, _v)) = t.split_once('=') {
+                !k.is_empty()
+                    && !k.contains(' ')
+                    && k.bytes().all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_')
+                    && (k.contains('_')
+                        || matches!(k, "PORT" | "HOST" | "DEBUG" | "ENV" | "SECRET"))
+            } else {
+                false
+            }
+        })
+        .count();
+    if env_hits >= 2 {
+        return Some(make_source_core(
+            "env",
+            &["env"],
+            "sig.text.env",
+            Verification::Structure,
+        ));
+    }
+
+    // .gitignore / .dockerignore
+    let ignore_patterns = [
+        "target/",
+        "node_modules/",
+        "__pycache__/",
+        ".DS_Store",
+        "*.log",
+        "*.pyc",
+        "dist/",
+        "build/",
+        ".env",
+    ];
+    let ignore_hits = ignore_patterns
+        .iter()
+        .filter(|pat| window.lines().any(|l| l.trim() == **pat))
+        .count();
+    if ignore_hits >= 2 {
+        return Some(make_source_core(
+            "gitignore",
+            &["gitignore", "dockerignore"],
+            "sig.text.gitignore",
+            Verification::Structure,
+        ));
+    }
+
     // PowerShell (.ps1)
     if (window.contains("[CmdletBinding(")
         || window.contains("param(")

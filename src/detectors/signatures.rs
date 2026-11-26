@@ -149,18 +149,96 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
 
     if header.len() >= 12
         && (header.starts_with(b"II*\x00") || header.starts_with(b"MM\x00*"))
-        && &header[8..10] == b"CR"
+    {
+        if &header[8..10] == b"CR" {
+            return Some(DetectionCore {
+                format_id: Some("cr2"),
+                category: "image",
+                container_id: None,
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("cr2"),
+                accepted_extensions: &["cr2"],
+                primary_evidence: Some("sig.cr2.header"),
+                secondary_evidence: None,
+                warning: None,
+                candidate: None,
+            });
+        }
+        let scan = &header[..header.len().min(4096)];
+        if scan.windows(17).any(|w| w == b"NIKON CORPORATION") {
+            return Some(DetectionCore {
+                format_id: Some("nef"),
+                category: "image",
+                container_id: None,
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("nef"),
+                accepted_extensions: &["nef"],
+                primary_evidence: Some("sig.nef.tiff"),
+                secondary_evidence: None,
+                warning: None,
+                candidate: None,
+            });
+        }
+        if scan.windows(4).any(|w| w == b"SONY")
+            && (scan.windows(5).any(|w| w == b"ILCE-")
+                || scan.windows(4).any(|w| w == b"DSC-")
+                || scan.windows(4).any(|w| w == b"SLT-"))
+        {
+            return Some(DetectionCore {
+                format_id: Some("arw"),
+                category: "image",
+                container_id: None,
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("arw"),
+                accepted_extensions: &["arw"],
+                primary_evidence: Some("sig.arw.tiff"),
+                secondary_evidence: None,
+                warning: None,
+                candidate: None,
+            });
+        }
+        if scan.windows(5).any(|w| w == b"Adobe") && scan.windows(3).any(|w| w == b"DNG") {
+            return Some(DetectionCore {
+                format_id: Some("dng"),
+                category: "image",
+                container_id: None,
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("dng"),
+                accepted_extensions: &["dng"],
+                primary_evidence: Some("sig.dng.tiff"),
+                secondary_evidence: None,
+                warning: None,
+                candidate: None,
+            });
+        }
+    }
+
+    if header.len() >= 16
+        && header[0] == 0x08
+        && (1..=20).contains(&header[1])
+        && (header.windows(4).any(|w| w == b"onnx")
+            || header.windows(7).any(|w| w == b"pytorch")
+            || header.windows(7).any(|w| w == b"tf2onnx")
+            || header.windows(10).any(|w| w == b"keras2onnx"))
     {
         return Some(DetectionCore {
-            format_id: Some("cr2"),
-            category: "image",
+            format_id: Some("onnx"),
+            category: "model",
             container_id: None,
             identification: Identification::Format,
             verification: Verification::Structure,
             inspection: Inspection::Complete,
-            recommended_extension: Some("cr2"),
-            accepted_extensions: &["cr2"],
-            primary_evidence: Some("sig.cr2.header"),
+            recommended_extension: Some("onnx"),
+            accepted_extensions: &["onnx"],
+            primary_evidence: Some("sig.onnx.protobuf"),
             secondary_evidence: None,
             warning: None,
             candidate: None,
