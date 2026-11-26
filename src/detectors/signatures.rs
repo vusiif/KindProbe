@@ -29,6 +29,93 @@ pub enum SignatureMatch {
     None,
 }
 
+fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
+    if header.len() >= 8 && header.starts_with(b"GGUF") {
+        let ver = u32::from_le_bytes([header[4], header[5], header[6], header[7]]);
+        if (1..=3).contains(&ver) {
+            return Some(DetectionCore {
+                format_id: Some("gguf"),
+                category: "model",
+                container_id: None,
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("gguf"),
+                accepted_extensions: &["gguf"],
+                primary_evidence: Some("sig.gguf.header"),
+                secondary_evidence: None,
+                warning: None,
+                candidate: None,
+            });
+        }
+    }
+
+    if header.len() >= 12 && header.starts_with(b"!BDN") {
+        return Some(DetectionCore {
+            format_id: Some("pst"),
+            category: "email",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Signature,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("pst"),
+            accepted_extensions: &["pst", "ost"],
+            primary_evidence: Some("sig.pst.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    if header.len() >= 8 && &header[4..8] == b"TFL3" {
+        return Some(DetectionCore {
+            format_id: Some("tflite"),
+            category: "model",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Signature,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("tflite"),
+            accepted_extensions: &["tflite"],
+            primary_evidence: Some("sig.tflite.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    if header.len() >= 20 && header[8] == b'{' {
+        let meta_len = u64::from_le_bytes([
+            header[0], header[1], header[2], header[3], header[4], header[5], header[6], header[7],
+        ]);
+        if (2..=100_000_000).contains(&meta_len) {
+            let check_end = header.len().min(8usize.saturating_add(meta_len as usize));
+            let json_slice = &header[8..check_end];
+            if json_slice.windows(7).any(|w| w == b"\"dtype\"")
+                || json_slice.windows(14).any(|w| w == b"\"__metadata__\"")
+                || json_slice.windows(7).any(|w| w == b"\"shape\"")
+            {
+                return Some(DetectionCore {
+                    format_id: Some("safetensors"),
+                    category: "model",
+                    container_id: None,
+                    identification: Identification::Format,
+                    verification: Verification::Structure,
+                    inspection: Inspection::Complete,
+                    recommended_extension: Some("safetensors"),
+                    accepted_extensions: &["safetensors"],
+                    primary_evidence: Some("sig.safetensors.header"),
+                    secondary_evidence: None,
+                    warning: None,
+                    candidate: None,
+                });
+            }
+        }
+    }
+
+    None
+}
+
 pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
     if header.is_empty() {
         return SignatureMatchCore::None;
@@ -60,11 +147,20 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             }
         }
         b'G' => {
-            // GIF
+            // GIF or GGUF
+            if let Some(c) = probe_modern_binary_core(header) {
+                return SignatureMatchCore::Confirmed(c);
+            }
             match probe_image_signatures_core(header) {
                 ImageMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
                 ImageMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
                 ImageMatchCore::None => (),
+            }
+        }
+        b'!' => {
+            // Outlook PST/OST (!BDN)
+            if let Some(c) = probe_modern_binary_core(header) {
+                return SignatureMatchCore::Confirmed(c);
             }
         }
         b'7' => {
@@ -190,6 +286,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
     }
 
     // 2. Bounded non-zero offset signature probes
+    if let Some(c) = probe_modern_binary_core(header) {
+        return SignatureMatchCore::Confirmed(c);
+    }
     if header.len() >= 8 && &header[4..8] == b"ftyp" {
         match probe_media_signatures_core(header) {
             MediaMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
@@ -421,6 +520,11 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
     }
 
     // 2. Bounded non-zero offset signature probes
+    if let Some(c) = probe_modern_binary_core(header) {
+        return SignatureMatch::Confirmed(Box::new(
+            c.to_report(Default::default(), ExtensionStatus::Undetermined),
+        ));
+    }
     if header.len() >= 8 && &header[4..8] == b"ftyp" {
         match probe_media_signatures(header) {
             MediaMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),

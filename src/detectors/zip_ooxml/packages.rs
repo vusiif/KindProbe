@@ -24,6 +24,13 @@ pub fn check_zip_packages<R: Read + Seek>(
         return true;
     }
 
+    // 1b. Android App Bundle (AAB): BundleConfig.pb
+    if archive.by_name("BundleConfig.pb").is_ok() {
+        apply_pkg(report, "aab", "package", "aab", &["aab"]);
+        report.evidence.push(EvidenceItem::new("zip.aab.bundle"));
+        return true;
+    }
+
     // 2. iOS Application Archive (IPA): Payload/*.app/Info.plist
     for i in 0..archive.len() {
         if let Ok(entry) = archive.by_index_raw(i) {

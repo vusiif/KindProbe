@@ -202,6 +202,20 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
             return Ok(report);
         }
 
+        // 1b. Android App Bundle (AAB): BundleConfig.pb
+        if cd_check.has_aab_bundle {
+            report.identification = Identification::Format;
+            report.format_id = Some("aab".to_string());
+            report.category = "package".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("aab".to_string());
+            report.accepted_extensions = vec!["aab".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.aab.bundle"));
+            return Ok(report);
+        }
+
         // 2. iOS Application Archive (IPA): Payload/*.app/Info.plist
         if cd_check.has_ipa_payload {
             report.identification = Identification::Format;

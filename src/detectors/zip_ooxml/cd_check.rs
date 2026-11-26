@@ -13,6 +13,7 @@ pub struct ZipCdPreCheckResult {
     pub has_ooxml_subdirs: bool,
     pub has_apk_manifest: bool,
     pub has_apk_dex: bool,
+    pub has_aab_bundle: bool,
     pub has_ipa_payload: bool,
     pub has_jar_manifest: bool,
     pub has_kmz_kml: bool,
@@ -187,6 +188,7 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
     let mut has_ooxml_subdirs = false;
     let mut has_apk_manifest = false;
     let mut has_apk_dex = false;
+    let mut has_aab_bundle = false;
     let mut has_ipa_payload = false;
     let mut has_jar_manifest = false;
     let mut has_kmz_kml = false;
@@ -294,6 +296,8 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             has_apk_manifest = true;
         } else if raw_bytes == b"classes.dex" {
             has_apk_dex = true;
+        } else if raw_bytes == b"BundleConfig.pb" {
+            has_aab_bundle = true;
         } else if raw_bytes.starts_with(b"Payload/") && raw_bytes.ends_with(b".app/Info.plist") {
             has_ipa_payload = true;
         } else if raw_bytes == b"META-INF/MANIFEST.MF" {
@@ -362,6 +366,7 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         has_ooxml_subdirs,
         has_apk_manifest,
         has_apk_dex,
+        has_aab_bundle,
         has_ipa_payload,
         has_jar_manifest,
         has_kmz_kml,

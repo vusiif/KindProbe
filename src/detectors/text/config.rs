@@ -9,12 +9,55 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
         return None;
     }
 
-    // 1. TOML detection: Section headers like [package] or multiple key = value lines
+    // 1. INI detection: Semicolon comment followed by [section] or key=value
     let mut lines = trimmed.lines().filter(|l| !l.trim().is_empty());
     if let Some(first_line) = lines.next() {
         let fl = first_line.trim();
+        if fl.starts_with(';') {
+            if let Some(next_line) = lines.next() {
+                let nl = next_line.trim();
+                if (nl.starts_with('[') && nl.ends_with(']')) || nl.contains('=') {
+                    return Some(make_config_core("ini", &["ini", "cfg", "conf"], "sig.text.ini"));
+                }
+            }
+        }
+        // 2. TOML detection: Section headers like [package]
         if fl.starts_with('[') && fl.ends_with(']') && !fl.contains("://") && fl.len() >= 3 {
             return Some(make_config_core("toml", &["toml"], "sig.text.toml"));
+        }
+    }
+
+    // 3. EML (RFC 5322 email) detection: >= 2 standard email headers at top
+    let mut eml_headers = 0usize;
+    for line in trimmed.lines().take(12) {
+        if line.trim().is_empty() {
+            break;
+        }
+        let lb = line.as_bytes();
+        let is_hdr = lb.get(..5).is_some_and(|p| p.eq_ignore_ascii_case(b"from:"))
+            || lb.get(..3).is_some_and(|p| p.eq_ignore_ascii_case(b"to:"))
+            || lb.get(..8).is_some_and(|p| p.eq_ignore_ascii_case(b"subject:"))
+            || lb.get(..5).is_some_and(|p| p.eq_ignore_ascii_case(b"date:"))
+            || lb.get(..13).is_some_and(|p| p.eq_ignore_ascii_case(b"mime-version:"))
+            || lb.get(..11).is_some_and(|p| p.eq_ignore_ascii_case(b"message-id:"));
+        if is_hdr {
+            eml_headers += 1;
+            if eml_headers >= 2 {
+                return Some(DetectionCore {
+                    format_id: Some("eml"),
+                    category: "email",
+                    container_id: None,
+                    identification: Identification::Format,
+                    verification: Verification::Structure,
+                    inspection: Inspection::Complete,
+                    recommended_extension: Some("eml"),
+                    accepted_extensions: &["eml", "mht"],
+                    primary_evidence: Some("sig.text.eml"),
+                    secondary_evidence: None,
+                    warning: None,
+                    candidate: None,
+                });
+            }
         }
     }
 

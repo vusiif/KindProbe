@@ -67,6 +67,27 @@ pub fn make_m4a_core() -> DetectionCore {
     }
 }
 
+pub fn make_isobmff_image_core(
+    format_id: &'static str,
+    exts: &'static [&'static str],
+    secondary_evidence: &'static str,
+) -> DetectionCore {
+    DetectionCore {
+        format_id: Some(format_id),
+        category: "image",
+        container_id: Some("isobmff"),
+        identification: Identification::Format,
+        verification: Verification::Structure,
+        inspection: Inspection::Complete,
+        recommended_extension: Some(format_id),
+        accepted_extensions: exts,
+        primary_evidence: Some("sig.mp4.ftyp"),
+        secondary_evidence: Some(secondary_evidence),
+        warning: None,
+        candidate: None,
+    }
+}
+
 pub fn make_mp4_core() -> DetectionCore {
     DetectionCore {
         format_id: Some("mp4"),
@@ -111,6 +132,33 @@ pub fn probe_mp4_core(header: &[u8]) -> Mp4MatchCore {
 
         if major_brand == b"M4A " {
             return Mp4MatchCore::Confirmed(make_m4a_core());
+        }
+
+        if major_brand == b"avif" || major_brand == b"avis" {
+            return Mp4MatchCore::Confirmed(make_isobmff_image_core(
+                "avif",
+                &["avif", "avifs"],
+                "sig.avif.brand",
+            ));
+        }
+
+        if matches!(
+            major_brand,
+            b"heic" | b"heix" | b"hevc" | b"hevx" | b"heim" | b"heis"
+        ) {
+            return Mp4MatchCore::Confirmed(make_isobmff_image_core(
+                "heic",
+                &["heic", "heif"],
+                "sig.heic.brand",
+            ));
+        }
+
+        if major_brand == b"mif1" || major_brand == b"msf1" || major_brand == b"heif" {
+            return Mp4MatchCore::Confirmed(make_isobmff_image_core(
+                "heif",
+                &["heif", "heic"],
+                "sig.heif.brand",
+            ));
         }
 
         return Mp4MatchCore::Confirmed(make_mp4_core());
@@ -169,6 +217,30 @@ pub fn probe_mp4(header: &[u8]) -> Mp4Match {
                 stats: Default::default(),
                 candidates: None,
             }));
+        }
+
+        if major_brand == b"avif" || major_brand == b"avis" {
+            return Mp4Match::Confirmed(Box::new(
+                make_isobmff_image_core("avif", &["avif", "avifs"], "sig.avif.brand")
+                    .to_report(Default::default(), ExtensionStatus::Undetermined),
+            ));
+        }
+
+        if matches!(
+            major_brand,
+            b"heic" | b"heix" | b"hevc" | b"hevx" | b"heim" | b"heis"
+        ) {
+            return Mp4Match::Confirmed(Box::new(
+                make_isobmff_image_core("heic", &["heic", "heif"], "sig.heic.brand")
+                    .to_report(Default::default(), ExtensionStatus::Undetermined),
+            ));
+        }
+
+        if major_brand == b"mif1" || major_brand == b"msf1" || major_brand == b"heif" {
+            return Mp4Match::Confirmed(Box::new(
+                make_isobmff_image_core("heif", &["heif", "heic"], "sig.heif.brand")
+                    .to_report(Default::default(), ExtensionStatus::Undetermined),
+            ));
         }
 
         evidence.push(EvidenceItem::new("sig.mp4.brand"));

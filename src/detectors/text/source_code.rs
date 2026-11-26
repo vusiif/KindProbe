@@ -226,6 +226,57 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         return Some(make_source_core("py", &["py", "pyw"], "sig.text.python", Verification::Structure));
     }
 
+    // Dockerfile detection: first non-comment line starts with FROM <image> + instruction
+    if let Some(first_inst) = window
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty() && !l.starts_with('#'))
+    {
+        if first_inst.starts_with("FROM ")
+            && first_inst.len() > 5
+            && (window.contains("\nRUN ")
+                || window.contains("\nCOPY ")
+                || window.contains("\nWORKDIR ")
+                || window.contains("\nCMD ")
+                || window.contains("\nENTRYPOINT ")
+                || window.contains("\nENV ")
+                || window.contains("\nEXPOSE "))
+        {
+            return Some(make_source_core(
+                "dockerfile",
+                &["dockerfile"],
+                "sig.text.dockerfile",
+                Verification::Structure,
+            ));
+        }
+    }
+
+    // CSS detection: braces + >= 2 CSS property/at-rule markers
+    if w_bytes.contains(&b'{') && w_bytes.contains(&b'}') {
+        let css_markers = [
+            "color:",
+            "display:",
+            "margin:",
+            "padding:",
+            "font-size:",
+            "background:",
+            "width:",
+            "height:",
+            "border:",
+            "@media ",
+            "@import ",
+        ];
+        let hits = css_markers.iter().filter(|m| window.contains(*m)).count();
+        if hits >= 2 {
+            return Some(make_source_core(
+                "css",
+                &["css"],
+                "sig.text.css",
+                Verification::Structure,
+            ));
+        }
+    }
+
     None
 }
 
