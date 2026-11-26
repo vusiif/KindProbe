@@ -47,37 +47,42 @@ fn scan_ascii_slice(
     }
     true
 }
-    // 2. Single-pass unified ASCII / NUL / control character scan (SWAR 8-byte fast path)
+    // 2. Single-pass unified ASCII / NUL / control character scan
+    // Use 8-byte SWAR for >= 64B payloads; direct scalar scan avoids SWAR setup overhead on tiny snippets.
     let total_len = raw.len();
     let max_controls = total_len / 100;
     let mut control_count = 0usize;
     let mut ascii_end = raw.len();
 
-    let mut idx = 0usize;
-    let (chunks, remainder) = raw.as_chunks::<8>();
-    for chunk in chunks {
-        let w = u64::from_ne_bytes(*chunk);
-        let has_non_ascii = (w & 0x8080_8080_8080_8080) != 0;
-        let has_lt_0x20 =
-            (w.wrapping_sub(0x2020_2020_2020_2020) & !w & 0x8080_8080_8080_8080) != 0;
-        let x7f = w ^ 0x7F7F_7F7F_7F7F_7F7F;
-        let has_0x7f =
-            (x7f.wrapping_sub(0x0101_0101_0101_0101) & !x7f & 0x8080_8080_8080_8080) != 0;
+    if total_len >= 64 {
+        let mut idx = 0usize;
+        let (chunks, remainder) = raw.as_chunks::<8>();
+        for chunk in chunks {
+            let w = u64::from_ne_bytes(*chunk);
+            let has_non_ascii = (w & 0x8080_8080_8080_8080) != 0;
+            let has_lt_0x20 =
+                (w.wrapping_sub(0x2020_2020_2020_2020) & !w & 0x8080_8080_8080_8080) != 0;
+            let x7f = w ^ 0x7F7F_7F7F_7F7F_7F7F;
+            let has_0x7f =
+                (x7f.wrapping_sub(0x0101_0101_0101_0101) & !x7f & 0x8080_8080_8080_8080) != 0;
 
-        if (has_non_ascii || has_lt_0x20 || has_0x7f)
-            && !scan_ascii_slice(chunk, idx, &mut control_count, max_controls, &mut ascii_end)
+            if (has_non_ascii || has_lt_0x20 || has_0x7f)
+                && !scan_ascii_slice(chunk, idx, &mut control_count, max_controls, &mut ascii_end)
+            {
+                return None;
+            }
+            if ascii_end != raw.len() {
+                break;
+            }
+            idx += 8;
+        }
+
+        if ascii_end == raw.len()
+            && !scan_ascii_slice(remainder, idx, &mut control_count, max_controls, &mut ascii_end)
         {
             return None;
         }
-        if ascii_end != raw.len() {
-            break;
-        }
-        idx += 8;
-    }
-
-    if ascii_end == raw.len()
-        && !scan_ascii_slice(remainder, idx, &mut control_count, max_controls, &mut ascii_end)
-    {
+    } else if !scan_ascii_slice(raw, 0, &mut control_count, max_controls, &mut ascii_end) {
         return None;
     }
 
