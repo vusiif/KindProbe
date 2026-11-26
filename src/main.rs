@@ -228,6 +228,7 @@ fn print_help(lang: AppLanguage) {
     --batch          启用批量模式（支持多文件/目录，使用零分配核心引擎）
     -r, --recursive  递归遍历目录（自动启用批量模式）
     --jsonl          以 JSON Lines 格式逐行输出结果（自动启用批量模式）
+    -j, --jobs <N>   批量模式并发线程数（默认自动检测 CPU 核心数）
     -h, --help       打印帮助信息
     -V, --version    打印版本信息
 
@@ -259,6 +260,7 @@ OPTIONS:
     --batch          Enable batch mode (multiple files/dirs via zero-alloc core)
     -r, --recursive  Recursively traverse directories (implies --batch)
     --jsonl          Output one JSON object per line (implies --batch)
+    -j, --jobs <N>   Worker threads in batch mode (default: auto-detected CPU count)
     -h, --help       Print help information
     -V, --version    Print version information
 
@@ -636,10 +638,66 @@ fn error_code_for_detect_error(err: &DetectError) -> &'static str {
     }
 }
 
+fn process_batch_file(
+    path: &std::path::Path,
+    options: &DetectOptions,
+    jsonl_mode: bool,
+    out: &mut impl Write,
+    err_out: &mut impl Write,
+) -> (usize, usize, usize) {
+    let path_str = path.to_string_lossy();
+    match detect_path_core(path, options) {
+        Ok(core) => {
+            if jsonl_mode {
+                let _ = serde_json::to_writer(
+                    &mut *out,
+                    &BatchResultJson {
+                        path: &path_str,
+                        status: "ok",
+                        format_id: core.format_id,
+                        category: core.category,
+                        container_id: core.container_id,
+                        identification: core.identification,
+                        recommended_extension: core.recommended_extension,
+                    },
+                );
+                let _ = out.write_all(b"\n");
+            } else {
+                let fmt = core.format_id.unwrap_or("unknown");
+                let _ = writeln!(out, "{} -> {} ({})", path_str, fmt, core.category);
+            }
+            if core.identification == Identification::Format {
+                (1, 0, 0)
+            } else {
+                (0, 1, 0)
+            }
+        }
+        Err(err) => {
+            let code = error_code_for_detect_error(&err);
+            if jsonl_mode {
+                let _ = serde_json::to_writer(
+                    &mut *out,
+                    &BatchErrorJson {
+                        path: &path_str,
+                        status: "error",
+                        error_code: code,
+                        message: err.to_string(),
+                    },
+                );
+                let _ = out.write_all(b"\n");
+            } else {
+                let _ = writeln!(err_out, "Error [{}]: {} ({})", code, path_str, err);
+            }
+            (0, 0, 1)
+        }
+    }
+}
+
 fn run_batch(
     paths: &[PathBuf],
     recursive: bool,
     jsonl_mode: bool,
+    jobs: Option<usize>,
     lang: AppLanguage,
 ) -> i32 {
     let start = Instant::now();
@@ -651,6 +709,7 @@ fn run_batch(
     let mut identified: usize = 0;
     let mut unknown: usize = 0;
     let mut errors: usize = 0;
+    let mut file_paths: Vec<PathBuf> = Vec::new();
 
     // Explicit stack of (path, is_root_arg) so `--batch <dir>` scans 1 level even when !recursive
     let mut work_stack: Vec<(PathBuf, bool)> =
@@ -729,51 +788,80 @@ fn run_batch(
             continue;
         }
 
-        total_files += 1;
-        let path_str = path.to_string_lossy();
-        match detect_path_core(&path, &options) {
-            Ok(core) => {
-                if core.identification == Identification::Format {
-                    identified += 1;
-                } else {
-                    unknown += 1;
-                }
-                if jsonl_mode {
-                    let _ = serde_json::to_writer(
-                        &mut out,
-                        &BatchResultJson {
-                            path: &path_str,
-                            status: "ok",
-                            format_id: core.format_id,
-                            category: core.category,
-                            container_id: core.container_id,
-                            identification: core.identification,
-                            recommended_extension: core.recommended_extension,
-                        },
-                    );
-                    let _ = out.write_all(b"\n");
-                } else {
-                    let fmt = core.format_id.unwrap_or("unknown");
-                    let _ = writeln!(out, "{} -> {} ({})", path_str, fmt, core.category);
-                }
-            }
-            Err(err) => {
-                errors += 1;
-                let code = error_code_for_detect_error(&err);
-                if jsonl_mode {
-                    let _ = serde_json::to_writer(
-                        &mut out,
-                        &BatchErrorJson {
-                            path: &path_str,
-                            status: "error",
-                            error_code: code,
-                            message: err.to_string(),
-                        },
-                    );
-                    let _ = out.write_all(b"\n");
-                } else {
-                    eprintln!("Error [{}]: {} ({})", code, path_str, err);
-                }
+        file_paths.push(path);
+    }
+
+    total_files += file_paths.len();
+    let default_jobs = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4)
+        .clamp(2, 8);
+    let num_threads = jobs
+        .unwrap_or(default_jobs)
+        .clamp(1, file_paths.len().max(1))
+        .min(16);
+
+    if file_paths.len() < 32 || num_threads <= 1 {
+        let mut stderr = std::io::stderr();
+        for path in &file_paths {
+            let (id_inc, unk_inc, err_inc) =
+                process_batch_file(path, &options, jsonl_mode, &mut out, &mut stderr);
+            identified += id_inc;
+            unknown += unk_inc;
+            errors += err_inc;
+        }
+    } else {
+        #[derive(Default)]
+        struct BatchChunkResult {
+            id_cnt: usize,
+            unk_cnt: usize,
+            err_cnt: usize,
+            local_out: Vec<u8>,
+            local_err: Vec<u8>,
+        }
+
+        let chunk_size = file_paths.len().div_ceil(num_threads);
+        let chunk_results: Vec<BatchChunkResult> = std::thread::scope(|s| {
+            let handles: Vec<_> = file_paths
+                .chunks(chunk_size)
+                .map(|chunk| {
+                    let opts_ref = &options;
+                    s.spawn(move || {
+                        let mut res = BatchChunkResult {
+                            local_out: Vec::with_capacity(chunk.len() * 128),
+                            ..BatchChunkResult::default()
+                        };
+                        for path in chunk {
+                            let (i, u, e) = process_batch_file(
+                                path,
+                                opts_ref,
+                                jsonl_mode,
+                                &mut res.local_out,
+                                &mut res.local_err,
+                            );
+                            res.id_cnt += i;
+                            res.unk_cnt += u;
+                            res.err_cnt += e;
+                        }
+                        res
+                    })
+                })
+                .collect();
+
+            handles
+                .into_iter()
+                .map(|h| h.join().unwrap_or_default())
+                .collect()
+        });
+
+        let mut stderr = std::io::stderr();
+        for res in chunk_results {
+            identified += res.id_cnt;
+            unknown += res.unk_cnt;
+            errors += res.err_cnt;
+            let _ = out.write_all(&res.local_out);
+            if !res.local_err.is_empty() {
+                let _ = stderr.write_all(&res.local_err);
             }
         }
     }
@@ -813,6 +901,7 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
     let mut batch_mode = false;
     let mut recursive = false;
     let mut jsonl_mode = false;
+    let mut jobs: Option<usize> = None;
 
     let mut i = 1;
     while i < args.len() {
@@ -834,6 +923,25 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
         } else if arg == OsStr::new("--jsonl") {
             batch_mode = true;
             jsonl_mode = true;
+        } else if arg == OsStr::new("-j") || arg == OsStr::new("--jobs") {
+            i += 1;
+            if i >= args.len() {
+                return print_arg_error(
+                    json_mode,
+                    lang,
+                    ArgErrorType::UnrecognizedOption(arg.to_string_lossy().into_owned()),
+                );
+            }
+            match args[i].to_string_lossy().parse::<usize>() {
+                Ok(n) if n >= 1 => jobs = Some(n),
+                _ => {
+                    return print_arg_error(
+                        json_mode,
+                        lang,
+                        ArgErrorType::UnrecognizedOption(args[i].to_string_lossy().into_owned()),
+                    );
+                }
+            }
         } else if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
             print_help(lang);
             return 0;
@@ -862,7 +970,7 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
         if target_files.is_empty() {
             return print_arg_error(json_mode, lang, ArgErrorType::MissingFile);
         }
-        return run_batch(&target_files, recursive, jsonl_mode || json_mode, lang);
+        return run_batch(&target_files, recursive, jsonl_mode || json_mode, jobs, lang);
     }
 
     let file_path = match target_files.into_iter().next() {

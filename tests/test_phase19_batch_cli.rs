@@ -76,3 +76,46 @@ fn test_phase19_batch_missing_path_returns_exit_4() {
     assert_eq!(v["status"], "error");
     assert_eq!(v["error_code"], "io.not_found");
 }
+
+#[test]
+fn test_phase20_parallel_batch_80_files_jsonl() {
+    let root = make_temp_dir("parallel_80");
+    for i in 0..80 {
+        match i % 4 {
+            0 => fs::write(
+                root.join(format!("f_{:03}.png", i)),
+                b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4",
+            )
+            .expect("png"),
+            1 => fs::write(root.join(format!("f_{:03}.json", i)), br#"{"ok":true}"#).expect("json"),
+            2 => fs::write(root.join(format!("f_{:03}.py", i)), b"#!/usr/bin/env python3\n").expect("py"),
+            _ => fs::write(root.join(format!("f_{:03}.bin", i)), [0xAA, 0xBB, 0x00, 0xCC]).expect("bin"),
+        }
+    }
+
+    let out = Command::new(bin_path())
+        .args(["--batch", "-j", "4", "--jsonl"])
+        .arg(&root)
+        .output()
+        .expect("run parallel batch");
+    assert_eq!(out.status.code(), Some(0));
+    let lines: Vec<serde_json::Value> = String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .map(|l| serde_json::from_str(l).expect("valid jsonl"))
+        .collect();
+    assert_eq!(lines.len(), 80);
+    assert_eq!(
+        lines.iter().filter(|v| v["format_id"] == "png").count(),
+        20
+    );
+    assert_eq!(
+        lines.iter().filter(|v| v["format_id"] == "json").count(),
+        20
+    );
+    assert_eq!(
+        lines.iter().filter(|v| v["format_id"] == "py").count(),
+        20
+    );
+
+    let _ = fs::remove_dir_all(&root);
+}
