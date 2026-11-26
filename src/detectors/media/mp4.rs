@@ -134,6 +134,65 @@ pub fn probe_mp4_core(header: &[u8]) -> Mp4MatchCore {
             return Mp4MatchCore::Confirmed(make_m4a_core());
         }
 
+        if major_brand == b"M4B " {
+            return Mp4MatchCore::Confirmed(DetectionCore {
+                format_id: Some("m4b"),
+                category: "audio",
+                container_id: Some("isobmff"),
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("m4b"),
+                accepted_extensions: &["m4b", "m4a"],
+                primary_evidence: Some("sig.mp4.ftyp"),
+                secondary_evidence: Some("sig.m4b.brand"),
+                warning: None,
+                candidate: None,
+            });
+        }
+
+        if matches!(major_brand, b"3gp4" | b"3gp5" | b"3gp6" | b"3gp7" | b"3gp8" | b"3gp9") {
+            return Mp4MatchCore::Confirmed(DetectionCore {
+                format_id: Some("3gp"),
+                category: "video",
+                container_id: Some("isobmff"),
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("3gp"),
+                accepted_extensions: &["3gp", "3gpp"],
+                primary_evidence: Some("sig.mp4.ftyp"),
+                secondary_evidence: Some("sig.3gp.brand"),
+                warning: None,
+                candidate: None,
+            });
+        }
+
+        if matches!(major_brand, b"3g2a" | b"3g2b" | b"3g2c") {
+            return Mp4MatchCore::Confirmed(DetectionCore {
+                format_id: Some("3g2"),
+                category: "video",
+                container_id: Some("isobmff"),
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("3g2"),
+                accepted_extensions: &["3g2"],
+                primary_evidence: Some("sig.mp4.ftyp"),
+                secondary_evidence: Some("sig.3g2.brand"),
+                warning: None,
+                candidate: None,
+            });
+        }
+
+        if major_brand == b"crx " {
+            return Mp4MatchCore::Confirmed(make_isobmff_image_core(
+                "cr3",
+                &["cr3"],
+                "sig.cr3.brand",
+            ));
+        }
+
         if major_brand == b"avif" || major_brand == b"avis" {
             return Mp4MatchCore::Confirmed(make_isobmff_image_core(
                 "avif",
@@ -239,6 +298,73 @@ pub fn probe_mp4(header: &[u8]) -> Mp4Match {
         if major_brand == b"mif1" || major_brand == b"msf1" || major_brand == b"heif" {
             return Mp4Match::Confirmed(Box::new(
                 make_isobmff_image_core("heif", &["heif", "heic"], "sig.heif.brand")
+                    .to_report(Default::default(), ExtensionStatus::Undetermined),
+            ));
+        }
+
+        if major_brand == b"M4B " {
+            return Mp4Match::Confirmed(Box::new(
+                DetectionCore {
+                    format_id: Some("m4b"),
+                    category: "audio",
+                    container_id: Some("isobmff"),
+                    identification: Identification::Format,
+                    verification: Verification::Structure,
+                    inspection: Inspection::Complete,
+                    recommended_extension: Some("m4b"),
+                    accepted_extensions: &["m4b", "m4a"],
+                    primary_evidence: Some("sig.mp4.ftyp"),
+                    secondary_evidence: Some("sig.m4b.brand"),
+                    warning: None,
+                    candidate: None,
+                }
+                .to_report(Default::default(), ExtensionStatus::Undetermined),
+            ));
+        }
+
+        if matches!(major_brand, b"3gp4" | b"3gp5" | b"3gp6" | b"3gp7" | b"3gp8" | b"3gp9") {
+            return Mp4Match::Confirmed(Box::new(
+                DetectionCore {
+                    format_id: Some("3gp"),
+                    category: "video",
+                    container_id: Some("isobmff"),
+                    identification: Identification::Format,
+                    verification: Verification::Structure,
+                    inspection: Inspection::Complete,
+                    recommended_extension: Some("3gp"),
+                    accepted_extensions: &["3gp", "3gpp"],
+                    primary_evidence: Some("sig.mp4.ftyp"),
+                    secondary_evidence: Some("sig.3gp.brand"),
+                    warning: None,
+                    candidate: None,
+                }
+                .to_report(Default::default(), ExtensionStatus::Undetermined),
+            ));
+        }
+
+        if matches!(major_brand, b"3g2a" | b"3g2b" | b"3g2c") {
+            return Mp4Match::Confirmed(Box::new(
+                DetectionCore {
+                    format_id: Some("3g2"),
+                    category: "video",
+                    container_id: Some("isobmff"),
+                    identification: Identification::Format,
+                    verification: Verification::Structure,
+                    inspection: Inspection::Complete,
+                    recommended_extension: Some("3g2"),
+                    accepted_extensions: &["3g2"],
+                    primary_evidence: Some("sig.mp4.ftyp"),
+                    secondary_evidence: Some("sig.3g2.brand"),
+                    warning: None,
+                    candidate: None,
+                }
+                .to_report(Default::default(), ExtensionStatus::Undetermined),
+            ));
+        }
+
+        if major_brand == b"crx " {
+            return Mp4Match::Confirmed(Box::new(
+                make_isobmff_image_core("cr3", &["cr3"], "sig.cr3.brand")
                     .to_report(Default::default(), ExtensionStatus::Undetermined),
             ));
         }

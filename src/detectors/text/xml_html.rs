@@ -33,7 +33,18 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
 
     let is_xml_head = head.starts_with(b"<?xml");
 
-    // 2. Specialized XML dialects (SVG, KML, GPX, COLLADA DAE, Apple Plist)
+    // 2. Specialized XML dialects (SVG, KML, GPX, COLLADA DAE, Apple Plist) and SFCs (Vue, Svelte)
+    if head.starts_with(b"<template") && (trimmed.contains("<script") || trimmed.contains("<style")) {
+        return Some(make_core("vue", "text", None, "vue", &["vue"], "sig.text.vue"));
+    }
+    if head.starts_with(b"<script")
+        && (trimmed.contains("export let ")
+            || trimmed.contains("$:")
+            || trimmed.contains("{#if ")
+            || trimmed.contains("{#each "))
+    {
+        return Some(make_core("svelte", "text", None, "svelte", &["svelte"], "sig.text.svelte"));
+    }
     if head.starts_with(b"<svg") || (is_xml_head && contains_sub(b"<svg")) {
         return Some(make_core("svg", "image", Some("xml"), "svg", &["svg"], "sig.text.svg"));
     }

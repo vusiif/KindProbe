@@ -258,6 +258,20 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
             return Ok(report);
         }
 
+        // 4b. NumPy NPZ archive: contains *.npy arrays
+        if cd_check.has_npz_array {
+            report.identification = Identification::Format;
+            report.format_id = Some("npz".to_string());
+            report.category = "scientific".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("npz".to_string());
+            report.accepted_extensions = vec!["npz".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.npz.array"));
+            return Ok(report);
+        }
+
         // 5. Plain ZIP archive
         report.identification = Identification::Format;
         report.format_id = Some("zip".to_string());

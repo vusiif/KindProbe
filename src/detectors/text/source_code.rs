@@ -45,6 +45,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     if window.lines().next().map(|l| l.trim().eq_ignore_ascii_case("@echo off")).unwrap_or(false) {
         return Some(make_source_core("bat", &["bat", "cmd"], "sig.text.batch", Verification::Structure));
     }
+    if window.contains("@import(\"std\")") || (window.contains("pub fn ") && window.contains("@import(")) {
+        return Some(make_source_core("zig", &["zig"], "sig.text.zig", Verification::Structure));
+    }
 
     // C / C++ and Markdown fast check (only executed if `#` is present)
     let has_hash = w_bytes.contains(&b'#');
@@ -210,7 +213,7 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         return Some(make_source_core("v", &["v", "vh", "sv"], "sig.text.verilog", Verification::Structure));
     }
 
-    if (has_rs_fn && has_rs_kw) || (has_rs_type && has_rs_impl) {
+    if ((has_rs_fn && has_rs_kw) || (has_rs_type && has_rs_impl)) && !window.contains("@import(") {
         return Some(make_source_core("rs", &["rs"], "sig.text.rust", Verification::Structure));
     }
 
@@ -220,6 +223,31 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     if has_package && has_go_func {
         return Some(make_source_core("go", &["go"], "sig.text.go", Verification::Structure));
+    }
+
+    // Kotlin & Scala (check before Python `def` fallback since Scala uses `def` + `package`/`object`/`case class`)
+    if window.contains("fun ")
+        && (window.contains("val ") || window.contains("var ") || window.contains("data class "))
+        && !window.contains("fn ")
+    {
+        return Some(make_source_core(
+            "kt",
+            &["kt", "kts"],
+            "sig.text.kotlin",
+            Verification::Structure,
+        ));
+    }
+
+    if window.contains("package ")
+        && (window.contains("object ") || window.contains("case class ") || window.contains("trait "))
+        && window.contains("def ")
+    {
+        return Some(make_source_core(
+            "scala",
+            &["scala", "sc"],
+            "sig.text.scala",
+            Verification::Structure,
+        ));
     }
 
     if has_py_def || (has_import && (has_py_def || has_class_or_pub || has_py_from)) {
@@ -249,6 +277,95 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
                 Verification::Structure,
             ));
         }
+    }
+
+    // CMakeLists.txt / *.cmake
+    if (window.contains("cmake_minimum_required(") || window.contains("CMAKE_MINIMUM_REQUIRED("))
+        && (window.contains("project(")
+            || window.contains("add_executable(")
+            || window.contains("add_library("))
+    {
+        return Some(make_source_core(
+            "cmake",
+            &["cmake"],
+            "sig.text.cmake",
+            Verification::Structure,
+        ));
+    }
+
+    // Makefile (.PHONY / target: + tab-indented recipe)
+    if (window.contains(".PHONY:") || window.contains("all:") || window.contains("clean:"))
+        && window.contains("\n\t")
+    {
+        return Some(make_source_core(
+            "makefile",
+            &["mk", "mak", "makefile"],
+            "sig.text.makefile",
+            Verification::Structure,
+        ));
+    }
+
+    // Terraform / HCL (.tf / .hcl)
+    if (window.contains("resource \"")
+        || window.contains("provider \"")
+        || window.contains("terraform {"))
+        && (window.contains("variable \"")
+            || window.contains("output \"")
+            || window.contains("module \"")
+            || window.contains("required_version")
+            || window.contains("required_providers")
+            || window.contains(" = "))
+    {
+        return Some(make_source_core(
+            "hcl",
+            &["tf", "hcl", "tfvars"],
+            "sig.text.hcl",
+            Verification::Structure,
+        ));
+    }
+
+    // GraphQL schema / query
+    if (window.contains("type ") || window.contains("query ") || window.contains("input "))
+        && w_bytes.contains(&b'{')
+        && (window.contains(": String")
+            || window.contains(": Int")
+            || window.contains(": ID")
+            || window.contains(": Boolean"))
+    {
+        return Some(make_source_core(
+            "graphql",
+            &["graphql", "gql"],
+            "sig.text.graphql",
+            Verification::Structure,
+        ));
+    }
+
+    // Dart
+    if window.contains("import 'package:")
+        || (window.contains("void main(")
+            && (window.contains("Widget ") || window.contains("print("))
+            && window.contains(';'))
+    {
+        return Some(make_source_core(
+            "dart",
+            &["dart"],
+            "sig.text.dart",
+            Verification::Structure,
+        ));
+    }
+
+    // SCSS (check before CSS since SCSS shares CSS properties + `$` vars / `@mixin`)
+    if w_bytes.contains(&b'{')
+        && w_bytes.contains(&b'}')
+        && (window.contains("@mixin ") || window.contains("@include ") || (w_bytes.contains(&b'$') && window.contains(": ")))
+        && (window.contains("color:") || window.contains("margin:") || window.contains("padding:") || window.contains("display:"))
+    {
+        return Some(make_source_core(
+            "scss",
+            &["scss"],
+            "sig.text.scss",
+            Verification::Structure,
+        ));
     }
 
     // CSS detection: braces + >= 2 CSS property/at-rule markers

@@ -113,6 +113,103 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
         }
     }
 
+    if header.len() >= 16 && header.starts_with(b"FUJIFILMCCD-RAW ") {
+        return Some(DetectionCore {
+            format_id: Some("raf"),
+            category: "image",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Signature,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("raf"),
+            accepted_extensions: &["raf"],
+            primary_evidence: Some("sig.raf.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    if header.len() >= 12
+        && (header.starts_with(b"II*\x00") || header.starts_with(b"MM\x00*"))
+        && &header[8..10] == b"CR"
+    {
+        return Some(DetectionCore {
+            format_id: Some("cr2"),
+            category: "image",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("cr2"),
+            accepted_extensions: &["cr2"],
+            primary_evidence: Some("sig.cr2.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    if header.len() >= 10 && header.starts_with(b"\x93NUMPY") && (1..=3).contains(&header[6]) {
+        return Some(DetectionCore {
+            format_id: Some("npy"),
+            category: "scientific",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("npy"),
+            accepted_extensions: &["npy"],
+            primary_evidence: Some("sig.npy.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    if header.len() >= 26
+        && &header[0..4] == b"\x04\x00\x00\x00"
+        && &header[16..26] == b"{\"files\":{"
+    {
+        return Some(DetectionCore {
+            format_id: Some("asar"),
+            category: "archive",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("asar"),
+            accepted_extensions: &["asar"],
+            primary_evidence: Some("sig.asar.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    if header.len() >= 262 && &header[257..262] == b"ustar" {
+        let name_end = header[..100]
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(100);
+        if header[..name_end].ends_with(b".ovf") {
+            return Some(DetectionCore {
+                format_id: Some("ova"),
+                category: "virtualization",
+                container_id: Some("tar"),
+                identification: Identification::Format,
+                verification: Verification::Structure,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("ova"),
+                accepted_extensions: &["ova"],
+                primary_evidence: Some("sig.ova.ovf"),
+                secondary_evidence: None,
+                warning: None,
+                candidate: None,
+            });
+        }
+    }
+
     None
 }
 

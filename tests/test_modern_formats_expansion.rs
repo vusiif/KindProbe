@@ -24,6 +24,97 @@ fn test_modern_isobmff_images_avif_heic_heif() {
     assert_both_paths(avif, "avif");
     assert_both_paths(heic, "heic");
     assert_both_paths(heif, "heif");
+    assert_both_paths(b"\x00\x00\x00\x18ftypM4B \x00\x00\x00\x00M4B ", "m4b");
+    assert_both_paths(b"\x00\x00\x00\x18ftyp3gp5\x00\x00\x00\x003gp5", "3gp");
+    assert_both_paths(b"\x00\x00\x00\x18ftyp3g2a\x00\x00\x00\x003g2a", "3g2");
+    assert_both_paths(b"\x00\x00\x00\x18ftypcrx \x00\x00\x00\x00crx ", "cr3");
+}
+
+#[test]
+fn test_active_raw_scientific_asar_ova_and_npz() {
+    let mut raf = b"FUJIFILMCCD-RAW ".to_vec();
+    raf.extend_from_slice(&[0u8; 16]);
+    assert_both_paths(&raf, "raf");
+
+    let cr2 = b"II*\x00\x10\x00\x00\x00CR\x02\x00\x00\x00\x00\x00";
+    assert_both_paths(cr2, "cr2");
+
+    let npy = b"\x93NUMPY\x01\x00\x10\x00{'descr':'<f4'}";
+    assert_both_paths(npy, "npy");
+
+    let mut asar = Vec::new();
+    asar.extend_from_slice(&4u32.to_le_bytes());
+    asar.extend_from_slice(&40u32.to_le_bytes());
+    asar.extend_from_slice(&36u32.to_le_bytes());
+    asar.extend_from_slice(&32u32.to_le_bytes());
+    asar.extend_from_slice(br#"{"files":{"app.js":{}}}"#);
+    assert_both_paths(&asar, "asar");
+
+    // OVA (POSIX TAR with .ovf first entry)
+    let mut ova = vec![0u8; 512];
+    let ovf_name = b"vm.ovf";
+    ova[..ovf_name.len()].copy_from_slice(ovf_name);
+    ova[257..263].copy_from_slice(b"ustar\0");
+    assert_both_paths(&ova, "ova");
+
+    // NPZ (ZIP containing .npy)
+    let mut buf = Cursor::new(Vec::new());
+    {
+        let mut zw = ZipWriter::new(&mut buf);
+        let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        zw.start_file("weights.npy", opts).expect("start");
+        zw.write_all(npy).expect("write");
+        zw.finish().expect("finish");
+    }
+    assert_both_paths(&buf.into_inner(), "npz");
+}
+
+#[test]
+fn test_active_web_devops_and_language_formats() {
+    assert_both_paths(
+        b"<template><div>{{ msg }}</div></template>\n<script setup>\nconst msg = 'hi';\n</script>\n",
+        "vue",
+    );
+    assert_both_paths(
+        b"<script>\n  export let count = 0;\n  $: doubled = count * 2;\n</script>\n<button>{count}</button>\n",
+        "svelte",
+    );
+    assert_both_paths(
+        b"cmake_minimum_required(VERSION 3.20)\nproject(kindprobe LANGUAGES CXX)\nadd_executable(app main.cpp)\n",
+        "cmake",
+    );
+    assert_both_paths(
+        b".PHONY: all clean\nall:\n\tcargo build --release\nclean:\n\tcargo clean\n",
+        "makefile",
+    );
+    assert_both_paths(
+        b"terraform {\n  required_version = \">= 1.5\"\n}\nresource \"aws_s3_bucket\" \"b\" {\n  bucket = \"demo\"\n}\n",
+        "hcl",
+    );
+    assert_both_paths(
+        b"type User {\n  id: ID!\n  name: String!\n  age: Int\n}\n",
+        "graphql",
+    );
+    assert_both_paths(
+        b"const std = @import(\"std\");\npub fn main() void {\n    std.debug.print(\"hi\", .{});\n}\n",
+        "zig",
+    );
+    assert_both_paths(
+        b"import 'package:flutter/material.dart';\nvoid main() {\n  Widget w;\n}\n",
+        "dart",
+    );
+    assert_both_paths(
+        b"package com.example\ndata class User(val id: Int)\nfun greet(u: User) = println(u.id)\n",
+        "kt",
+    );
+    assert_both_paths(
+        b"package demo\ncase class Item(id: Int)\nobject Main {\n  def run(): Unit = ()\n}\n",
+        "scala",
+    );
+    assert_both_paths(
+        b"$primary: #333;\n@mixin card { padding: 12px; color: $primary; }\n.box { @include card; margin: 8px; }\n",
+        "scss",
+    );
 }
 
 #[test]

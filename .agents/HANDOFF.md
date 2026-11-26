@@ -1,17 +1,18 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- **Modern High-Frequency Format Expansion**:
-  - `src/detectors/media/mp4.rs`: Added `avif` (`avif`/`avis`), `heic` (`heic`/`heix`/`hevc`/`hevx`/`heim`/`heis`), and `heif` (`mif1`/`msf1`/`heif`) ISO-BMFF image brands in both `_core` and `Report` paths.
-  - `src/detectors/signatures.rs`: Added `probe_modern_binary_core` for `gguf` (`GGUF` v1..=3), `pst` (`!BDN`, also `.ost`), `tflite` (`TFL3` at offset 4), and `safetensors` (8B LE JSON header len + JSON tensor schema keys).
-  - `src/detectors/zip_ooxml/{cd_check.rs, mod.rs, packages.rs}`: Added Android App Bundle `aab` (`BundleConfig.pb` in ZIP).
-  - `src/detectors/text/{config.rs, source_code.rs}`: Added `eml` (RFC 5322 headers using UTF-8-safe byte slice checks), `ini` (`;` comment + `[section]`/`key=val`), `dockerfile` (`FROM ...` + instructions), and `css` (braces + CSS properties).
-  - `src/extension/registry.rs`: Registered all 13 new extensions (`1019` total sorted entries).
-  - `tests/test_modern_formats_expansion.rs`: Added dual-path & registry tests for all newly added formats.
+- **Previous Batch (`31c8a93`)**: Committed and pushed AVIF/HEIC/HEIF/GGUF/Safetensors/TFLite/PST/AAB/EML/INI/Dockerfile/CSS.
+- **Active Format Expansion (Round 2)**:
+  - `src/detectors/media/mp4.rs`: Added `m4b`, `3gp`, `3g2`, and Canon `cr3` ISO-BMFF brands.
+  - `src/detectors/signatures.rs`: Added `raf` (`FUJIFILMCCD-RAW `), `cr2` (TIFF + `CR` at offset 8), `npy` (`\x93NUMPY`), `asar` (Chromium Pickle + `{"files":{`), and `ova` (TAR `ustar` with `.ovf` first entry).
+  - `src/detectors/zip_ooxml/{cd_check.rs, mod.rs}`: Added `npz` (`*.npy` inside ZIP).
+  - `src/detectors/text/{xml_html.rs, source_code.rs}`: Added `vue`, `svelte`, `cmake`, `makefile`, `hcl`/`tf`, `graphql`, `zig` (before Rust `pub fn main(` loop), `dart`, `kt`, `scala` (before Python `def`), and `scss` (before CSS).
+  - `src/extension/registry.rs`: Expanded sorted registry to **1,047** entries (including `pkg` -> `xar`).
+  - `tests/test_modern_formats_expansion.rs`: Added dual-path assertions for all new formats.
 
 ## [当前状态] (Current State)
 - `cargo clippy --all-targets --all-features -- -D warnings`: **0 warnings**.
 - `cargo test --release --all-targets`: **All 59 test binaries passed**.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Working tree has uncommitted modern format expansion changes. Awaiting user confirmation before `git commit` / `git push`.
+- Working tree has uncommitted Round 2 active format changes. Awaiting user confirmation before `git commit` / `git push`.
