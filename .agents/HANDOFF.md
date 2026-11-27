@@ -1,16 +1,12 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- **Round 5 (`c745c9e`)**: Committed and pushed NEF/ARW/DNG RAW, ONNX, C#, Swift, R, .env, and .gitignore.
-- **Round 6 (LNK, MXF, SLN, CSPROJ, LaTeX, RST, AsciiDoc, Gradle, Nginx)**:
-  - `src/detectors/signatures.rs`: Added Windows Shortcut **`lnk`** (`0x4C` + MS-SHLLINK CLSID) and SMPTE **`mxf`** (`06 0E 2B 34 ...` Partition Pack).
-  - `src/detectors/text/xml_html.rs`: Added MSBuild **`csproj`** (`<Project Sdk=...>` / `<PropertyGroup>`).
-  - `src/detectors/text/source_code.rs`: Added **`sln`** (VS Solution), **`tex`** (LaTeX), **`rst`** (reStructuredText), **`adoc`** (AsciiDoc), **`gradle`**, and **`nginx`**.
-  - `src/extension/registry.rs`: Expanded sorted registry to **1,079** entries.
-  - `tests/test_modern_formats_expansion.rs`: Added `test_round6_lnk_mxf_sln_csproj_tex_rst_adoc_gradle_nginx`.
+- Committed and pushed Round 6 (`0a8532a`).
+- Implemented Round 7 format expansion across JSON subformats (`ipynb`, `gltf`, `har`, `lottie`) in `src/detectors/text/json.rs`, YAML frontmatter guard in `src/detectors/text/config.rs`, and source/schema formats (`astro`, `prisma`, `sol`, `ex`, `hs`) in `src/detectors/text/source_code.rs`.
+- Updated `src/extension/registry.rs` and added `test_round7_ipynb_gltf_har_lottie_prisma_sol_hs_ex_astro` in `tests/test_modern_formats_expansion.rs`.
 
 ## [当前状态] (Current State)
-- Verification running via `cargo clippy` + `cargo test --release --all-targets`.
+- Running `update_registry.py`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test --release --all-targets`.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Working tree has uncommitted Round 6 changes. Awaiting user confirmation before `git commit` / `git push`.
+- Confirm Round 7 tests pass and await user instruction to commit & push.

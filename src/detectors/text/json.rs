@@ -63,6 +63,29 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         || (geo_window.contains("\"Feature\"") && geo_window.contains("\"geometry\""))
     {
         ("geojson", "geospatial", Some("json"), "geojson", &["geojson", "json"], "sig.text.geojson")
+    } else if geo_window.contains("\"nbformat\"") && geo_window.contains("\"cells\"") {
+        ("ipynb", "document", Some("json"), "ipynb", &["ipynb"], "sig.text.ipynb")
+    } else if geo_window.contains("\"asset\"")
+        && geo_window.contains("\"version\"")
+        && (geo_window.contains("\"scenes\"")
+            || geo_window.contains("\"nodes\"")
+            || geo_window.contains("\"meshes\""))
+    {
+        ("gltf", "3d", Some("json"), "gltf", &["gltf"], "sig.text.gltf")
+    } else if geo_window.contains("\"log\"")
+        && geo_window.contains("\"entries\"")
+        && (geo_window.contains("\"pages\"")
+            || geo_window.contains("\"creator\"")
+            || geo_window.contains("\"version\""))
+    {
+        ("har", "network", Some("json"), "har", &["har"], "sig.text.har")
+    } else if geo_window.contains("\"layers\"")
+        && geo_window.contains("\"fr\"")
+        && geo_window.contains("\"ip\"")
+        && geo_window.contains("\"op\"")
+        && geo_window.contains("\"v\"")
+    {
+        ("lottie", "animation", Some("json"), "json", &["json", "lottie"], "sig.text.lottie")
     } else {
         ("json", "text", None, "json", &["json"], "sig.text.json")
     };

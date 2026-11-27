@@ -431,6 +431,72 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // Astro component (.astro)
+    let trimmed_win = window.trim_start();
+    if trimmed_win.starts_with("---")
+        && (trimmed_win.contains("import ") || trimmed_win.contains("const "))
+        && trimmed_win[3..].contains("\n---")
+        && trimmed_win.contains('<')
+    {
+        return Some(make_source_core(
+            "astro",
+            &["astro"],
+            "sig.text.astro",
+            Verification::Structure,
+        ));
+    }
+
+    // Prisma Schema (.prisma)
+    if window.contains("datasource ")
+        && (window.contains("generator ") || window.contains("model "))
+        && (window.contains("provider") || window.contains("url"))
+    {
+        return Some(make_source_core(
+            "prisma",
+            &["prisma"],
+            "sig.text.prisma",
+            Verification::Structure,
+        ));
+    }
+
+    // Solidity (.sol)
+    if window.contains("pragma solidity")
+        && (window.contains("contract ")
+            || window.contains("interface ")
+            || window.contains("library "))
+    {
+        return Some(make_source_core(
+            "sol",
+            &["sol"],
+            "sig.text.solidity",
+            Verification::Structure,
+        ));
+    }
+
+    // Elixir (.ex / .exs)
+    if window.contains("defmodule ") && window.contains(" do") && window.contains("end") {
+        return Some(make_source_core(
+            "ex",
+            &["ex", "exs"],
+            "sig.text.elixir",
+            Verification::Structure,
+        ));
+    }
+
+    // Haskell (.hs)
+    if window.lines().any(|l| l.trim_start().starts_with("module "))
+        && window.contains("where")
+        && (window.contains("import ") || window.contains(" :: "))
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "hs",
+            &["hs", "lhs"],
+            "sig.text.haskell",
+            Verification::Structure,
+        ));
+    }
+
     // C# (.cs)
     if window.contains("using System")
         && (window.contains("namespace ")

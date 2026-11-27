@@ -269,6 +269,46 @@ fn test_round6_lnk_mxf_sln_csproj_tex_rst_adoc_gradle_nginx() {
 }
 
 #[test]
+fn test_round7_ipynb_gltf_har_lottie_prisma_sol_hs_ex_astro() {
+    assert_both_paths(
+        br#"{"cells":[{"cell_type":"code","source":["print(1)"]}],"metadata":{},"nbformat":4,"nbformat_minor":5}"#,
+        "ipynb",
+    );
+    assert_both_paths(
+        br#"{"asset":{"version":"2.0"},"scenes":[{"nodes":[0]}],"nodes":[{"mesh":0}]}"#,
+        "gltf",
+    );
+    assert_both_paths(
+        br#"{"log":{"version":"1.2","creator":{"name":"WebInspector","version":"537.36"},"entries":[]}}"#,
+        "har",
+    );
+    assert_both_paths(
+        br#"{"v":"5.7.4","fr":60,"ip":0,"op":120,"w":512,"h":512,"layers":[]}"#,
+        "lottie",
+    );
+    assert_both_paths(
+        b"datasource db {\n  provider = \"postgresql\"\n  url = env(\"DATABASE_URL\")\n}\nmodel User {\n  id Int @id\n}\n",
+        "prisma",
+    );
+    assert_both_paths(
+        b"// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\ncontract Counter {\n    uint256 public count;\n}\n",
+        "sol",
+    );
+    assert_both_paths(
+        b"module Main where\n\nimport Data.List (sort)\n\nmain :: IO ()\nmain = putStrLn \"hello\"\n",
+        "hs",
+    );
+    assert_both_paths(
+        b"defmodule Greeter do\n  def hello(name) do\n    \"Hello, #{name}\"\n  end\nend\n",
+        "ex",
+    );
+    assert_both_paths(
+        b"---\nimport Layout from '../layouts/Layout.astro';\nconst title = 'KindProbe';\n---\n<Layout title={title}><h1>Hi</h1></Layout>\n",
+        "astro",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

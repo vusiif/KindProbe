@@ -66,8 +66,12 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
         }
     }
 
-    // 2. YAML detection: Starts with document marker "---" or structured key: value pairs
-    if trimmed.starts_with("---") {
+    // 2. YAML detection: Starts with document marker "---" (excluding Astro frontmatter) or structured key: value pairs
+    if trimmed.starts_with("---")
+        && !((trimmed.contains("import ") || trimmed.contains("const "))
+            && trimmed[3..].contains("\n---")
+            && trimmed.contains('<'))
+    {
         return Some(make_config_core("yaml", &["yaml", "yml"], "sig.text.yaml"));
     }
 
