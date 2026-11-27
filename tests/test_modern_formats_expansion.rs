@@ -347,6 +347,99 @@ fn test_round8_pf_jsonl_rss_atom_opml_xslt_xsd_clj_erl_nim() {
 }
 
 #[test]
+fn test_round9_crx_whl_vsix_nupkg_xpi_tfstate_ris_bib_fs() {
+    assert_both_paths(b"Cr24\x03\x00\x00\x00\x10\x00\x00\x00", "crx");
+
+    let make_zip = |entries: &[(&str, &[u8])]| -> Vec<u8> {
+        let mut buf = Cursor::new(Vec::new());
+        {
+            let mut zw = ZipWriter::new(&mut buf);
+            let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+            for (name, data) in entries {
+                zw.start_file(*name, opts).expect("start");
+                zw.write_all(data).expect("write");
+            }
+            zw.finish().expect("finish");
+        }
+        buf.into_inner()
+    };
+
+    assert_both_paths(
+        &make_zip(&[("demo-1.0.dist-info/WHEEL", b"Wheel-Version: 1.0\n")]),
+        "whl",
+    );
+    assert_both_paths(
+        &make_zip(&[("extension.vsixmanifest", b"<PackageManifest/>")]),
+        "vsix",
+    );
+    assert_both_paths(
+        &make_zip(&[("KindProbe.nuspec", b"<package><metadata/></package>")]),
+        "nupkg",
+    );
+    assert_both_paths(
+        &make_zip(&[("install.rdf", b"<RDF/>")]),
+        "xpi",
+    );
+
+    assert_both_paths(
+        br#"{"version":4,"terraform_version":"1.8.0","resources":[{"mode":"managed","type":"aws_s3_bucket"}]}"#,
+        "tfstate",
+    );
+    assert_both_paths(
+        b"TY  - JOUR\nTI  - KindProbe Paper\nAU  - Doe, J.\nER  - \n",
+        "ris",
+    );
+    assert_both_paths(
+        b"@article{kindprobe2026,\n  author = {Doe, Jane},\n  title = {Fast Format Probing},\n  year = {2026}\n}\n",
+        "bib",
+    );
+    assert_both_paths(
+        b"open System\n\n[<EntryPoint>]\nlet main argv =\n    printfn \"Hello\"\n    0\n",
+        "fs",
+    );
+}
+
+#[test]
+fn test_round10_pfx_openapi_vb_ml_groovy_tcl_awk_wat_vhdl() {
+    assert_both_paths(
+        b"\x30\x82\x01\x00\x02\x01\x03\x30\x82\x00\x80\x06\x09\x2A\x86\x48\x86\xF7\x0D\x01\x07\x01\x00\x00",
+        "pfx",
+    );
+    assert_both_paths(
+        br#"{"openapi":"3.1.0","info":{"title":"KindProbe API","version":"1.0"},"paths":{"/probe":{}}}"#,
+        "openapi",
+    );
+    assert_both_paths(
+        b"Imports System\n\nModule Program\n    Sub Main(args As String())\n        Console.WriteLine(\"Hello\")\n    End Sub\nEnd Module\n",
+        "vb",
+    );
+    assert_both_paths(
+        b"let rec fact n =\n  if n <= 1 then 1 else n * fact (n - 1);;\n",
+        "ml",
+    );
+    assert_both_paths(
+        b"def name = 'KindProbe'\nprintln \"Hello $name\"\n",
+        "groovy",
+    );
+    assert_both_paths(
+        b"proc greet {name} {\n    puts \"Hello $name\"\n}\ngreet World\n",
+        "tcl",
+    );
+    assert_both_paths(
+        b"BEGIN { total = 0 }\n{ total += $1 }\nEND { print total }\n",
+        "awk",
+    );
+    assert_both_paths(
+        b"(module\n  (func (export \"add\") (param i32 i32) (result i32)\n    local.get 0\n    local.get 1\n    i32.add))\n",
+        "wat",
+    );
+    assert_both_paths(
+        b"library ieee;\nuse ieee.std_logic_1164.all;\n\nentity counter is\n    port (clk : in std_logic);\nend entity;\n",
+        "vhdl",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

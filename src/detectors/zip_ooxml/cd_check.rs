@@ -20,6 +20,10 @@ pub struct ZipCdPreCheckResult {
     pub has_kmz_kml: bool,
     pub has_mimetype: bool,
     pub has_epub_container: bool,
+    pub has_whl_dist_info: bool,
+    pub has_vsix_manifest: bool,
+    pub has_nupkg_nuspec: bool,
+    pub has_xpi_manifest: bool,
 }
 
 enum FastNameSet<T: Eq + std::hash::Hash> {
@@ -196,6 +200,10 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
     let mut has_kmz_kml = false;
     let mut has_mimetype = false;
     let mut has_epub_container = false;
+    let mut has_whl_dist_info = false;
+    let mut has_vsix_manifest = false;
+    let mut has_nupkg_nuspec = false;
+    let mut has_xpi_manifest = false;
 
     // Walk central directory headers to check for duplicate entry names or conflicting paths
     if let Err(e) = reader.seek(SeekFrom::Start(cd_offset)) {
@@ -312,6 +320,14 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             has_mimetype = true;
         } else if raw_bytes == b"META-INF/container.xml" {
             has_epub_container = true;
+        } else if raw_bytes.ends_with(b".dist-info/WHEEL") {
+            has_whl_dist_info = true;
+        } else if raw_bytes == b"extension.vsixmanifest" {
+            has_vsix_manifest = true;
+        } else if raw_bytes.ends_with(b".nuspec") && !raw_bytes.contains(&b'/') {
+            has_nupkg_nuspec = true;
+        } else if raw_bytes == b"install.rdf" || raw_bytes == b"META-INF/mozilla.rsa" {
+            has_xpi_manifest = true;
         }
 
         let norm: std::borrow::Cow<'_, str> = match std::str::from_utf8(raw_bytes) {
@@ -377,5 +393,9 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         has_kmz_kml,
         has_mimetype,
         has_epub_container,
+        has_whl_dist_info,
+        has_vsix_manifest,
+        has_nupkg_nuspec,
+        has_xpi_manifest,
     }))
 }

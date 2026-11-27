@@ -272,6 +272,56 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
             return Ok(report);
         }
 
+        // 4c. Python Wheel (.whl), VS Code Extension (.vsix), NuGet (.nupkg), Firefox Add-on (.xpi)
+        if cd_check.has_whl_dist_info {
+            report.identification = Identification::Format;
+            report.format_id = Some("whl".to_string());
+            report.category = "package".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("whl".to_string());
+            report.accepted_extensions = vec!["whl".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.whl.wheel"));
+            return Ok(report);
+        }
+        if cd_check.has_vsix_manifest {
+            report.identification = Identification::Format;
+            report.format_id = Some("vsix".to_string());
+            report.category = "package".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("vsix".to_string());
+            report.accepted_extensions = vec!["vsix".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.vsix.manifest"));
+            return Ok(report);
+        }
+        if cd_check.has_nupkg_nuspec {
+            report.identification = Identification::Format;
+            report.format_id = Some("nupkg".to_string());
+            report.category = "package".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("nupkg".to_string());
+            report.accepted_extensions = vec!["nupkg".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.nupkg.nuspec"));
+            return Ok(report);
+        }
+        if cd_check.has_xpi_manifest {
+            report.identification = Identification::Format;
+            report.format_id = Some("xpi".to_string());
+            report.category = "package".to_string();
+            report.container_id = Some("zip".to_string());
+            report.verification = Verification::Structure;
+            report.inspection = Inspection::Complete;
+            report.recommended_extension = Some("xpi".to_string());
+            report.accepted_extensions = vec!["xpi".to_string()];
+            report.evidence.push(EvidenceItem::new("zip.xpi.manifest"));
+            return Ok(report);
+        }
+
         // 5. Plain ZIP archive
         report.identification = Identification::Format;
         report.format_id = Some("zip".to_string());

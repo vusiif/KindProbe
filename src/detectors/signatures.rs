@@ -67,6 +67,46 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
         });
     }
 
+    if header.len() >= 12 && header.starts_with(b"Cr24") {
+        return Some(DetectionCore {
+            format_id: Some("crx"),
+            category: "package",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Signature,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("crx"),
+            accepted_extensions: &["crx"],
+            primary_evidence: Some("sig.crx.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
+    if header.len() >= 24
+        && (header.starts_with(b"\x30\x82") || header.starts_with(b"\x30\x80"))
+        && header[..header.len().min(64)].windows(3).any(|w| w == b"\x02\x01\x03")
+        && header[..header.len().min(64)]
+            .windows(11)
+            .any(|w| w == b"\x06\x09\x2A\x86\x48\x86\xF7\x0D\x01\x07\x01")
+    {
+        return Some(DetectionCore {
+            format_id: Some("pfx"),
+            category: "crypto",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Structure,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("pfx"),
+            accepted_extensions: &["pfx", "p12"],
+            primary_evidence: Some("sig.pfx.asn1"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
     if header.len() >= 8 && (header.starts_with(b"MAM\x04") || &header[4..8] == b"SCCA") {
         return Some(DetectionCore {
             format_id: Some("pf"),

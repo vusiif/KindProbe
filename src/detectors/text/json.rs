@@ -96,6 +96,16 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         && geo_window.contains("\"v\"")
     {
         ("lottie", "animation", Some("json"), "json", &["json", "lottie"], "sig.text.lottie")
+    } else if geo_window.contains("\"terraform_version\"")
+        && geo_window.contains("\"resources\"")
+        && geo_window.contains("\"version\"")
+    {
+        ("tfstate", "configuration", Some("json"), "tfstate", &["tfstate", "json"], "sig.text.tfstate")
+    } else if (geo_window.contains("\"openapi\"") || geo_window.contains("\"swagger\""))
+        && geo_window.contains("\"paths\"")
+        && geo_window.contains("\"info\"")
+    {
+        ("openapi", "configuration", Some("json"), "json", &["json"], "sig.text.openapi")
     } else {
         ("json", "text", None, "json", &["json"], "sig.text.json")
     };

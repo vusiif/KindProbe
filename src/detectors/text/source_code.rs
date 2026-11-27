@@ -530,6 +530,138 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // RIS bibliographic citation (.ris)
+    if window.lines().any(|l| l.starts_with("TY  - "))
+        && window.lines().any(|l| l.starts_with("ER  -"))
+    {
+        return Some(make_source_core(
+            "ris",
+            &["ris"],
+            "sig.text.ris",
+            Verification::Structure,
+        ));
+    }
+
+    // BibTeX (.bib)
+    if (window.contains("@article{")
+        || window.contains("@inproceedings{")
+        || window.contains("@book{")
+        || window.contains("@misc{"))
+        && (window.contains("author") || window.contains("title"))
+    {
+        return Some(make_source_core(
+            "bib",
+            &["bib", "bibtex"],
+            "sig.text.bibtex",
+            Verification::Structure,
+        ));
+    }
+
+    // F# (.fs / .fsx)
+    if (window.contains("open System") || window.contains("[<EntryPoint>]"))
+        && (window.contains("let ") || window.contains("printfn "))
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "fs",
+            &["fs", "fsx", "fsi"],
+            "sig.text.fsharp",
+            Verification::Structure,
+        ));
+    }
+
+    // VB.NET (.vb / .vbs)
+    if (window.contains("Imports System") || window.contains("Module "))
+        && (window.contains("End Module") || window.contains("End Sub"))
+    {
+        return Some(make_source_core(
+            "vb",
+            &["vb", "vbs"],
+            "sig.text.vb",
+            Verification::Structure,
+        ));
+    }
+
+    // OCaml (.ml / .mli)
+    if (window.contains("let rec ") || (window.contains("let ") && window.contains(";;")))
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "ml",
+            &["ml", "mli"],
+            "sig.text.ocaml",
+            Verification::Structure,
+        ));
+    }
+
+    // Groovy (.groovy / .gvy)
+    if (window.contains("@Grab(") || (window.contains("def ") && window.contains("println ")))
+        && !window.contains("def ")
+        || (window.contains("def ") && window.contains("println ") && !window.contains("def main(") && !window.contains(':'))
+    {
+        return Some(make_source_core(
+            "groovy",
+            &["groovy", "gvy"],
+            "sig.text.groovy",
+            Verification::Structure,
+        ));
+    }
+
+    // Tcl (.tcl)
+    if (window.contains("package require ")
+        || (window.contains("proc ") && window.contains("puts ")))
+        && w_bytes.contains(&b'{')
+        && w_bytes.contains(&b'}')
+    {
+        return Some(make_source_core(
+            "tcl",
+            &["tcl"],
+            "sig.text.tcl",
+            Verification::Structure,
+        ));
+    }
+
+    // AWK (.awk)
+    if (window.contains("BEGIN {") || window.contains("END {"))
+        && (window.contains("print ") || window.contains("printf ") || window.contains("$1") || window.contains("$0"))
+        && w_bytes.contains(&b'}')
+    {
+        return Some(make_source_core(
+            "awk",
+            &["awk"],
+            "sig.text.awk",
+            Verification::Structure,
+        ));
+    }
+
+    // WebAssembly Text Format (.wat / .wast)
+    if window.contains("(module")
+        && (window.contains("(func ")
+            || window.contains("(memory ")
+            || window.contains("(export ")
+            || window.contains("(import "))
+    {
+        return Some(make_source_core(
+            "wat",
+            &["wat", "wast"],
+            "sig.text.wat",
+            Verification::Structure,
+        ));
+    }
+
+    // VHDL (.vhd / .vhdl)
+    if (window.contains("library ieee;") || window.contains("LIBRARY IEEE;"))
+        && (window.contains("entity ") || window.contains("ENTITY "))
+        && (window.contains("port (") || window.contains("port(") || window.contains("PORT ("))
+    {
+        return Some(make_source_core(
+            "vhdl",
+            &["vhd", "vhdl"],
+            "sig.text.vhdl",
+            Verification::Structure,
+        ));
+    }
+
     // C# (.cs)
     if window.contains("using System")
         && (window.contains("namespace ")

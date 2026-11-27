@@ -58,6 +58,34 @@ pub fn check_zip_packages<R: Read + Seek>(
         return true;
     }
 
+    // 5. VS Code Extension (.vsix) & Firefox Add-on (.xpi) & Wheel (.whl) & NuGet (.nupkg)
+    if archive.by_name("extension.vsixmanifest").is_ok() {
+        apply_pkg(report, "vsix", "package", "vsix", &["vsix"]);
+        report.evidence.push(EvidenceItem::new("zip.vsix.manifest"));
+        return true;
+    }
+    if archive.by_name("install.rdf").is_ok() || archive.by_name("META-INF/mozilla.rsa").is_ok() {
+        apply_pkg(report, "xpi", "package", "xpi", &["xpi"]);
+        report.evidence.push(EvidenceItem::new("zip.xpi.manifest"));
+        return true;
+    }
+    for i in 0..archive.len() {
+        if let Ok(entry) = archive.by_index_raw(i) {
+            if let Ok(name) = entry.name() {
+                if name.ends_with(".dist-info/WHEEL") {
+                    apply_pkg(report, "whl", "package", "whl", &["whl"]);
+                    report.evidence.push(EvidenceItem::new("zip.whl.wheel"));
+                    return true;
+                }
+                if name.ends_with(".nuspec") && !name.contains('/') {
+                    apply_pkg(report, "nupkg", "package", "nupkg", &["nupkg"]);
+                    report.evidence.push(EvidenceItem::new("zip.nupkg.nuspec"));
+                    return true;
+                }
+            }
+        }
+    }
+
     false
 }
 
