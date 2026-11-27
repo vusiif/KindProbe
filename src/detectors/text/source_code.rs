@@ -146,6 +146,61 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // Typst (.typ) before code token scan
+    if (window.contains("#set ") || window.contains("#show ") || window.contains("#let "))
+        && (window.contains("\n= ") || window.starts_with("= ") || window.contains("#import "))
+    {
+        return Some(make_source_core(
+            "typ",
+            &["typ"],
+            "sig.text.typst",
+            Verification::Structure,
+        ));
+    }
+
+    // MDX (.mdx) before JS/TSX/Python scan
+    if (window.contains("import ") || window.contains("export const "))
+        && (window.contains("\n# ") || window.contains("\n## "))
+        && window.contains('<')
+        && window.contains("/>")
+    {
+        return Some(make_source_core(
+            "mdx",
+            &["mdx"],
+            "sig.text.mdx",
+            Verification::Structure,
+        ));
+    }
+
+    // Mojo (.mojo) before Rust/Python token scan
+    if window.contains("fn main():")
+        && (window.contains("var ") || window.contains("let "))
+        && window.contains("print(")
+    {
+        return Some(make_source_core(
+            "mojo",
+            &["mojo"],
+            "sig.text.mojo",
+            Verification::Structure,
+        ));
+    }
+
+    // Bazel / Starlark (.bzl) before Python scan
+    if (window.contains("load(\"@")
+        || window.contains("load(\"//")
+        || window.contains("cc_binary(")
+        || window.contains("rust_binary(")
+        || window.contains("http_archive("))
+        && w_bytes.contains(&b'(')
+    {
+        return Some(make_source_core(
+            "bzl",
+            &["bzl", "bazel"],
+            "sig.text.starlark",
+            Verification::Structure,
+        ));
+    }
+
     let mut has_v_module = false;
     let mut has_v_end = false;
     let mut has_rs_fn = false;
@@ -864,6 +919,72 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "dhall",
             &["dhall"],
             "sig.text.dhall",
+            Verification::Structure,
+        ));
+    }
+
+    // Justfile (.just)
+    if (window.contains("set shell") || window.contains(":="))
+        && window.contains(":\n")
+        && (window.contains("\n    ") || window.contains("\n\t"))
+        && !window.contains(".PHONY:")
+        && !w_bytes.contains(&b';')
+    {
+        return Some(make_source_core(
+            "just",
+            &["just"],
+            "sig.text.just",
+            Verification::Structure,
+        ));
+    }
+
+    // Lean 4 (.lean)
+    if (window.contains("theorem ") || window.contains("lemma ") || window.contains("inductive "))
+        && window.contains(":=")
+        && (window.contains("by ") || window.contains("Prop") || window.contains("Nat"))
+    {
+        return Some(make_source_core(
+            "lean",
+            &["lean"],
+            "sig.text.lean",
+            Verification::Structure,
+        ));
+    }
+
+    // KDL Document Language (.kdl)
+    if w_bytes.contains(&b'{')
+        && w_bytes.contains(&b'}')
+        && !w_bytes.contains(&b';')
+        && window
+            .lines()
+            .any(|l| {
+                let t = l.trim();
+                t.ends_with(" {") && t.contains('"')
+            })
+        && !window.contains("server {")
+        && !window.contains("plugins {")
+    {
+        return Some(make_source_core(
+            "kdl",
+            &["kdl"],
+            "sig.text.kdl",
+            Verification::Structure,
+        ));
+    }
+
+    // Rusty Object Notation (.ron)
+    let ron_trimmed = window.trim();
+    if ron_trimmed.starts_with('(')
+        && ron_trimmed.ends_with(')')
+        && ron_trimmed.contains(": ")
+        && !w_bytes.contains(&b';')
+        && !ron_trimmed.contains("(ns ")
+        && !ron_trimmed.contains("(module")
+    {
+        return Some(make_source_core(
+            "ron",
+            &["ron"],
+            "sig.text.ron",
             Verification::Structure,
         ));
     }

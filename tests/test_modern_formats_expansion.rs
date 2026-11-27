@@ -507,6 +507,42 @@ fn test_round12_cu_glsl_wgsl_hlsl_rego_jsonnet_bicep_dhall() {
 }
 
 #[test]
+fn test_round13_typ_mdx_mojo_bzl_just_lean_kdl_ron() {
+    assert_both_paths(
+        b"#set page(paper: \"a4\")\n#let title = \"KindProbe\"\n\n= Introduction\nHello Typst.\n",
+        "typ",
+    );
+    assert_both_paths(
+        b"import Chart from './Chart'\n\n# Quarterly Report\n\n<Chart data={[1, 2, 3]} />\n",
+        "mdx",
+    );
+    assert_both_paths(
+        b"fn main():\n    var x: Int = 42\n    print(x)\n",
+        "mojo",
+    );
+    assert_both_paths(
+        b"load(\"@rules_rust//rust:defs.bzl\", \"rust_binary\")\n\nrust_binary(\n    name = \"kindprobe\",\n    srcs = [\"src/main.rs\"],\n)\n",
+        "bzl",
+    );
+    assert_both_paths(
+        b"set shell := [\"bash\", \"-cu\"]\n\ntest:\n    cargo test --release\n",
+        "just",
+    );
+    assert_both_paths(
+        b"theorem add_zero (n : Nat) : n + 0 = n := by\n  rfl\n",
+        "lean",
+    );
+    assert_both_paths(
+        b"package \"kindprobe\" {\n    version \"0.2.0\"\n    edition \"2024\"\n}\n",
+        "kdl",
+    );
+    assert_both_paths(
+        b"(\n    window_size: (1280, 720),\n    title: \"KindProbe\",\n    vsync: true,\n)\n",
+        "ron",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();
