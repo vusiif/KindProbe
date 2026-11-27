@@ -55,6 +55,45 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         return Some(make_source_core("zig", &["zig"], "sig.text.zig", Verification::Structure));
     }
 
+    // CUDA (.cu / .cuh) and GLSL (.glsl / .vert / .frag) before C/C++ #include check
+    if (window.contains("__global__") || window.contains("__device__"))
+        && (window.contains("threadIdx") || window.contains("blockIdx") || window.contains("<<<"))
+    {
+        return Some(make_source_core(
+            "cu",
+            &["cu", "cuh"],
+            "sig.text.cuda",
+            Verification::Structure,
+        ));
+    }
+    if window.contains("#version ")
+        && window.contains("void main(")
+        && (window.contains("gl_Position")
+            || window.contains("gl_FragColor")
+            || window.contains("uniform ")
+            || window.contains("layout("))
+    {
+        return Some(make_source_core(
+            "glsl",
+            &["glsl", "vert", "frag"],
+            "sig.text.glsl",
+            Verification::Structure,
+        ));
+    }
+
+    // WebGPU Shading Language (.wgsl) before Rust token scan (`fn ` / `->`)
+    if (window.contains("@vertex") || window.contains("@fragment") || window.contains("@compute"))
+        && window.contains("fn ")
+        && (window.contains("@location(") || window.contains("@builtin(") || window.contains("@group("))
+    {
+        return Some(make_source_core(
+            "wgsl",
+            &["wgsl"],
+            "sig.text.wgsl",
+            Verification::Structure,
+        ));
+    }
+
     // C / C++ and Markdown fast check (only executed if `#` is present)
     let has_hash = w_bytes.contains(&b'#');
     if has_hash {
@@ -758,6 +797,73 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "editorconfig",
             &["editorconfig"],
             "sig.text.editorconfig",
+            Verification::Structure,
+        ));
+    }
+
+    // Open Policy Agent Rego (.rego)
+    if window.contains("package ")
+        && (window.contains("default ") || window.contains("allow") || window.contains("deny"))
+        && window.contains("input.")
+        && w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "rego",
+            &["rego"],
+            "sig.text.rego",
+            Verification::Structure,
+        ));
+    }
+
+    // Jsonnet (.jsonnet / .libsonnet)
+    if window.contains("local ")
+        && (window.contains("std.") || window.contains("+:") || window.contains("::"))
+        && w_bytes.contains(&b'{')
+        && w_bytes.contains(&b'}')
+    {
+        return Some(make_source_core(
+            "jsonnet",
+            &["jsonnet", "libsonnet"],
+            "sig.text.jsonnet",
+            Verification::Structure,
+        ));
+    }
+
+    // Azure Bicep (.bicep)
+    if window.contains("param ")
+        && window.contains("resource ")
+        && (window.contains("'Microsoft.") || window.contains("@description(") || window.contains("= {"))
+    {
+        return Some(make_source_core(
+            "bicep",
+            &["bicep"],
+            "sig.text.bicep",
+            Verification::Structure,
+        ));
+    }
+
+    // DirectX HLSL (.hlsl / .fx)
+    if (window.contains("cbuffer ") || window.contains("StructuredBuffer<") || window.contains("Texture2D"))
+        && (window.contains("SV_Position") || window.contains("SV_Target") || window.contains("float4"))
+    {
+        return Some(make_source_core(
+            "hlsl",
+            &["hlsl", "fx"],
+            "sig.text.hlsl",
+            Verification::Structure,
+        ));
+    }
+
+    // Dhall configuration (.dhall)
+    if window.contains("let ")
+        && (window.contains(" in ") || window.contains("\nin "))
+        && (window.contains(": Type") || window.contains(": Text") || window.contains(": Natural"))
+        && !w_bytes.contains(&b';')
+    {
+        return Some(make_source_core(
+            "dhall",
+            &["dhall"],
+            "sig.text.dhall",
             Verification::Structure,
         ));
     }

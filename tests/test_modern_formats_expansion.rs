@@ -471,6 +471,42 @@ fn test_round11_puml_mmd_dot_thrift_fbs_capnp_smithy_editorconfig_pub() {
 }
 
 #[test]
+fn test_round12_cu_glsl_wgsl_hlsl_rego_jsonnet_bicep_dhall() {
+    assert_both_paths(
+        b"#include <stdio.h>\n__global__ void add(int *a) {\n    int i = threadIdx.x + blockIdx.x;\n    a[i] += 1;\n}\n",
+        "cu",
+    );
+    assert_both_paths(
+        b"#version 330 core\nlayout(location = 0) in vec3 aPos;\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n}\n",
+        "glsl",
+    );
+    assert_both_paths(
+        b"@vertex\nfn vs_main(@location(0) pos: vec3<f32>) -> @builtin(position) vec4<f32> {\n    return vec4<f32>(pos, 1.0);\n}\n",
+        "wgsl",
+    );
+    assert_both_paths(
+        b"cbuffer Constants : register(b0) { float4x4 mvp; };\nfloat4 main(float3 pos : POSITION) : SV_Position {\n    return float4(pos, 1.0);\n}\n",
+        "hlsl",
+    );
+    assert_both_paths(
+        b"package authz\ndefault allow := false\nallow if {\n    input.user == \"admin\"\n}\n",
+        "rego",
+    );
+    assert_both_paths(
+        b"local name = 'kindprobe';\n{\n  app: name,\n  upper: std.asciiUpper(name),\n}\n",
+        "jsonnet",
+    );
+    assert_both_paths(
+        b"param location string = 'eastus'\nresource stg 'Microsoft.Storage/storageAccounts@2023-01-01' = {\n  name: 'kpstore'\n  location: location\n}\n",
+        "bicep",
+    );
+    assert_both_paths(
+        b"let Config : Type = { port : Natural }\nin let cfg : Config = { port = 8080 }\nin cfg\n",
+        "dhall",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();
