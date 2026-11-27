@@ -67,6 +67,23 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
         });
     }
 
+    if header.len() >= 8 && (header.starts_with(b"MAM\x04") || &header[4..8] == b"SCCA") {
+        return Some(DetectionCore {
+            format_id: Some("pf"),
+            category: "system",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Signature,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("pf"),
+            accepted_extensions: &["pf"],
+            primary_evidence: Some("sig.pf.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
     if header.len() >= 8 && &header[4..8] == b"TFL3" {
         return Some(DetectionCore {
             format_id: Some("tflite"),

@@ -497,6 +497,39 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // Clojure (.clj / .cljs / .cljc)
+    if window.contains("(ns ") && (window.contains("(defn ") || window.contains("(def ")) {
+        return Some(make_source_core(
+            "clj",
+            &["clj", "cljs", "cljc", "edn"],
+            "sig.text.clojure",
+            Verification::Structure,
+        ));
+    }
+
+    // Erlang (.erl / .hrl)
+    if window.contains("-module(") && window.contains("-export(") {
+        return Some(make_source_core(
+            "erl",
+            &["erl", "hrl"],
+            "sig.text.erlang",
+            Verification::Structure,
+        ));
+    }
+
+    // Nim (.nim / .nims)
+    if window.contains("proc ")
+        && (window.contains("echo ") || window.contains("result ="))
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "nim",
+            &["nim", "nims"],
+            "sig.text.nim",
+            Verification::Structure,
+        ));
+    }
+
     // C# (.cs)
     if window.contains("using System")
         && (window.contains("namespace ")

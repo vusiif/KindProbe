@@ -68,6 +68,27 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("csproj", "text", Some("xml"), "csproj", &["csproj", "fsproj", "vbproj"], "sig.text.csproj"));
     }
+    if head.starts_with(b"<rss") || (is_xml_head && contains_sub(b"<rss")) {
+        return Some(make_core("rss", "text", Some("xml"), "rss", &["rss", "xml"], "sig.text.rss"));
+    }
+    if (head.starts_with(b"<feed") || (is_xml_head && contains_sub(b"<feed"))) && contains_sub(b"2005/atom") {
+        return Some(make_core("atom", "text", Some("xml"), "atom", &["atom", "xml"], "sig.text.atom"));
+    }
+    if head.starts_with(b"<opml") || (is_xml_head && contains_sub(b"<opml")) {
+        return Some(make_core("opml", "text", Some("xml"), "opml", &["opml", "xml"], "sig.text.opml"));
+    }
+    if head.starts_with(b"<xsl:stylesheet")
+        || head.starts_with(b"<xsl:transform")
+        || (is_xml_head && (contains_sub(b"<xsl:stylesheet") || contains_sub(b"<xsl:transform")))
+    {
+        return Some(make_core("xslt", "text", Some("xml"), "xslt", &["xslt", "xsl"], "sig.text.xslt"));
+    }
+    if head.starts_with(b"<xs:schema")
+        || head.starts_with(b"<xsd:schema")
+        || (is_xml_head && (contains_sub(b"<xs:schema") || contains_sub(b"<xsd:schema")))
+    {
+        return Some(make_core("xsd", "text", Some("xml"), "xsd", &["xsd", "xml"], "sig.text.xsd"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head

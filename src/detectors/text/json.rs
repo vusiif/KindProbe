@@ -51,6 +51,14 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         text
     };
 
+    let mut lines = trimmed.lines().map(str::trim).filter(|l| !l.is_empty());
+    let is_jsonl = match (lines.next(), lines.next()) {
+        (Some(l1), Some(l2)) => {
+            l1.starts_with('{') && l1.ends_with('}') && l2.starts_with('{') && l2.ends_with('}')
+        }
+        _ => false,
+    };
+
     let (fmt, cat, cont, rec, exts, ev): (
         &'static str,
         &'static str,
@@ -58,7 +66,9 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         &'static str,
         &'static [&'static str],
         &'static str,
-    ) = if geo_window.contains("\"FeatureCollection\"")
+    ) = if is_jsonl {
+        ("jsonl", "text", None, "jsonl", &["jsonl", "ndjson"], "sig.text.jsonl")
+    } else if geo_window.contains("\"FeatureCollection\"")
         || geo_window.contains("\"GeometryCollection\"")
         || (geo_window.contains("\"Feature\"") && geo_window.contains("\"geometry\""))
     {

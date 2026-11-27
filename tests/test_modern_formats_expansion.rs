@@ -309,6 +309,44 @@ fn test_round7_ipynb_gltf_har_lottie_prisma_sol_hs_ex_astro() {
 }
 
 #[test]
+fn test_round8_pf_jsonl_rss_atom_opml_xslt_xsd_clj_erl_nim() {
+    assert_both_paths(b"MAM\x04\x00\x10\x00\x00\x00\x00\x00\x00", "pf");
+    assert_both_paths(b"{\"id\":1,\"ok\":true}\n{\"id\":2,\"ok\":false}\n", "jsonl");
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>Feed</title></channel></rss>",
+        "rss",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><feed xmlns=\"http://www.w3.org/2005/Atom\"><title>Atom</title></feed>",
+        "atom",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><opml version=\"2.0\"><body><outline text=\"News\"/></body></opml>",
+        "opml",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"></xsl:stylesheet>",
+        "xslt",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"></xs:schema>",
+        "xsd",
+    );
+    assert_both_paths(
+        b"(ns kindprobe.core\n  (:require [clojure.string :as str]))\n\n(defn greet [name]\n  (str \"Hello \" name))\n",
+        "clj",
+    );
+    assert_both_paths(
+        b"-module(hello).\n-export([world/0]).\n\nworld() -> ok.\n",
+        "erl",
+    );
+    assert_both_paths(
+        b"proc greet(name: string): string =\n  result = \"Hello \" & name\n  echo result\n",
+        "nim",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();
