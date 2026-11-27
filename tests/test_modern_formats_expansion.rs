@@ -440,6 +440,37 @@ fn test_round10_pfx_openapi_vb_ml_groovy_tcl_awk_wat_vhdl() {
 }
 
 #[test]
+fn test_round11_puml_mmd_dot_thrift_fbs_capnp_smithy_editorconfig_pub() {
+    assert_both_paths(b"@startuml\nAlice -> Bob: Hello\n@enduml\n", "puml");
+    assert_both_paths(b"flowchart TD\n    A[Start] --> B[Done]\n", "mmd");
+    assert_both_paths(b"digraph G {\n  A -> B;\n}\n", "dot");
+    assert_both_paths(
+        b"namespace rs kindprobe\nstruct Probe {\n  1: required string name\n}\n",
+        "thrift",
+    );
+    assert_both_paths(
+        b"namespace KindProbe;\ntable Header {\n  id: uint32;\n}\nroot_type Header;\n",
+        "fbs",
+    );
+    assert_both_paths(
+        b"@0xdbb9ad1f14bf0b36;\nstruct Point {\n  x @0 :Float32;\n}\n",
+        "capnp",
+    );
+    assert_both_paths(
+        b"$version: \"2.0\"\nnamespace com.example\nservice ProbeService {\n  version: \"2026-01-01\"\n}\n",
+        "smithy",
+    );
+    assert_both_paths(
+        b"root = true\n\n[*]\nindent_style = space\nindent_size = 4\nend_of_line = lf\n",
+        "editorconfig",
+    );
+    assert_both_paths(
+        b"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKindProbeTestKey user@host\n",
+        "sshpub",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

@@ -662,6 +662,106 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // PlantUML (.puml / .plantuml)
+    if window.contains("@startuml") && window.contains("@enduml") {
+        return Some(make_source_core(
+            "puml",
+            &["puml", "plantuml"],
+            "sig.text.plantuml",
+            Verification::Structure,
+        ));
+    }
+
+    // Mermaid diagram (.mmd / .mermaid)
+    let trimmed_mmd = window.trim_start();
+    if (trimmed_mmd.starts_with("flowchart ")
+        || trimmed_mmd.starts_with("graph ")
+        || trimmed_mmd.starts_with("sequenceDiagram")
+        || trimmed_mmd.starts_with("classDiagram")
+        || trimmed_mmd.starts_with("stateDiagram")
+        || trimmed_mmd.starts_with("erDiagram"))
+        && (window.contains("-->") || window.contains("->") || window.contains("||--") || window.contains("participant "))
+    {
+        return Some(make_source_core(
+            "mmd",
+            &["mmd", "mermaid"],
+            "sig.text.mermaid",
+            Verification::Structure,
+        ));
+    }
+
+    // Graphviz DOT (.dot / .gv)
+    if (window.contains("digraph ") || window.contains("strict digraph ") || window.contains("strict graph "))
+        && w_bytes.contains(&b'{')
+        && w_bytes.contains(&b'}')
+        && (window.contains("->") || window.contains("--"))
+    {
+        return Some(make_source_core(
+            "dot",
+            &["dot", "gv"],
+            "sig.text.dot",
+            Verification::Structure,
+        ));
+    }
+
+    // Apache Thrift IDL (.thrift)
+    if window.contains("namespace ")
+        && (window.contains("struct ") || window.contains("service "))
+        && (window.contains("1:") || window.contains("2:"))
+    {
+        return Some(make_source_core(
+            "thrift",
+            &["thrift"],
+            "sig.text.thrift",
+            Verification::Structure,
+        ));
+    }
+
+    // FlatBuffers Schema (.fbs)
+    if window.contains("table ")
+        && (window.contains("root_type ") || window.contains("file_identifier "))
+        && w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "fbs",
+            &["fbs"],
+            "sig.text.fbs",
+            Verification::Structure,
+        ));
+    }
+
+    // Cap'n Proto (.capnp)
+    if window.contains("@0x") && window.contains("struct ") && window.contains("@0") {
+        return Some(make_source_core(
+            "capnp",
+            &["capnp"],
+            "sig.text.capnp",
+            Verification::Structure,
+        ));
+    }
+
+    // AWS Smithy IDL (.smithy)
+    if window.contains("$version:") && window.contains("namespace ") && (window.contains("service ") || window.contains("structure ")) {
+        return Some(make_source_core(
+            "smithy",
+            &["smithy"],
+            "sig.text.smithy",
+            Verification::Structure,
+        ));
+    }
+
+    // EditorConfig (.editorconfig)
+    if (window.contains("root = true") || window.contains("[*]"))
+        && (window.contains("indent_style") || window.contains("indent_size") || window.contains("end_of_line"))
+    {
+        return Some(make_source_core(
+            "editorconfig",
+            &["editorconfig"],
+            "sig.text.editorconfig",
+            Verification::Structure,
+        ));
+    }
+
     // C# (.cs)
     if window.contains("using System")
         && (window.contains("namespace ")

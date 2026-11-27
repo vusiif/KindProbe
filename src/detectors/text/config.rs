@@ -21,9 +21,10 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
                 }
             }
         }
-        // 2. TOML detection: Section headers like [package]
+        // 2. TOML detection: Section headers like [package] (excluding EditorConfig [*])
         if fl.starts_with('[')
             && fl.ends_with(']')
+            && fl != "[*]"
             && !fl.contains("://")
             && !fl.contains('(')
             && fl.len() >= 3
