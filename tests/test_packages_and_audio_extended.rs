@@ -131,11 +131,12 @@ fn test_detect_apk_and_jar_in_zip() {
         ExtensionStatus::Mismatch
     );
 
-    // 1b. DEX-less valid APK (resource/split APK with valid AXML AndroidManifest.xml only)
+    // 1b. DEX-less APK with a deflated binary manifest exercises the direct decoder.
     let mut split_apk = Cursor::new(Vec::new());
     {
         let mut zip = ZipWriter::new(&mut split_apk);
-        let zip_opts = SimpleFileOptions::default();
+        let zip_opts =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
         zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
         zip.write_all(&axml).unwrap();
         zip.finish().unwrap();

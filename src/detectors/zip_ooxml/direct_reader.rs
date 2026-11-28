@@ -109,6 +109,12 @@ pub(super) enum DirectManifestOutcome {
     Fallback,
 }
 
+fn direct_deflate_decoder<R: Read>(stream: R, compressed_size: u32) -> DeflateDecoder<R> {
+    // The input is capped at the member size, so the decoder cannot fill a larger buffer.
+    let capacity = compressed_size.clamp(1, 32 * 1024) as usize;
+    DeflateDecoder::new_with_buf(stream, vec![0; capacity])
+}
+
 pub(super) fn verify_apk_manifest_direct<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
     meta: &ZipEntryMeta,
@@ -150,7 +156,7 @@ pub(super) fn verify_apk_manifest_direct<R: Read + Seek>(
     let status = match meta.compression_method {
         0 => super::packages::verify_apk_manifest_stream(compressed, options, report),
         8 => super::packages::verify_apk_manifest_stream(
-            DeflateDecoder::new(compressed),
+            direct_deflate_decoder(compressed, meta.compressed_size),
             options,
             report,
         ),
@@ -249,7 +255,7 @@ where
     let parsed = match meta.compression_method {
         0 => run_bounded_xml_reader(compressed, xml_limit_msg, options, report, parse_fn),
         8 => run_bounded_xml_reader(
-            DeflateDecoder::new(compressed),
+            direct_deflate_decoder(compressed, meta.compressed_size),
             xml_limit_msg,
             options,
             report,
