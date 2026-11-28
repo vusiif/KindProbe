@@ -240,6 +240,11 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("maven_settings", "configuration", Some("xml"), "xml", &["xml"], "sig.text.maven_settings"));
     }
+    if (head.starts_with(b"<rdf:rdf") || (is_xml_head && contains_sub(b"<rdf:rdf")))
+        && trimmed.contains("w3.org/2002/07/owl#")
+    {
+        return Some(make_core("owl", "data", Some("xml"), "owl", &["owl", "xml"], "sig.text.owl"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head

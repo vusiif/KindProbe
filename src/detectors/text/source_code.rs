@@ -97,6 +97,18 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // POV-Ray (.pov) before C/C++ `#include "` check
+    if window.contains("#include \"colors.inc\"")
+        || (window.contains("camera {") && window.contains("light_source {"))
+    {
+        return Some(make_source_core(
+            "pov",
+            &["pov", "inc"],
+            "sig.text.povray",
+            Verification::Structure,
+        ));
+    }
+
     // C / C++ and Markdown fast check (only executed if `#` is present)
     let has_hash = w_bytes.contains(&b'#');
     if has_hash {
@@ -2089,6 +2101,162 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "sudoers",
             &["sudoers"],
             "sig.text.sudoers",
+            Verification::Structure,
+        ));
+    }
+
+    // OpenSCAD (.scad)
+    if window.contains("module ")
+        && (window.contains("cube(")
+            || window.contains("cylinder(")
+            || window.contains("difference(")
+            || window.contains("union("))
+        && w_bytes.contains(&b'{')
+        && w_bytes.contains(&b';')
+    {
+        return Some(make_source_core(
+            "scad",
+            &["scad"],
+            "sig.text.openscad",
+            Verification::Structure,
+        ));
+    }
+
+    // GNU Linker Script (.ld / .lds)
+    if window.contains("SECTIONS")
+        && (window.contains("ENTRY(") || window.contains(".text :") || window.contains("KEEP("))
+        && w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "lds",
+            &["ld", "lds"],
+            "sig.text.linker_script",
+            Verification::Structure,
+        ));
+    }
+
+    // Linux Device Tree Source (.dts / .dtsi)
+    if window.contains("/dts-v1/;")
+        || (window.contains("compatible = \"") && window.contains("reg = <") && window.contains("};"))
+    {
+        return Some(make_source_core(
+            "dts_src",
+            &["dts", "dtsi"],
+            "sig.text.devicetree",
+            Verification::Structure,
+        ));
+    }
+
+    // Puppet manifest (.pp)
+    if (window.contains("package {") || window.contains("service {") || window.contains("file {"))
+        && window.contains("ensure =>")
+    {
+        return Some(make_source_core(
+            "puppet",
+            &["pp"],
+            "sig.text.puppet",
+            Verification::Structure,
+        ));
+    }
+
+    // MATLAB / Octave (.m)
+    if window.contains("function [") && window.contains("] = ") && window.contains("end") {
+        return Some(make_source_core(
+            "matlab",
+            &["m"],
+            "sig.text.matlab",
+            Verification::Structure,
+        ));
+    }
+
+    // Slint UI (.slint)
+    if window.contains("export component ")
+        && (window.contains("inherits Window")
+            || window.contains("Text {")
+            || window.contains("in-out property"))
+    {
+        return Some(make_source_core(
+            "slint",
+            &["slint"],
+            "sig.text.slint",
+            Verification::Structure,
+        ));
+    }
+
+    // Qt QML (.qml)
+    if window.contains("import QtQuick")
+        && (window.contains("Rectangle {")
+            || window.contains("Window {")
+            || window.contains("Item {")
+            || window.contains("ApplicationWindow {"))
+    {
+        return Some(make_source_core(
+            "qml",
+            &["qml"],
+            "sig.text.qml",
+            Verification::Structure,
+        ));
+    }
+
+    // CUE configuration (.cue)
+    if window.contains("package ")
+        && window.contains('#')
+        && window.contains(": {")
+        && (window.contains("string") || window.contains("int") || window.contains("bool"))
+    {
+        return Some(make_source_core(
+            "cuelang",
+            &["cue"],
+            "sig.text.cue",
+            Verification::Structure,
+        ));
+    }
+
+    // Smalltalk (.st)
+    if window.contains("Object subclass:") && window.contains("instanceVariableNames:") {
+        return Some(make_source_core(
+            "smalltalk",
+            &["st"],
+            "sig.text.smalltalk",
+            Verification::Structure,
+        ));
+    }
+
+    // Prolog (.pro / .P)
+    if window.contains(":-")
+        && window.contains(").")
+        && window.contains("?-")
+        && !window.contains("use strict")
+    {
+        return Some(make_source_core(
+            "prolog",
+            &["pro", "P"],
+            "sig.text.prolog",
+            Verification::Structure,
+        ));
+    }
+
+    // WebIDL / OMG IDL (.idl / .webidl)
+    if (window.contains("interface ")
+        && (window.contains("readonly attribute")
+            || window.contains("DOMString")
+            || window.contains("Promise<")))
+        || (window.contains("module ") && window.contains("interface ") && window.contains("};"))
+    {
+        return Some(make_source_core(
+            "idl",
+            &["idl", "webidl"],
+            "sig.text.idl",
+            Verification::Structure,
+        ));
+    }
+
+    // SAS script (.sas)
+    if window.contains("data ") && window.contains("set ") && window.contains("run;") {
+        return Some(make_source_core(
+            "sas_script",
+            &["sas"],
+            "sig.text.sas",
             Verification::Structure,
         ));
     }

@@ -1130,6 +1130,66 @@ fn test_round23_figma_sops_insomnia_hal_drawio_bpmn_nuget_maven_flatpakref_minis
 }
 
 #[test]
+fn test_round24_owl_pov_scad_lds_dts_puppet_matlab_slint_qml_cuelang_smalltalk_prolog_idl_sas() {
+    assert_both_paths(
+        b"<rdf:RDF xmlns:owl=\"http://www.w3.org/2002/07/owl#\"><owl:Ontology rdf:about=\"\"/></rdf:RDF>",
+        "owl",
+    );
+    assert_both_paths(
+        b"#include \"colors.inc\"\ncamera { location <0, 2, -3> }\nlight_source { <2, 4, -3> color White }\n",
+        "pov",
+    );
+    assert_both_paths(
+        b"module box_part(w) {\n  difference() {\n    cube([w, w, w]);\n    cylinder(r=2, h=w);\n  }\n}\n",
+        "scad",
+    );
+    assert_both_paths(
+        b"ENTRY(_start)\nSECTIONS {\n  . = 0x10000;\n  .text : { KEEP(*(.text)) }\n}\n",
+        "lds",
+    );
+    assert_both_paths(
+        b"/dts-v1/;\n/ {\n  compatible = \"acme,board\";\n  soc { reg = <0x0 0x1000>; };\n};\n",
+        "dts_src",
+    );
+    assert_both_paths(
+        b"package { 'nginx':\n  ensure => installed,\n}\n",
+        "puppet",
+    );
+    assert_both_paths(
+        b"function [s, m] = stats(x)\n  s = sum(x);\n  m = mean(x);\nend\n",
+        "matlab",
+    );
+    assert_both_paths(
+        b"export component AppWindow inherits Window {\n    Text { text: \"KindProbe\"; }\n}\n",
+        "slint",
+    );
+    assert_both_paths(
+        b"import QtQuick 2.15\nRectangle {\n    width: 200\n    height: 100\n}\n",
+        "qml",
+    );
+    assert_both_paths(
+        b"package app\n#Config: {\n    host: string\n    port: int\n}\n",
+        "cuelang",
+    );
+    assert_both_paths(
+        b"Object subclass: #Counter\n    instanceVariableNames: 'value'\n    classVariableNames: ''\n",
+        "smalltalk",
+    );
+    assert_both_paths(
+        b"parent(alice, bob).\nancestor(X, Y) :- parent(X, Y).\n?- ancestor(alice, bob).\n",
+        "prolog",
+    );
+    assert_both_paths(
+        b"interface ProbeReport {\n  readonly attribute DOMString formatId;\n};\n",
+        "idl",
+    );
+    assert_both_paths(
+        b"data work.out;\n  set work.in;\nrun;\n",
+        "sas_script",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();
