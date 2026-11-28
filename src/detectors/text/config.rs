@@ -30,6 +30,7 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
             && fl != "[user]"
             && fl != "[core]"
             && !fl.starts_with("[submodule ")
+            && !fl.starts_with("[program:")
             && !fl.contains("://")
             && !fl.contains('(')
             && fl.len() >= 3

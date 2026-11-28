@@ -191,6 +191,33 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("checkstyle", "data", Some("xml"), "xml", &["xml"], "sig.text.checkstyle"));
     }
+    if (head.starts_with(b"<interface") || (is_xml_head && contains_sub(b"<interface")))
+        && trimmed.contains("<object class=\"Gtk")
+    {
+        return Some(make_core("glade", "text", Some("xml"), "glade", &["glade", "ui"], "sig.text.glade"));
+    }
+    if (head.starts_with(b"<ui") || (is_xml_head && contains_sub(b"<ui")))
+        && trimmed.contains("<widget class=")
+    {
+        return Some(make_core("qt_ui", "text", Some("xml"), "ui", &["ui", "xml"], "sig.text.qt_ui"));
+    }
+    if (head.starts_with(b"<xliff") || (is_xml_head && contains_sub(b"<xliff")))
+        && trimmed.contains("<file")
+        && (trimmed.contains("<trans-unit") || trimmed.contains("<unit"))
+    {
+        return Some(make_core("xliff", "text", Some("xml"), "xlf", &["xlf", "xliff"], "sig.text.xliff"));
+    }
+    if (head.starts_with(b"<tmx") || (is_xml_head && contains_sub(b"<tmx")))
+        && trimmed.contains("<tu")
+        && trimmed.contains("<tuv")
+    {
+        return Some(make_core("tmx", "text", Some("xml"), "tmx", &["tmx", "xml"], "sig.text.tmx"));
+    }
+    if (head.starts_with(b"<score-partwise") || (is_xml_head && contains_sub(b"<score-partwise")))
+        && trimmed.contains("<part")
+    {
+        return Some(make_core("musicxml", "audio", Some("xml"), "musicxml", &["musicxml", "xml"], "sig.text.musicxml"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head

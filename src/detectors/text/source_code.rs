@@ -1103,6 +1103,7 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         && !window.contains("server {")
         && !window.contains("plugins {")
         && !window.contains("job \"")
+        && !window.contains(" = ")
     {
         return Some(make_source_core(
             "kdl",
@@ -1928,6 +1929,82 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "coffee",
             &["coffee"],
             "sig.text.coffeescript",
+            Verification::Structure,
+        ));
+    }
+
+    // Expect script (.exp)
+    if window.contains("spawn ") && window.contains("expect ") && window.contains("send ") {
+        return Some(make_source_core(
+            "expect",
+            &["exp"],
+            "sig.text.expect",
+            Verification::Structure,
+        ));
+    }
+
+    // GNU Automake (Makefile.am)
+    if (window.contains("bin_PROGRAMS") || window.contains("lib_LTLIBRARIES") || window.contains("SUBDIRS ="))
+        && window.contains('_')
+    {
+        return Some(make_source_core(
+            "automake",
+            &["am"],
+            "sig.text.automake",
+            Verification::Structure,
+        ));
+    }
+
+    // GNU Autoconf (configure.ac)
+    if window.contains("AC_INIT(") && (window.contains("AC_OUTPUT") || window.contains("AC_PROG_")) {
+        return Some(make_source_core(
+            "autoconf",
+            &["ac"],
+            "sig.text.autoconf",
+            Verification::Structure,
+        ));
+    }
+
+    // Supervisor config (supervisord.conf)
+    if window.contains("[program:") && window.contains("command=") {
+        return Some(make_source_core(
+            "supervisor",
+            &["conf"],
+            "sig.text.supervisor",
+            Verification::Structure,
+        ));
+    }
+
+    // logrotate config
+    if (window.contains("daily") || window.contains("weekly") || window.contains("monthly"))
+        && window.contains("rotate ")
+        && window.contains("compress")
+        && w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "logrotate",
+            &["conf"],
+            "sig.text.logrotate",
+            Verification::Structure,
+        ));
+    }
+
+    // Grafana Alloy (.alloy)
+    if window.contains("prometheus.scrape \"") && window.contains("forward_to =") {
+        return Some(make_source_core(
+            "alloy",
+            &["alloy"],
+            "sig.text.alloy",
+            Verification::Structure,
+        ));
+    }
+
+    // Mozilla Project Fluent (.ftl)
+    if window.contains(" = ") && window.contains("{$") && window.contains('}') && !w_bytes.contains(&b';') {
+        return Some(make_source_core(
+            "ftl",
+            &["ftl"],
+            "sig.text.fluent",
             Verification::Structure,
         ));
     }

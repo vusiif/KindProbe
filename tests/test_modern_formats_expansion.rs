@@ -989,6 +989,78 @@ fn test_round21_sarif_cyclonedx_spdx_sourcemap_webmanifest_junit_cobertura_check
 }
 
 #[test]
+fn test_round22_jsonschema_jsonld_vega_postman_asyncapi_glade_qtui_xliff_tmx_musicxml_expect_automake_autoconf_supervisor_logrotate_alloy_ftl() {
+    assert_both_paths(
+        br#"{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"id":{"type":"string"}}}"#,
+        "jsonschema",
+    );
+    assert_both_paths(
+        br#"{"@context":"https://schema.org","@type":"Person","name":"Jane Doe"}"#,
+        "jsonld",
+    );
+    assert_both_paths(
+        br#"{"$schema":"https://vega.github.io/schema/vega-lite/v5.json","mark":"bar","data":{"values":[]}}"#,
+        "vega",
+    );
+    assert_both_paths(
+        br#"{"info":{"_postman_id":"1234","name":"API"},"item":[]}"#,
+        "postman",
+    );
+    assert_both_paths(
+        br#"{"asyncapi":"3.0.0","info":{"title":"Events","version":"1.0"},"channels":{}}"#,
+        "asyncapi",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><interface><object class=\"GtkWindow\" id=\"win\"/></interface>",
+        "glade",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><ui version=\"4.0\"><widget class=\"QMainWindow\" name=\"MainWindow\"/></ui>",
+        "qt_ui",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><xliff version=\"1.2\"><file source-language=\"en\" target-language=\"zh\"><body><trans-unit id=\"1\"/></body></file></xliff>",
+        "xliff",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><tmx version=\"1.4\"><body><tu><tuv xml:lang=\"en\"><seg>Hi</seg></tuv></tu></body></tmx>",
+        "tmx",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><score-partwise version=\"4.0\"><part id=\"P1\"/></score-partwise>",
+        "musicxml",
+    );
+    assert_both_paths(
+        b"spawn ssh user@host\nexpect \"password:\"\nsend \"secret\\r\"\n",
+        "expect",
+    );
+    assert_both_paths(
+        b"SUBDIRS = src tests\nbin_PROGRAMS = kindprobe\n",
+        "automake",
+    );
+    assert_both_paths(
+        b"AC_INIT([kindprobe], [0.2.0])\nAC_PROG_CC\nAC_OUTPUT\n",
+        "autoconf",
+    );
+    assert_both_paths(
+        b"[program:kindprobe]\ncommand=/usr/local/bin/kindprobe\nautostart=true\n",
+        "supervisor",
+    );
+    assert_both_paths(
+        b"/var/log/kindprobe.log {\n    daily\n    rotate 7\n    compress\n}\n",
+        "logrotate",
+    );
+    assert_both_paths(
+        b"prometheus.scrape \"default\" {\n  targets = []\n  forward_to = [prometheus.remote_write.default.receiver]\n}\n",
+        "alloy",
+    );
+    assert_both_paths(
+        b"welcome = Hello, {$user}!\n",
+        "ftl",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

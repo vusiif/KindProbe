@@ -131,6 +131,27 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         && geo_window.contains("\"start_url\"")
     {
         ("webmanifest", "configuration", Some("json"), "webmanifest", &["webmanifest", "json"], "sig.text.webmanifest")
+    } else if geo_window.contains("\"$schema\"")
+        && geo_window.contains("json-schema.org")
+        && (geo_window.contains("\"properties\"") || geo_window.contains("\"type\""))
+    {
+        ("jsonschema", "data", Some("json"), "json", &["json"], "sig.text.jsonschema")
+    } else if geo_window.contains("\"@context\"") && geo_window.contains("\"@type\"") {
+        ("jsonld", "data", Some("json"), "jsonld", &["jsonld", "json"], "sig.text.jsonld")
+    } else if geo_window.contains("vega.github.io/schema")
+        && (geo_window.contains("\"mark\"") || geo_window.contains("\"marks\""))
+    {
+        ("vega", "data", Some("json"), "vg.json", &["json"], "sig.text.vega")
+    } else if geo_window.contains("\"_postman_id\"")
+        && geo_window.contains("\"item\"")
+        && geo_window.contains("\"info\"")
+    {
+        ("postman", "data", Some("json"), "json", &["json"], "sig.text.postman")
+    } else if geo_window.contains("\"asyncapi\"")
+        && geo_window.contains("\"channels\"")
+        && geo_window.contains("\"info\"")
+    {
+        ("asyncapi", "configuration", Some("json"), "json", &["json"], "sig.text.asyncapi")
     } else if geo_window.contains("\n//") || geo_window.contains("\n  //") || geo_window.contains("/*") {
         ("json5", "configuration", Some("json"), "json5", &["json5", "jsonc"], "sig.text.json5")
     } else {
