@@ -29,6 +29,9 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     if (trimmed.contains("{{#if ") || trimmed.contains("{{#each ")) && trimmed.contains("{{/") {
         return Some(make_core("hbs", "text", None, "hbs", &["hbs", "handlebars"], "sig.text.handlebars"));
     }
+    if (trimmed.contains("{% endif %}") || trimmed.contains("{% endfor %}")) && trimmed.contains("{%") {
+        return Some(make_core("liquid", "text", None, "liquid", &["liquid"], "sig.text.liquid"));
+    }
     if (trimmed.contains("{% block ") || trimmed.contains("{% extends ") || trimmed.contains("{% for "))
         && trimmed.contains("%}")
     {
@@ -36,6 +39,12 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     }
     if (trimmed.contains("<%=") || trimmed.contains("<%-") || trimmed.contains("<% ")) && trimmed.contains("%>") {
         return Some(make_core("ejs", "text", None, "ejs", &["ejs"], "sig.text.ejs"));
+    }
+    if head.starts_with(b"<virtualhost")
+        || head.starts_with(b"<directory")
+        || head.starts_with(b"<ifmodule")
+    {
+        return Some(make_core("htaccess", "configuration", None, "htaccess", &["htaccess", "conf"], "sig.text.apache"));
     }
     if head.starts_with(b"<!doctype html")
         || head.starts_with(b"<html")

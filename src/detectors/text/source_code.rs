@@ -1145,12 +1145,20 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
-    // Handlebars (.hbs), Jinja2 (.j2 / .jinja), EJS (.ejs)
+    // Handlebars (.hbs), Liquid (.liquid), Jinja2 (.j2 / .jinja), EJS (.ejs)
     if (window.contains("{{#if ") || window.contains("{{#each ")) && window.contains("{{/") {
         return Some(make_source_core(
             "hbs",
             &["hbs", "handlebars"],
             "sig.text.handlebars",
+            Verification::Structure,
+        ));
+    }
+    if (window.contains("{% endif %}") || window.contains("{% endfor %}")) && window.contains("{%") {
+        return Some(make_source_core(
+            "liquid",
+            &["liquid"],
+            "sig.text.liquid",
             Verification::Structure,
         ));
     }
@@ -1219,6 +1227,68 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "procfile",
             &["procfile"],
             "sig.text.procfile",
+            Verification::Structure,
+        ));
+    }
+
+    // Vagrantfile
+    if window.contains("Vagrant.configure(") && window.contains("end") {
+        return Some(make_source_core(
+            "vagrantfile",
+            &["vagrantfile"],
+            "sig.text.vagrantfile",
+            Verification::Structure,
+        ));
+    }
+
+    // OpenSSH Client Config (ssh_config)
+    if window.lines().any(|l| l.trim_start().starts_with("Host "))
+        && (window.contains("HostName ") || window.contains("IdentityFile ") || window.contains("User "))
+    {
+        return Some(make_source_core(
+            "ssh_config",
+            &["config"],
+            "sig.text.ssh_config",
+            Verification::Structure,
+        ));
+    }
+
+    // /etc/hosts
+    if window.contains("127.0.0.1") && window.contains("localhost") {
+        return Some(make_source_core(
+            "hosts",
+            &["hosts"],
+            "sig.text.hosts",
+            Verification::Structure,
+        ));
+    }
+
+    // Crontab
+    if (window.contains("* * * * *")
+        || window.contains(" * * * ")
+        || window.contains("@reboot ")
+        || window.contains("@daily ")
+        || window.contains("@hourly "))
+        && window.contains('/')
+    {
+        return Some(make_source_core(
+            "crontab",
+            &["cron", "crontab"],
+            "sig.text.crontab",
+            Verification::Structure,
+        ));
+    }
+
+    // Apache HTTP Server / .htaccess
+    if window.contains("RewriteEngine ")
+        || window.contains("RewriteRule ")
+        || window.contains("<VirtualHost ")
+        || window.contains("<Directory ")
+    {
+        return Some(make_source_core(
+            "htaccess",
+            &["htaccess", "conf"],
+            "sig.text.apache",
             Verification::Structure,
         ));
     }
@@ -1434,6 +1504,24 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "scss",
             &["scss"],
             "sig.text.scss",
+            Verification::Structure,
+        ));
+    }
+
+    // Less (.less) before CSS
+    if w_bytes.contains(&b'{')
+        && w_bytes.contains(&b'}')
+        && w_bytes.contains(&b'@')
+        && window.lines().any(|l| {
+            let t = l.trim_start();
+            t.starts_with('@') && t.contains(':') && t.ends_with(';') && !t.starts_with("@media") && !t.starts_with("@import")
+        })
+        && (window.contains("color:") || window.contains("margin:") || window.contains("padding:") || window.contains("display:"))
+    {
+        return Some(make_source_core(
+            "less",
+            &["less"],
+            "sig.text.less",
             Verification::Structure,
         ));
     }

@@ -661,6 +661,42 @@ fn test_round16_pug_hbs_jinja_ejs_jenkinsfile_earthfile_meson_procfile() {
 }
 
 #[test]
+fn test_round17_liquid_less_htaccess_vagrantfile_ssh_config_hosts_crontab() {
+    assert_both_paths(
+        b"{% if user %}\n<p>Hello {{ user.name }}</p>\n{% endif %}\n",
+        "liquid",
+    );
+    assert_both_paths(
+        b"@primary: #428bca;\n.btn {\n  color: @primary;\n  padding: 8px;\n}\n",
+        "less",
+    );
+    assert_both_paths(
+        b"RewriteEngine On\nRewriteRule ^old$ /new [R=301,L]\n",
+        "htaccess",
+    );
+    assert_both_paths(
+        b"<VirtualHost *:80>\n  ServerName example.com\n</VirtualHost>\n",
+        "htaccess",
+    );
+    assert_both_paths(
+        b"Vagrant.configure(\"2\") do |config|\n  config.vm.box = \"ubuntu/jammy64\"\nend\n",
+        "vagrantfile",
+    );
+    assert_both_paths(
+        b"Host prod\n    HostName 10.0.0.5\n    User deploy\n    IdentityFile ~/.ssh/id_ed25519\n",
+        "ssh_config",
+    );
+    assert_both_paths(
+        b"127.0.0.1 localhost\n::1 localhost\n",
+        "hosts",
+    );
+    assert_both_paths(
+        b"0 2 * * * /usr/local/bin/backup.sh\n",
+        "crontab",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();
