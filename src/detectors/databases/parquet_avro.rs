@@ -1,6 +1,5 @@
 use crate::model::{
-    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
-    Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 pub enum ColumnarMatch {
@@ -66,45 +65,10 @@ pub fn probe_parquet_avro(header: &[u8]) -> ColumnarMatch {
         return ColumnarMatch::None;
     }
 
-    // 1. Apache Parquet ("PAR1")
-    if header.starts_with(b"PAR1") {
-        return ColumnarMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("parquet".to_string()),
-            category: "database".to_string(),
-            container_id: None,
-            identification: Identification::Format,
-            verification: Verification::Structure,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("parquet".to_string()),
-            accepted_extensions: vec!["parquet".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: vec![EvidenceItem::new("sig.parquet.magic")],
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
+    match probe_parquet_avro_core(header) {
+        Some(core) => ColumnarMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
+        None => ColumnarMatch::None,
     }
-
-    // 2. Apache Avro ("Obj\x01")
-    if header.starts_with(b"Obj\x01") {
-        return ColumnarMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("avro".to_string()),
-            category: "database".to_string(),
-            container_id: None,
-            identification: Identification::Format,
-            verification: Verification::Structure,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("avro".to_string()),
-            accepted_extensions: vec!["avro".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: vec![EvidenceItem::new("sig.avro.magic")],
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
-    }
-
-    ColumnarMatch::None
 }

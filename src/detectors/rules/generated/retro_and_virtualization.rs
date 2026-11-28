@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_binary_6_from_2;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -104,7 +105,7 @@ pub static RETRO_AND_VIRTUALIZATION_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.hfv.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_binary_6_from_2),
     },
     SignatureRule {
         format_id: "med",

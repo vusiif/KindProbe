@@ -1,6 +1,5 @@
 use crate::model::{
-    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
-    Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 pub const VMDK_SPARSE_MAGIC: &[u8] = b"KDMV";
@@ -82,58 +81,10 @@ pub fn probe_vmdk(header: &[u8]) -> VmdkMatch {
         return VmdkMatch::None;
     }
 
-    // 1. Sparse VMDK binary format
-    if header.starts_with(VMDK_SPARSE_MAGIC) {
-        let mut evidence = vec![EvidenceItem::new("sig.vmdk.sparse_magic")];
-        let verification = if header.len() >= 8 {
-            let version = u32::from_le_bytes([header[4], header[5], header[6], header[7]]);
-            if (1..=3).contains(&version) {
-                evidence.push(EvidenceItem::new("sig.vmdk.version"));
-                Verification::Structure
-            } else {
-                Verification::Signature
-            }
-        } else {
-            Verification::Signature
-        };
-
-        return VmdkMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("vmdk".to_string()),
-            category: "disk".to_string(),
-            container_id: None,
-            identification: Identification::Format,
-            verification,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("vmdk".to_string()),
-            accepted_extensions: vec!["vmdk".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence,
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
+    match probe_vmdk_core(header) {
+        Some(core) => VmdkMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
+        None => VmdkMatch::None,
     }
-
-    // 2. Monolithic Flat descriptor VMDK format
-    if header.starts_with(VMDK_DESC_MAGIC) {
-        return VmdkMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("vmdk".to_string()),
-            category: "disk".to_string(),
-            container_id: None,
-            identification: Identification::Format,
-            verification: Verification::Structure,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("vmdk".to_string()),
-            accepted_extensions: vec!["vmdk".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: vec![EvidenceItem::new("sig.vmdk.desc_magic")],
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
-    }
-
-    VmdkMatch::None
 }

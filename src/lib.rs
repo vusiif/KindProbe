@@ -38,6 +38,17 @@ fn resolve_path_extension(path: &Path) -> Option<&OsStr> {
 ///
 /// Follows symlinks safely, verifies that the target is a regular file,
 /// identifies the format via content evidence, and performs independent extension diagnosis.
+///
+/// # Examples
+///
+/// ```no_run
+/// use std::path::Path;
+/// use kindprobe::{detect_path, DetectOptions};
+///
+/// let report = detect_path(Path::new("sample.png"), &DetectOptions::default())?;
+/// assert_eq!(report.format_id.as_deref(), Some("png"));
+/// # Ok::<(), kindprobe::DetectError>(())
+/// ```
 pub fn detect_path(path: &Path, options: &DetectOptions) -> Result<DetectionReport, DetectError> {
     let start = Instant::now();
 
@@ -83,7 +94,19 @@ pub fn detect_path(path: &Path, options: &DetectOptions) -> Result<DetectionRepo
     Ok(report)
 }
 
-/// Detects the format of an in-memory byte slice returning a lightweight, zero-allocation DetectionCore.
+/// Lightweight detection for an in-memory byte slice returning a zero-allocation [`DetectionCore`].
+///
+/// # Examples
+///
+/// ```
+/// use kindprobe::{detect_bytes_core, DetectOptions, Identification};
+///
+/// let png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR";
+/// let core = detect_bytes_core(png, &DetectOptions::default())?;
+/// assert_eq!(core.identification, Identification::Format);
+/// assert_eq!(core.format_id, Some("png"));
+/// # Ok::<(), kindprobe::DetectError>(())
+/// ```
 pub fn detect_bytes_core(
     bytes: &[u8],
     options: &DetectOptions,
@@ -119,6 +142,18 @@ pub fn detect_bytes_core(
 }
 
 /// Detects the format of an in-memory byte slice.
+///
+/// # Examples
+///
+/// ```
+/// use kindprobe::{detect_bytes, DetectOptions};
+///
+/// let pdf = b"%PDF-1.7\n";
+/// let report = detect_bytes(pdf, &DetectOptions::default())?;
+/// assert_eq!(report.format_id.as_deref(), Some("pdf"));
+/// assert_eq!(report.recommended_extension.as_deref(), Some("pdf"));
+/// # Ok::<(), kindprobe::DetectError>(())
+/// ```
 pub fn detect_bytes(bytes: &[u8], options: &DetectOptions) -> Result<DetectionReport, DetectError> {
     let start = Instant::now();
 
@@ -189,7 +224,19 @@ pub fn detect_bytes(bytes: &[u8], options: &DetectOptions) -> Result<DetectionRe
     Ok(report)
 }
 
-/// Lightweight detection for a seekable reader returning zero-allocation DetectionCore.
+/// Lightweight detection for a seekable reader returning zero-allocation [`DetectionCore`].
+///
+/// # Examples
+///
+/// ```
+/// use std::io::Cursor;
+/// use kindprobe::{detect_reader_core, DetectOptions};
+///
+/// let mut cursor = Cursor::new(b"{\"hello\": \"world\"}\n");
+/// let core = detect_reader_core(&mut cursor, &DetectOptions::default())?;
+/// assert_eq!(core.format_id, Some("json"));
+/// # Ok::<(), kindprobe::DetectError>(())
+/// ```
 pub fn detect_reader_core<R: Read + Seek>(
     reader: &mut R,
     options: &DetectOptions,
@@ -255,6 +302,18 @@ pub fn detect_path_core(
 }
 
 /// Detects the format of a seekable reader using content-first structural analysis.
+///
+/// # Examples
+///
+/// ```
+/// use std::io::Cursor;
+/// use kindprobe::{detect_reader, DetectOptions};
+///
+/// let mut cursor = Cursor::new(b"fLaC\x00\x00\x00\x22");
+/// let report = detect_reader(&mut cursor, &DetectOptions::default())?;
+/// assert_eq!(report.format_id.as_deref(), Some("flac"));
+/// # Ok::<(), kindprobe::DetectError>(())
+/// ```
 pub fn detect_reader<R: Read + Seek>(
     reader: &mut R,
     options: &DetectOptions,

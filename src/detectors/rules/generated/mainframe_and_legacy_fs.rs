@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_min_4;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -26,7 +27,7 @@ pub static MAINFRAME_AND_LEGACY_FS_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.atr.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_min_4),
     },
     SignatureRule {
         format_id: "crt_c64",

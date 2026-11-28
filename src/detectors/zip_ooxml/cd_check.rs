@@ -4,10 +4,22 @@ use crate::model::{DetectError, DetectionReport, Identification, Inspection, War
 use std::collections::HashSet;
 use std::io::{Read, Seek, SeekFrom};
 
+#[derive(Debug, Clone)]
+pub struct ZipEntryMeta {
+    pub name: String,
+    pub compression_method: u16,
+    pub flags: u16,
+    pub compressed_size: u32,
+    pub local_header_offset: u32,
+}
+
+const MAX_CACHED_XML_ENTRIES: usize = 128;
+
 pub struct ZipCdPreCheckResult {
     pub cd_total_entries: usize,
     pub cd_size: usize,
     pub cd_offset: u64,
+    pub is_zip64: bool,
     pub has_content_types: bool,
     pub has_rels: bool,
     pub has_ooxml_subdirs: bool,
@@ -25,6 +37,10 @@ pub struct ZipCdPreCheckResult {
     pub has_nupkg_nuspec: bool,
     pub has_xpi_manifest: bool,
     pub has_msix_manifest: bool,
+    pub content_types_entry: Option<ZipEntryMeta>,
+    pub rels_entry: Option<ZipEntryMeta>,
+    pub xml_entries: Vec<ZipEntryMeta>,
+    pub xml_entries_capped: bool,
 }
 
 enum FastNameSet<T: Eq + std::hash::Hash> {
@@ -205,6 +221,11 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
     let mut has_nupkg_nuspec = false;
     let mut has_xpi_manifest = false;
     let mut has_msix_manifest = false;
+    let mut content_types_entry: Option<ZipEntryMeta> = None;
+    let mut rels_entry: Option<ZipEntryMeta> = None;
+    let mut xml_entries: Vec<ZipEntryMeta> = Vec::new();
+    let mut xml_entries_capped = false;
+    let mut any_zip64 = cd_total_entries == 0xFFFF || cd_offset == u64::from(u32::MAX);
 
     // Walk central directory headers to check for duplicate entry names or conflicting paths
     if let Err(e) = reader.seek(SeekFrom::Start(cd_offset)) {
@@ -264,11 +285,19 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             ));
             return Ok(None);
         }
+        let flags = u16::from_le_bytes([cd_bytes[pos + 8], cd_bytes[pos + 9]]);
+        let compression_method = u16::from_le_bytes([cd_bytes[pos + 10], cd_bytes[pos + 11]]);
         let compressed_size = u32::from_le_bytes([
             cd_bytes[pos + 20],
             cd_bytes[pos + 21],
             cd_bytes[pos + 22],
             cd_bytes[pos + 23],
+        ]);
+        let uncompressed_size = u32::from_le_bytes([
+            cd_bytes[pos + 24],
+            cd_bytes[pos + 25],
+            cd_bytes[pos + 26],
+            cd_bytes[pos + 27],
         ]);
         let fn_len = u16::from_le_bytes([cd_bytes[pos + 28], cd_bytes[pos + 29]]) as usize;
         let extra_len = u16::from_le_bytes([cd_bytes[pos + 30], cd_bytes[pos + 31]]) as usize;
@@ -279,6 +308,12 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             cd_bytes[pos + 44],
             cd_bytes[pos + 45],
         ]);
+        if local_header_offset == u32::MAX
+            || compressed_size == u32::MAX
+            || uncompressed_size == u32::MAX
+        {
+            any_zip64 = true;
+        }
         if local_header_offset != u32::MAX && cd_offset > 0 {
             let lfh_off = local_header_offset as u64;
             if lfh_off >= cd_offset
@@ -314,46 +349,87 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             duplicate_entry = Some(String::from_utf8_lossy(raw_bytes).to_string());
         }
 
+        let make_meta = |name_bytes: &[u8]| -> Option<ZipEntryMeta> {
+            if (flags & 0x0001) != 0
+                || (compression_method != 0 && compression_method != 8)
+                || local_header_offset == u32::MAX
+                || compressed_size == u32::MAX
+                || uncompressed_size == u32::MAX
+            {
+                return None;
+            }
+            std::str::from_utf8(name_bytes)
+                .ok()
+                .map(|name| ZipEntryMeta {
+                    name: name.to_string(),
+                    compression_method,
+                    flags,
+                    compressed_size,
+                    local_header_offset,
+                })
+        };
+
         // Check OOXML, package, and container indicators on raw bytes without string conversion
         if raw_bytes == b"[Content_Types].xml" {
             has_content_types = true;
+            if content_types_entry.is_none() {
+                content_types_entry = make_meta(raw_bytes);
+            }
         } else if raw_bytes == b"_rels/.rels" {
             has_rels = true;
-        } else if raw_bytes.starts_with(b"word/")
-            || raw_bytes.starts_with(b"xl/")
-            || raw_bytes.starts_with(b"ppt/")
-            || raw_bytes.starts_with(b"customXml/")
-            || raw_bytes.starts_with(b"docProps/")
-        {
-            has_ooxml_subdirs = true;
-        } else if raw_bytes == b"AndroidManifest.xml" {
-            has_apk_manifest = true;
-        } else if raw_bytes == b"classes.dex" {
-            has_apk_dex = true;
-        } else if raw_bytes == b"BundleConfig.pb" {
-            has_aab_bundle = true;
-        } else if raw_bytes.ends_with(b".npy") {
-            has_npz_array = true;
-        } else if raw_bytes.starts_with(b"Payload/") && raw_bytes.ends_with(b".app/Info.plist") {
-            has_ipa_payload = true;
-        } else if raw_bytes == b"META-INF/MANIFEST.MF" {
-            has_jar_manifest = true;
-        } else if raw_bytes == b"doc.kml" {
-            has_kmz_kml = true;
-        } else if raw_bytes == b"mimetype" {
-            has_mimetype = true;
-        } else if raw_bytes == b"META-INF/container.xml" {
-            has_epub_container = true;
-        } else if raw_bytes.ends_with(b".dist-info/WHEEL") {
-            has_whl_dist_info = true;
-        } else if raw_bytes == b"extension.vsixmanifest" {
-            has_vsix_manifest = true;
-        } else if raw_bytes.ends_with(b".nuspec") && !raw_bytes.contains(&b'/') {
-            has_nupkg_nuspec = true;
-        } else if raw_bytes == b"install.rdf" || raw_bytes == b"META-INF/mozilla.rsa" {
-            has_xpi_manifest = true;
-        } else if raw_bytes == b"AppxManifest.xml" {
-            has_msix_manifest = true;
+            if rels_entry.is_none() {
+                rels_entry = make_meta(raw_bytes);
+            }
+        } else {
+            if raw_bytes.len() > 4 && raw_bytes[raw_bytes.len() - 4..].eq_ignore_ascii_case(b".xml")
+            {
+                if xml_entries.len() < MAX_CACHED_XML_ENTRIES {
+                    if let Some(meta) = make_meta(raw_bytes) {
+                        xml_entries.push(meta);
+                    } else {
+                        xml_entries_capped = true;
+                    }
+                } else {
+                    xml_entries_capped = true;
+                }
+            }
+            if raw_bytes.starts_with(b"word/")
+                || raw_bytes.starts_with(b"xl/")
+                || raw_bytes.starts_with(b"ppt/")
+                || raw_bytes.starts_with(b"customXml/")
+                || raw_bytes.starts_with(b"docProps/")
+            {
+                has_ooxml_subdirs = true;
+            } else if raw_bytes == b"AndroidManifest.xml" {
+                has_apk_manifest = true;
+            } else if raw_bytes == b"classes.dex" {
+                has_apk_dex = true;
+            } else if raw_bytes == b"BundleConfig.pb" {
+                has_aab_bundle = true;
+            } else if raw_bytes.ends_with(b".npy") {
+                has_npz_array = true;
+            } else if raw_bytes.starts_with(b"Payload/") && raw_bytes.ends_with(b".app/Info.plist")
+            {
+                has_ipa_payload = true;
+            } else if raw_bytes == b"META-INF/MANIFEST.MF" {
+                has_jar_manifest = true;
+            } else if raw_bytes == b"doc.kml" {
+                has_kmz_kml = true;
+            } else if raw_bytes == b"mimetype" {
+                has_mimetype = true;
+            } else if raw_bytes == b"META-INF/container.xml" {
+                has_epub_container = true;
+            } else if raw_bytes.ends_with(b".dist-info/WHEEL") {
+                has_whl_dist_info = true;
+            } else if raw_bytes == b"extension.vsixmanifest" {
+                has_vsix_manifest = true;
+            } else if raw_bytes.ends_with(b".nuspec") && !raw_bytes.contains(&b'/') {
+                has_nupkg_nuspec = true;
+            } else if raw_bytes == b"install.rdf" || raw_bytes == b"META-INF/mozilla.rsa" {
+                has_xpi_manifest = true;
+            } else if raw_bytes == b"AppxManifest.xml" {
+                has_msix_manifest = true;
+            }
         }
 
         let norm: std::borrow::Cow<'_, str> = match std::str::from_utf8(raw_bytes) {
@@ -425,6 +501,7 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         cd_total_entries: actual_entries,
         cd_size,
         cd_offset,
+        is_zip64: any_zip64,
         has_content_types,
         has_rels,
         has_ooxml_subdirs,
@@ -442,5 +519,9 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         has_nupkg_nuspec,
         has_xpi_manifest,
         has_msix_manifest,
+        content_types_entry,
+        rels_entry,
+        xml_entries,
+        xml_entries_capped,
     }))
 }

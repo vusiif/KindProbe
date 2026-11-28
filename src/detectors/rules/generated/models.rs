@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_binary_6_from_2;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -52,7 +53,7 @@ pub static MODELS_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.3ds.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_binary_6_from_2),
     },
     SignatureRule {
         format_id: "ply",
@@ -169,6 +170,6 @@ pub static MODELS_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.3ds.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_binary_6_from_2),
     },
 ];

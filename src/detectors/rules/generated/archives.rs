@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_min_4;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -39,7 +40,7 @@ pub static ARCHIVES_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.arj.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_min_4),
     },
     SignatureRule {
         format_id: "zoo",

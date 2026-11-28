@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::{validate_eac3, validate_min_4};
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -52,7 +53,7 @@ pub static VIDEO_STREAMS_AND_RF_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.ac4.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_min_4),
     },
     SignatureRule {
         format_id: "eac3",
@@ -65,7 +66,7 @@ pub static VIDEO_STREAMS_AND_RF_RULES: &[SignatureRule] = &[
         priority: 45,
         evidence_code: "rule.eac3.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_eac3),
     },
     SignatureRule {
         format_id: "truehd",

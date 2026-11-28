@@ -198,3 +198,39 @@ fn test_detect_declarative_truncated() {
         .iter()
         .any(|w| w.code == "input.truncated"));
 }
+
+#[test]
+fn test_short_rule_collision_and_length_guards() {
+    let opts = DetectOptions::default();
+
+    // E-AC-3 (bsid = 16 in header[5] >> 3) must not be shadowed by AC-3
+    let eac3 = [0x0b, 0x77, 0x01, 0x00, 0x00, 0x80, 0x00, 0x00];
+    let rep_eac3 = detect_bytes(&eac3, &opts).expect("detect eac3");
+    assert_eq!(rep_eac3.format_id.as_deref(), Some("eac3"));
+    assert_eq!(
+        compare_extension(&rep_eac3, Some(OsStr::new("eac3"))),
+        ExtensionStatus::Match
+    );
+
+    // Standard AC-3 (bsid = 8) stays ac3
+    let ac3 = [0x0b, 0x77, 0x12, 0x34, 0x08, 0x40, 0x00, 0x00];
+    let rep_ac3 = detect_bytes(&ac3, &opts).expect("detect ac3");
+    assert_eq!(rep_ac3.format_id.as_deref(), Some("ac3"));
+
+    // PK font accepts both .pk and .pkf extensions
+    let pk = [0xf7, 0x59, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05];
+    let rep_pk = detect_bytes(&pk, &opts).expect("detect pk");
+    assert_eq!(rep_pk.format_id.as_deref(), Some("pk"));
+    assert_eq!(
+        compare_extension(&rep_pk, Some(OsStr::new("pkf"))),
+        ExtensionStatus::Match
+    );
+
+    // Short 2-byte prefixes report truncated/unknown instead of false-confirming
+    let short_jxl = detect_bytes(b"\xff\x0a", &opts).expect("detect short jxl");
+    assert_eq!(short_jxl.identification, Identification::Unknown);
+    assert!(short_jxl
+        .warnings
+        .iter()
+        .any(|w| w.code == "input.truncated"));
+}

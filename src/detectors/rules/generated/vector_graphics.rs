@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_min_6;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -55,7 +56,7 @@ pub static VECTOR_GRAPHICS_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.jxl.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_min_6),
     },
     SignatureRule {
         format_id: "jxl",
@@ -107,7 +108,7 @@ pub static VECTOR_GRAPHICS_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.flc.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_min_6),
     },
     SignatureRule {
         format_id: "fli",
@@ -120,7 +121,7 @@ pub static VECTOR_GRAPHICS_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.fli.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_min_6),
     },
     SignatureRule {
         format_id: "eps_bin",

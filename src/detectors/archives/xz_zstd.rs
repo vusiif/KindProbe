@@ -1,7 +1,6 @@
 use crate::detectors::archives::crc32::crc32_ieee;
 use crate::model::{
-    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
-    Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 pub const XZ_MAGIC: &[u8] = &[0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00];
@@ -76,61 +75,13 @@ pub fn probe_xz_zstd_core(header: &[u8]) -> Option<DetectionCore> {
 
 /// Probes XZ and Zstandard compressed archive formats.
 pub fn probe_xz_zstd(header: &[u8]) -> XzZstdMatch {
-    // 1. XZ format probe (must check 6-byte magic before Zstd to keep truncation clean)
-    if header.starts_with(XZ_MAGIC) {
-        let mut evidence = vec![EvidenceItem::new("sig.xz.magic")];
-        let verification = if header.len() >= 12 {
-            let flags = &header[6..8];
-            let expected_crc = u32::from_le_bytes([header[8], header[9], header[10], header[11]]);
-            if crc32_ieee(flags) == expected_crc {
-                evidence.push(EvidenceItem::new("sig.xz.crc"));
-                Verification::Structure
-            } else {
-                Verification::Signature
-            }
-        } else {
-            Verification::Signature
-        };
-
-        return XzZstdMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("xz".to_string()),
-            category: "archive".to_string(),
-            container_id: Some("xz".to_string()),
-            identification: Identification::Format,
-            verification,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("xz".to_string()),
-            accepted_extensions: vec!["xz".to_string(), "txz".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence,
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
+    if let Some(core) = probe_xz_zstd_core(header) {
+        return XzZstdMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        ));
     }
 
-    // 2. Zstandard format probe (4-byte magic)
-    if header.len() >= 4 && header.starts_with(ZSTD_MAGIC) {
-        return XzZstdMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("zstd".to_string()),
-            category: "archive".to_string(),
-            container_id: Some("zstd".to_string()),
-            identification: Identification::Format,
-            verification: Verification::Structure,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("zst".to_string()),
-            accepted_extensions: vec!["zst".to_string(), "zstd".to_string(), "tzst".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: vec![EvidenceItem::new("sig.zstd.magic")],
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
-    }
-
-    // 3. Truncated XZ / Zstd prefixes
+    // Truncated XZ / Zstd prefixes
     if header.len() >= 2 && header.len() < 6 && XZ_MAGIC.starts_with(header) {
         return XzZstdMatch::Truncated("xz".to_string());
     }

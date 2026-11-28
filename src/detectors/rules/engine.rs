@@ -174,3 +174,105 @@ pub fn evaluate_rules(header: &[u8], rules: &[SignatureRule]) -> RuleMatch {
         .map(RuleMatch::Truncated)
         .unwrap_or(RuleMatch::None)
 }
+
+#[inline]
+pub(crate) fn validate_min_bytes(header: &[u8], min_len: usize) -> ValidationStatus {
+    if header.len() < min_len {
+        ValidationStatus::Truncated
+    } else {
+        ValidationStatus::Valid
+    }
+}
+
+pub(crate) fn validate_min_4(header: &[u8]) -> ValidationStatus {
+    validate_min_bytes(header, 4)
+}
+
+pub(crate) fn validate_min_6(header: &[u8]) -> ValidationStatus {
+    validate_min_bytes(header, 6)
+}
+
+pub(crate) fn validate_binary_not_ascii(
+    header: &[u8],
+    min_len: usize,
+    ascii_check_from: usize,
+) -> ValidationStatus {
+    if header.len() < min_len {
+        return ValidationStatus::Truncated;
+    }
+    let slice = &header[ascii_check_from..header.len().min(16)];
+    if slice
+        .iter()
+        .all(|b| b.is_ascii_graphic() || matches!(b, b' ' | b'\t' | b'\r' | b'\n'))
+    {
+        ValidationStatus::Invalid
+    } else {
+        ValidationStatus::Valid
+    }
+}
+
+pub(crate) fn validate_binary_6_from_2(header: &[u8]) -> ValidationStatus {
+    validate_binary_not_ascii(header, 6, 2)
+}
+
+pub(crate) fn validate_eot(header: &[u8]) -> ValidationStatus {
+    validate_binary_not_ascii(header, 16, 0)
+}
+
+pub(crate) fn validate_der(header: &[u8]) -> ValidationStatus {
+    if header.len() < 4 {
+        return ValidationStatus::Truncated;
+    }
+    let len = u16::from_be_bytes([header[2], header[3]]);
+    if len > 0 {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+pub(crate) fn validate_z_compress(header: &[u8]) -> ValidationStatus {
+    if header.len() < 4 {
+        return ValidationStatus::Truncated;
+    }
+    let flags = header[2];
+    if (flags & 0x60) == 0 && (9..=16).contains(&(flags & 0x1F)) {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+pub(crate) fn validate_sgi(header: &[u8]) -> ValidationStatus {
+    if header.len() < 6 {
+        return ValidationStatus::Truncated;
+    }
+    if (header[2] == 0 || header[2] == 1) && (header[3] == 1 || header[3] == 2) {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+pub(crate) fn validate_ac3(header: &[u8]) -> ValidationStatus {
+    if header.len() < 4 {
+        return ValidationStatus::Truncated;
+    }
+    // E-AC-3 uses bitstream id (bsid = header[5] >> 3) in 11..=16; yield to the eac3 rule.
+    if header.len() >= 6 && (11..=16).contains(&(header[5] >> 3)) {
+        ValidationStatus::Invalid
+    } else {
+        ValidationStatus::Valid
+    }
+}
+
+pub(crate) fn validate_eac3(header: &[u8]) -> ValidationStatus {
+    if header.len() < 6 {
+        return ValidationStatus::Invalid;
+    }
+    if (11..=16).contains(&(header[5] >> 3)) {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}

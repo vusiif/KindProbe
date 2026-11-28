@@ -1,6 +1,5 @@
 use crate::model::{
-    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
-    Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 pub const VHDX_MAGIC: &[u8] = b"vhdxfile";
@@ -69,45 +68,10 @@ pub fn probe_vhd(header: &[u8]) -> VhdMatch {
         return VhdMatch::None;
     }
 
-    // 1. VHDX format
-    if header.starts_with(VHDX_MAGIC) {
-        return VhdMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("vhdx".to_string()),
-            category: "disk".to_string(),
-            container_id: None,
-            identification: Identification::Format,
-            verification: Verification::Structure,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("vhdx".to_string()),
-            accepted_extensions: vec!["vhdx".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: vec![EvidenceItem::new("sig.vhdx.magic")],
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
+    match probe_vhd_core(header) {
+        Some(core) => VhdMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
+        None => VhdMatch::None,
     }
-
-    // 2. VHD format
-    if header.starts_with(VHD_MAGIC) {
-        return VhdMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("vhd".to_string()),
-            category: "disk".to_string(),
-            container_id: None,
-            identification: Identification::Format,
-            verification: Verification::Structure,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("vhd".to_string()),
-            accepted_extensions: vec!["vhd".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: vec![EvidenceItem::new("sig.vhd.magic")],
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
-    }
-
-    VhdMatch::None
 }

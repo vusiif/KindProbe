@@ -1,20 +1,10 @@
+use crate::detectors::rules::engine::validate_binary_not_ascii;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule, ValidationStatus};
 use crate::model::Verification;
 
 fn validate_crn(header: &[u8]) -> ValidationStatus {
     // Crunch GPU textures start with "Cr" followed by binary header bytes, not plain ASCII prose.
-    if header.len() < 4 {
-        return ValidationStatus::Truncated;
-    }
-    let slice = &header[2..header.len().min(16)];
-    if slice
-        .iter()
-        .all(|b| b.is_ascii_graphic() || matches!(b, b' ' | b'\t' | b'\r' | b'\n'))
-    {
-        ValidationStatus::Invalid
-    } else {
-        ValidationStatus::Valid
-    }
+    validate_binary_not_ascii(header, 4, 2)
 }
 
 pub static TEXTURES_RULES: &[SignatureRule] = &[

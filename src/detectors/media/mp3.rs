@@ -1,6 +1,5 @@
 use crate::model::{
-    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
-    Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -129,91 +128,11 @@ fn is_mp3_frame_sync(b0: u8, b1: u8) -> bool {
 
 /// Probes ID3v2 tag and MPEG-1/2 Audio Layer III frame sync.
 pub fn probe_mp3(header: &[u8]) -> Mp3Match {
-    // 1. Truncation check
-    if header.len() < 3 {
-        if !header.is_empty() && header.starts_with(b"ID") {
-            return Mp3Match::Truncated("mp3".to_string());
-        }
-        return Mp3Match::None;
+    match probe_mp3_core(header) {
+        Mp3MatchCore::Confirmed(core) => Mp3Match::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
+        Mp3MatchCore::Truncated(cand) => Mp3Match::Truncated(cand.to_string()),
+        Mp3MatchCore::None => Mp3Match::None,
     }
-
-    // 2. ID3v2 container probe
-    if header.starts_with(b"ID3") {
-        if header.len() < 10 {
-            return Mp3Match::Truncated("mp3".to_string());
-        }
-
-        let major_ver = header[3];
-        let synchsafe_valid =
-            header[6] < 0x80 && header[7] < 0x80 && header[8] < 0x80 && header[9] < 0x80;
-
-        if major_ver < 0xFF && synchsafe_valid {
-            let mut evidence = vec![EvidenceItem::new("sig.id3.tag")];
-
-            // Scan header for subsequent frame sync
-            let mut has_frame_sync = false;
-            for i in 10..header.len().saturating_sub(1) {
-                if is_mp3_frame_sync(header[i], header[i + 1]) {
-                    has_frame_sync = true;
-                    break;
-                }
-            }
-
-            let verification = if has_frame_sync {
-                evidence.push(EvidenceItem::new("sig.mp3.frame_sync"));
-                Verification::Structure
-            } else {
-                Verification::Signature
-            };
-
-            return Mp3Match::Confirmed(Box::new(DetectionReport {
-                schema_version: 1,
-                format_id: Some("mp3".to_string()),
-                category: "audio".to_string(),
-                container_id: None,
-                identification: Identification::Format,
-                verification,
-                inspection: Inspection::Complete,
-                recommended_extension: Some("mp3".to_string()),
-                accepted_extensions: vec!["mp3".to_string()],
-                extension_status: ExtensionStatus::Undetermined,
-                evidence,
-                warnings: Vec::new(),
-                stats: Default::default(),
-                candidates: None,
-            }));
-        }
-    }
-
-    // 3. Raw MPEG Audio Layer III frame sync without ID3 tag
-    if header.len() >= 2 && is_mp3_frame_sync(header[0], header[1]) {
-        // Extra validation on byte 2 if available: bitrate index not 0x0F, sample rate not 0x03
-        if header.len() >= 3 {
-            let b2 = header[2];
-            let bitrate_idx = (b2 >> 4) & 0x0F;
-            let sample_rate_idx = (b2 >> 2) & 0x03;
-            if bitrate_idx == 0x0F || sample_rate_idx == 0x03 {
-                return Mp3Match::None;
-            }
-        }
-
-        return Mp3Match::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("mp3".to_string()),
-            category: "audio".to_string(),
-            container_id: None,
-            identification: Identification::Format,
-            verification: Verification::Signature,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("mp3".to_string()),
-            accepted_extensions: vec!["mp3".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence: vec![EvidenceItem::new("sig.mp3.frame_sync")],
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
-    }
-
-    Mp3Match::None
 }

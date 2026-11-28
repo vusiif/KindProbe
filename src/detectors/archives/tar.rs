@@ -1,6 +1,5 @@
 use crate::model::{
-    DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
-    Verification,
+    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
 
 pub enum TarMatch {
@@ -82,30 +81,10 @@ pub fn probe_tar(header: &[u8]) -> TarMatch {
         return TarMatch::None;
     }
 
-    let verification = match check_tar_header(header) {
-        Some(v) => v,
-        None => return TarMatch::None,
-    };
-
-    let mut evidence = vec![EvidenceItem::new("sig.tar.ustar")];
-    if verification == Verification::Structure {
-        evidence.push(EvidenceItem::new("sig.tar.checksum"));
+    match probe_tar_core(header) {
+        Some(core) => TarMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
+        None => TarMatch::None,
     }
-
-    TarMatch::Confirmed(Box::new(DetectionReport {
-        schema_version: 1,
-        format_id: Some("tar".to_string()),
-        category: "archive".to_string(),
-        container_id: Some("tar".to_string()),
-        identification: Identification::Format,
-        verification,
-        inspection: Inspection::Complete,
-        recommended_extension: Some("tar".to_string()),
-        accepted_extensions: vec!["tar".to_string()],
-        extension_status: ExtensionStatus::Undetermined,
-        evidence,
-        warnings: Vec::new(),
-        stats: Default::default(),
-        candidates: None,
-    }))
 }

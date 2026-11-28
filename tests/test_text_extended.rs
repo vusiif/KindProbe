@@ -215,4 +215,20 @@ fn test_text_heuristic_and_short_pattern_false_positive_fixes() {
     let rep_cr_text =
         detect_bytes(b"Create a new configuration file before starting.\n", &opts).unwrap();
     assert_eq!(rep_cr_text.format_id.as_deref(), Some("txt"));
+
+    // 6. Plain ASCII text starting with MM / BD / :U / offset-8 LP must not hit 3ds / hfv / sg2 / eot
+    for sample in [
+        b"MM: Meeting minutes and action items\n".as_slice(),
+        b"BDD scenario description for authentication\n".as_slice(),
+        b":User documentation notes on protocols\n".as_slice(),
+        b"12345678LP plain ASCII content line\n".as_slice(),
+    ] {
+        let rep = detect_bytes(sample, &opts).unwrap();
+        assert_eq!(
+            rep.format_id.as_deref(),
+            Some("txt"),
+            "unexpected match for {:?}",
+            std::str::from_utf8(sample)
+        );
+    }
 }

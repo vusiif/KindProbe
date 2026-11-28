@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_binary_6_from_2;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -156,7 +157,7 @@ pub static PRO_AUDIO_AND_SCIENCE_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.sg2.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_binary_6_from_2),
     },
     SignatureRule {
         format_id: "edf",

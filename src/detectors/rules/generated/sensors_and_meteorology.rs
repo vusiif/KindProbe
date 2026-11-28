@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_min_6;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -117,7 +118,7 @@ pub static SENSORS_AND_METEOROLOGY_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.ubx.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_min_6),
     },
     SignatureRule {
         format_id: "nmea",
