@@ -1135,6 +1135,94 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // Pug template (.pug / .jade)
+    if window.trim_start().starts_with("doctype html") && !w_bytes.contains(&b'<') {
+        return Some(make_source_core(
+            "pug",
+            &["pug", "jade"],
+            "sig.text.pug",
+            Verification::Structure,
+        ));
+    }
+
+    // Handlebars (.hbs), Jinja2 (.j2 / .jinja), EJS (.ejs)
+    if (window.contains("{{#if ") || window.contains("{{#each ")) && window.contains("{{/") {
+        return Some(make_source_core(
+            "hbs",
+            &["hbs", "handlebars"],
+            "sig.text.handlebars",
+            Verification::Structure,
+        ));
+    }
+    if (window.contains("{% block ") || window.contains("{% extends ") || window.contains("{% for "))
+        && window.contains("%}")
+    {
+        return Some(make_source_core(
+            "jinja",
+            &["j2", "jinja", "jinja2"],
+            "sig.text.jinja",
+            Verification::Structure,
+        ));
+    }
+    if (window.contains("<%=") || window.contains("<%-") || window.contains("<% ")) && window.contains("%>") {
+        return Some(make_source_core(
+            "ejs",
+            &["ejs"],
+            "sig.text.ejs",
+            Verification::Structure,
+        ));
+    }
+
+    // Jenkinsfile
+    if window.contains("pipeline {")
+        && window.contains("agent ")
+        && window.contains("stages {")
+        && window.contains("stage(")
+    {
+        return Some(make_source_core(
+            "jenkinsfile",
+            &["jenkinsfile", "groovy"],
+            "sig.text.jenkinsfile",
+            Verification::Structure,
+        ));
+    }
+
+    // Earthfile
+    if window.contains("VERSION ")
+        && window.contains("FROM ")
+        && (window.contains("SAVE ARTIFACT") || window.contains("BUILD +") || window.contains("RUN "))
+    {
+        return Some(make_source_core(
+            "earthfile",
+            &["earthfile"],
+            "sig.text.earthfile",
+            Verification::Structure,
+        ));
+    }
+
+    // Meson build (meson.build)
+    if window.contains("project(")
+        && (window.contains("executable(") || window.contains("dependency(") || window.contains("library("))
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "meson",
+            &["build"],
+            "sig.text.meson",
+            Verification::Structure,
+        ));
+    }
+
+    // Procfile
+    if window.contains("web: ") && (window.contains("worker: ") || window.contains("release: ")) {
+        return Some(make_source_core(
+            "procfile",
+            &["procfile"],
+            "sig.text.procfile",
+            Verification::Structure,
+        ));
+    }
+
     // C# (.cs)
     if window.contains("using System")
         && (window.contains("namespace ")

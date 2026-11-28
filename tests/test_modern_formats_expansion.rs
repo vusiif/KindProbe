@@ -625,6 +625,42 @@ fn test_round15_wsdl_pom_mjml_xaml_nuspec_haproxy_service_desktop_applescript() 
 }
 
 #[test]
+fn test_round16_pug_hbs_jinja_ejs_jenkinsfile_earthfile_meson_procfile() {
+    assert_both_paths(
+        b"doctype html\nhtml(lang=\"en\")\n  body\n    h1 KindProbe\n",
+        "pug",
+    );
+    assert_both_paths(
+        b"<div class=\"list\">{{#each items}}<span>{{this}}</span>{{/each}}</div>\n",
+        "hbs",
+    );
+    assert_both_paths(
+        b"{% extends \"base.html\" %}\n{% block content %}<h1>{{ title }}</h1>{% endblock %}\n",
+        "jinja",
+    );
+    assert_both_paths(
+        b"<ul><% users.forEach(u => { %><li><%= u.name %></li><% }) %></ul>\n",
+        "ejs",
+    );
+    assert_both_paths(
+        b"pipeline {\n    agent any\n    stages {\n        stage('Test') {\n            steps { sh 'cargo test' }\n        }\n    }\n}\n",
+        "jenkinsfile",
+    );
+    assert_both_paths(
+        b"VERSION 0.8\nFROM rust:1.85\nbuild:\n    COPY . .\n    RUN cargo build --release\n    SAVE ARTIFACT target/release/kindprobe\n",
+        "earthfile",
+    );
+    assert_both_paths(
+        b"project('kindprobe', 'c')\ndep = dependency('zlib')\nexecutable('kp', 'main.c', dependencies: dep)\n",
+        "meson",
+    );
+    assert_both_paths(
+        b"web: gunicorn app:app\nworker: celery -A app worker\n",
+        "procfile",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

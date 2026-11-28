@@ -101,7 +101,10 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
         }
     }
 
-    if total_lines >= 2 && valid_yaml_lines == total_lines {
+    if total_lines >= 2
+        && valid_yaml_lines == total_lines
+        && !(trimmed.contains("web: ") && (trimmed.contains("worker: ") || trimmed.contains("release: ")))
+    {
         return Some(make_config_core("yaml", &["yaml", "yml"], "sig.text.yaml"));
     }
 
