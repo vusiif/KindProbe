@@ -841,6 +841,82 @@ fn test_round19_sitemap_resx_wadl_purs_gitattributes_codeowners_npmrc_yarnlock_g
 }
 
 #[test]
+fn test_round20_xbel_docbook_ivy_nu_sv_org_mediawiki_fennel_hy_lfe_raku_cr_fish_tmux_vimrc_gitconfig_sysctl_resolv() {
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><xbel version=\"1.0\"><bookmark href=\"https://example.com\"><title>Ex</title></bookmark></xbel>",
+        "xbel",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><book xmlns=\"http://docbook.org/ns/docbook\"><title>Guide</title></book>",
+        "docbook",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><ivy-module version=\"2.0\"><info organisation=\"com.example\" module=\"kp\"/></ivy-module>",
+        "ivy",
+    );
+    assert_both_paths(
+        b"def active-procs [limit] {\n  ps | where mem > $limit\n}\n",
+        "nu",
+    );
+    assert_both_paths(
+        b"module counter(input logic clk, output logic [7:0] q);\n  always_ff @(posedge clk) q <= q + 1;\nendmodule\n",
+        "sv",
+    );
+    assert_both_paths(
+        b"#+TITLE: KindProbe Notes\n#+AUTHOR: Dev\n* Overview\n",
+        "org",
+    );
+    assert_both_paths(
+        b"== History ==\n[[KindProbe]] is a '''fast''' file detector.\n",
+        "mediawiki",
+    );
+    assert_both_paths(
+        b"(local greet (fn [name] (print (.. \"Hi \" name))))\n",
+        "fennel",
+    );
+    assert_both_paths(
+        b"(import os)\n(defn main [] (print \"Hello Hy\"))\n",
+        "hy",
+    );
+    assert_both_paths(
+        b"(defmodule hello (export (world 0)))\n(defun world () 'ok)\n",
+        "lfe",
+    );
+    assert_both_paths(
+        b"use v6;\nmy Int $x = 42;\nsay $x;\n",
+        "raku",
+    );
+    assert_both_paths(
+        b"class User\n  property name : String\n  def initialize(@name)\n  end\nend\n",
+        "cr",
+    );
+    assert_both_paths(
+        b"function greet\n    set -l name World\n    echo \"Hello $name\"\nend\n",
+        "fish",
+    );
+    assert_both_paths(
+        b"set -g mouse on\nbind r source-file ~/.tmux.conf\n",
+        "tmux",
+    );
+    assert_both_paths(
+        b"set number\nnnoremap <leader>w :w<CR>\n",
+        "vimrc",
+    );
+    assert_both_paths(
+        b"[user]\n\tname = Jane Doe\n\temail = jane@example.com\n",
+        "gitconfig",
+    );
+    assert_both_paths(
+        b"net.ipv4.ip_forward = 1\nvm.swappiness = 10\n",
+        "sysctl",
+    );
+    assert_both_paths(
+        b"search example.com\nnameserver 1.1.1.1\n",
+        "resolv",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

@@ -234,6 +234,47 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // Nushell (.nu) before Python/Ruby `def ` scan
+    if window.contains("def ")
+        && w_bytes.contains(&b'[')
+        && w_bytes.contains(&b']')
+        && (window.contains("| where ") || window.contains("| select ") || window.contains("mut "))
+        && !w_bytes.contains(&b':')
+    {
+        return Some(make_source_core(
+            "nu",
+            &["nu"],
+            "sig.text.nushell",
+            Verification::Structure,
+        ));
+    }
+
+    // SystemVerilog (.sv / .svh) before Verilog scan
+    if window.contains("module ")
+        && window.contains("endmodule")
+        && (window.contains("logic ") || window.contains("always_ff") || window.contains("always_comb"))
+    {
+        return Some(make_source_core(
+            "sv",
+            &["sv", "svh"],
+            "sig.text.systemverilog",
+            Verification::Structure,
+        ));
+    }
+
+    // Emacs Org-mode (.org)
+    if window.contains("#+TITLE:")
+        || window.contains("#+AUTHOR:")
+        || (window.contains("#+BEGIN_SRC") && window.contains("#+END_SRC"))
+    {
+        return Some(make_source_core(
+            "org",
+            &["org"],
+            "sig.text.org",
+            Verification::Structure,
+        ));
+    }
+
     // Racket (.rkt)
     if window.trim_start().starts_with("#lang racket")
         || window.trim_start().starts_with("#lang typed/racket")
@@ -1639,6 +1680,145 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "zone",
             &["zone"],
             "sig.text.dns_zone",
+            Verification::Structure,
+        ));
+    }
+
+    // MediaWiki (.wiki / .mediawiki)
+    if window.contains("== ")
+        && window.contains(" ==")
+        && window.contains("[[")
+        && window.contains("]]")
+        && window.contains("'''")
+    {
+        return Some(make_source_core(
+            "mediawiki",
+            &["wiki", "mediawiki"],
+            "sig.text.mediawiki",
+            Verification::Structure,
+        ));
+    }
+
+    // Fennel (.fnl)
+    if window.contains("(fn ") && (window.contains("(local ") || window.contains("(let ")) && w_bytes.contains(&b')') {
+        return Some(make_source_core(
+            "fennel",
+            &["fnl"],
+            "sig.text.fennel",
+            Verification::Structure,
+        ));
+    }
+
+    // Hy (.hy)
+    if window.contains("(import ") && window.contains("(defn ") && w_bytes.contains(&b')') {
+        return Some(make_source_core(
+            "hy",
+            &["hy"],
+            "sig.text.hy",
+            Verification::Structure,
+        ));
+    }
+
+    // LFE - Lisp Flavored Erlang (.lfe)
+    if window.contains("(defmodule ") && window.contains("(export ") {
+        return Some(make_source_core(
+            "lfe",
+            &["lfe"],
+            "sig.text.lfe",
+            Verification::Structure,
+        ));
+    }
+
+    // Raku (.raku / .p6)
+    if window.contains("use v6;") || (window.contains("my Int $") && window.contains("say ")) {
+        return Some(make_source_core(
+            "raku",
+            &["raku", "rakumod", "p6"],
+            "sig.text.raku",
+            Verification::Structure,
+        ));
+    }
+
+    // Crystal (.cr)
+    if (window.contains("class ") || window.contains("struct "))
+        && window.contains("property ")
+        && window.contains("end")
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "cr",
+            &["cr"],
+            "sig.text.crystal",
+            Verification::Structure,
+        ));
+    }
+
+    // Fish shell (.fish)
+    if window.contains("function ")
+        && (window.contains("set -l ") || window.contains("set -gx ") || window.contains("set -U "))
+        && window.contains("end")
+    {
+        return Some(make_source_core(
+            "fish",
+            &["fish"],
+            "sig.text.fish",
+            Verification::Structure,
+        ));
+    }
+
+    // tmux.conf
+    if window.contains("set -g ") && (window.contains("bind ") || window.contains("bind-key ")) {
+        return Some(make_source_core(
+            "tmux",
+            &["conf"],
+            "sig.text.tmux",
+            Verification::Structure,
+        ));
+    }
+
+    // .vimrc
+    if window.contains("set nocompatible")
+        || (window.contains("set number")
+            && (window.contains("nnoremap ") || window.contains("inoremap ") || window.contains("autocmd ")))
+    {
+        return Some(make_source_core(
+            "vimrc",
+            &["vim", "vimrc"],
+            "sig.text.vimrc",
+            Verification::Structure,
+        ));
+    }
+
+    // .gitconfig
+    if window.contains("[user]") && window.contains("name =") && window.contains("email =") {
+        return Some(make_source_core(
+            "gitconfig",
+            &["gitconfig"],
+            "sig.text.gitconfig",
+            Verification::Structure,
+        ));
+    }
+
+    // sysctl.conf
+    if (window.contains("net.ipv4.") || window.contains("net.core.") || window.contains("vm.swappiness"))
+        && window.contains(" = ")
+    {
+        return Some(make_source_core(
+            "sysctl",
+            &["conf"],
+            "sig.text.sysctl",
+            Verification::Structure,
+        ));
+    }
+
+    // resolv.conf
+    if window.contains("nameserver ")
+        && (window.contains("search ") || window.contains("domain ") || window.contains("options "))
+    {
+        return Some(make_source_core(
+            "resolv",
+            &["conf"],
+            "sig.text.resolv",
             Verification::Structure,
         ));
     }

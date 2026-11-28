@@ -157,6 +157,23 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("wadl", "text", Some("xml"), "wadl", &["wadl", "xml"], "sig.text.wadl"));
     }
+    if (head.starts_with(b"<xbel") || (is_xml_head && contains_sub(b"<xbel")))
+        && trimmed.contains("<bookmark")
+    {
+        return Some(make_core("xbel", "text", Some("xml"), "xbel", &["xbel", "xml"], "sig.text.xbel"));
+    }
+    if (head.starts_with(b"<book")
+        || head.starts_with(b"<article")
+        || (is_xml_head && (contains_sub(b"<book") || contains_sub(b"<article"))))
+        && (trimmed.contains("docbook.org/ns/docbook") || trimmed.contains("OASIS//DTD DocBook"))
+    {
+        return Some(make_core("docbook", "document", Some("xml"), "xml", &["xml", "dbk"], "sig.text.docbook"));
+    }
+    if (head.starts_with(b"<ivy-module") || (is_xml_head && contains_sub(b"<ivy-module")))
+        && trimmed.contains("<info")
+    {
+        return Some(make_core("ivy", "text", Some("xml"), "xml", &["xml"], "sig.text.ivy"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head
