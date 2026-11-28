@@ -1,14 +1,14 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- Pushed `432ea71`, `a418dc9`, `3221d19` and committed `1074218` (`nmea`/`kml`/`bik`/`gxt`/`gbr` hardening, `direct_reader.rs`, `matroska.rs` deduplication).
-- **Batch 4 — Shared Header Parsers & Static Rule Index Invariants**:
-  - Consolidated `probe_mp4` onto `probe_mp4_core` (`src/detectors/media/mp4.rs`, removing ~180 duplicate lines).
-  - Extracted shared parsing helpers in `src/detectors/executables/pe.rs` (`valid_pe_header_offset`), `src/detectors/executables/elf.rs` (`parse_elf_meta`), `src/detectors/executables/macho.rs` (Fat Mach-O branch deduplication), and `src/detectors/media/riff.rs` (`parse_riff_subtype`).
-  - Added `test_static_rule_index_invariants` to `tests/test_api_consistency.rs` enforcing sorted `BY_FORMAT`, ascending `OFFSET_GROUPS`, and complete rule coverage.
+- Committed shared parser refactoring & index invariant test (`6354bea` on `main`).
+- **Batch 5 — Deduplicate Generated Rules & Rebuild Static Index**:
+  - Removed 14 unreachable exact-duplicate `SignatureRule` definitions across `images.rs` (`bpg`), `disk_images.rs` (`cso`), `roms.rs` (`ips`, `gba`), `models.rs` (`ply`), `fonts.rs` (`bdf`, `pcf`), `media.rs` (`ac3`, `tta`), `netpbm.rs` (`pam`, `xbm`), `vector_graphics.rs` (`qoi`), `scientific.rs` (`root`), and `multimedia_stream.rs` (`s3m`), reducing total declarative+generated rules cleanly from `790` to `776`.
+  - Regenerated `src/detectors/rules/static_index.rs` (`BUCKETS`, `OFFSET_GROUPS`, `BY_FORMAT`) matching the pruned rule tables.
+  - Strengthened `test_static_rule_index_invariants` in `tests/test_api_consistency.rs` to assert bucket+offset count parity and zero duplicate `(format_id, patterns)` entries.
 
 ## [当前状态] (Current State)
-- Pending final verification gate (`fmt`, `clippy`, `doc`, `--all-targets`) and auto-commit on `main`.
+- Pending final full CI gate (`fmt`, `clippy`, `doc`, `--all-targets`) and auto-commit.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Optional polish: deduplicate remaining `GENERATED_RULES` redundant entries (if regenerating `static_index.rs`) and add real OOXML/ELF/PE binary fixtures under `fixtures/real/`.
+- Optional future expansion: add real toolchain OOXML/ELF/PE/Wasm binary fixtures under `fixtures/real/` and `Cargo.toml` package metadata if publishing to crates.io.

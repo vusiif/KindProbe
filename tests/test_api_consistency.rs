@@ -162,8 +162,9 @@ fn test_core_vs_report_api_parity_across_domains() {
 
 #[test]
 fn test_static_rule_index_invariants() {
-    use kindprobe::detectors::rules::static_index::{BY_FORMAT, OFFSET_GROUPS};
+    use kindprobe::detectors::rules::static_index::{BUCKETS, BY_FORMAT, OFFSET_GROUPS};
     use kindprobe::detectors::rules::{DECLARATIVE_RULES, GENERATED_RULES};
+    use std::collections::HashSet;
 
     // 1. BY_FORMAT must stay strictly sorted so binary_search_by_key never misses an entry
     for pair in BY_FORMAT.windows(2) {
@@ -188,25 +189,35 @@ fn test_static_rule_index_invariants() {
         );
     }
 
-    // 3. Every rule in DECLARATIVE_RULES + GENERATED_RULES must be lookup-able via BY_FORMAT
-    for rule in DECLARATIVE_RULES.iter() {
+    // 3. Bucket + offset group entry counts must match total rules (DECLARATIVE + GENERATED)
+    let bucket_count: usize = BUCKETS.iter().map(|b| b.len()).sum();
+    let offset_count: usize = OFFSET_GROUPS.iter().map(|g| g.rules.len()).sum();
+    let total_rules =
+        DECLARATIVE_RULES.len() + GENERATED_RULES.iter().map(|g| g.len()).sum::<usize>();
+    assert_eq!(bucket_count + offset_count, total_rules);
+    assert_eq!(BY_FORMAT.len(), total_rules);
+
+    // 4. Every rule in DECLARATIVE_RULES + GENERATED_RULES must be lookup-able via BY_FORMAT,
+    //    and no exact duplicate (format_id, patterns) rule pairs should exist.
+    type RuleKey<'a> = (&'a str, Vec<(usize, &'a [u8])>);
+    let mut seen_rule_keys: HashSet<RuleKey<'_>> = HashSet::with_capacity(total_rules);
+    for rule in DECLARATIVE_RULES
+        .iter()
+        .chain(GENERATED_RULES.iter().flat_map(|g| g.iter()))
+    {
         assert!(
             BY_FORMAT
                 .binary_search_by_key(&rule.format_id, |&(fid, _)| fid)
                 .is_ok(),
-            "missing BY_FORMAT entry for declarative rule {}",
+            "missing BY_FORMAT entry for rule {}",
             rule.format_id
         );
-    }
-    for group in GENERATED_RULES {
-        for rule in *group {
-            assert!(
-                BY_FORMAT
-                    .binary_search_by_key(&rule.format_id, |&(fid, _)| fid)
-                    .is_ok(),
-                "missing BY_FORMAT entry for generated rule {}",
-                rule.format_id
-            );
-        }
+        let pat_key: Vec<(usize, &[u8])> =
+            rule.patterns.iter().map(|p| (p.offset, p.bytes)).collect();
+        assert!(
+            seen_rule_keys.insert((rule.format_id, pat_key)),
+            "duplicate (format_id, patterns) rule found for {}",
+            rule.format_id
+        );
     }
 }

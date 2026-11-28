@@ -162,17 +162,4 @@ pub static IMAGES_RULES: &[SignatureRule] = &[
         verification: Verification::Signature,
         validator: None,
     },
-    SignatureRule {
-        format_id: "bpg",
-        category: "image",
-        container_id: None,
-        recommended_ext: "bpg",
-        accepted_exts: &["bpg"],
-        patterns: &[MagicPattern::new(0, b"BPG\xfb")],
-        min_header_len: 4,
-        priority: 50,
-        evidence_code: "rule.bpg.magic",
-        verification: Verification::Signature,
-        validator: None,
-    },
 ];

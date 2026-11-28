@@ -149,17 +149,4 @@ pub static DISK_IMAGES_RULES: &[SignatureRule] = &[
         verification: Verification::Signature,
         validator: None,
     },
-    SignatureRule {
-        format_id: "cso",
-        category: "disk",
-        container_id: None,
-        recommended_ext: "cso",
-        accepted_exts: &["cso"],
-        patterns: &[MagicPattern::new(0, b"CISO")],
-        min_header_len: 4,
-        priority: 50,
-        evidence_code: "rule.cso.magic",
-        verification: Verification::Signature,
-        validator: None,
-    },
 ];
