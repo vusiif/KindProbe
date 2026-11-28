@@ -10,6 +10,15 @@ pub enum IsoMatch {
     None,
 }
 
+impl IsoMatch {
+    pub fn into_report(self) -> Option<DetectionReport> {
+        match self {
+            IsoMatch::Confirmed(rep) => Some(*rep),
+            IsoMatch::None => None,
+        }
+    }
+}
+
 pub fn make_iso_core() -> DetectionCore {
     DetectionCore {
         format_id: Some("iso"),

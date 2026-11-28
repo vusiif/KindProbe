@@ -1,25 +1,234 @@
-use std::io::{Read, Seek};
+use quick_xml::events::Event;
+use quick_xml::Reader;
+use std::io::{Cursor, Read, Seek};
 use zip::ZipArchive;
 
-use crate::model::{DetectionReport, EvidenceItem, Identification, Inspection, Verification};
+use crate::budget::{DecompressLimitReader, DetectOptions};
+use crate::model::{
+    DetectionReport, EvidenceItem, Identification, Inspection, Verification, WarningItem,
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum ApkManifestStatus {
+    Valid,
+    Invalid,
+    BudgetExceeded,
+}
+
+fn validate_axml_manifest(data: &[u8]) -> bool {
+    // Compiled Android Binary XML (AXML):
+    // ResXMLTree_header (type=0x0003, headerSize=0x0008, totalSize) followed by
+    // ResStringPool_header (type=0x0001, headerSize>=0x001C, poolSize) containing "manifest".
+    if data.len() < 36 || !data.starts_with(&[0x03, 0x00, 0x08, 0x00]) {
+        return false;
+    }
+    let total_size = u32::from_le_bytes([data[4], data[5], data[6], data[7]]) as usize;
+    if total_size < 36 || total_size != data.len() {
+        return false;
+    }
+    let chunk_type = u16::from_le_bytes([data[8], data[9]]);
+    let chunk_hdr_size = u16::from_le_bytes([data[10], data[11]]) as usize;
+    let pool_size = u32::from_le_bytes([data[12], data[13], data[14], data[15]]) as usize;
+    let string_count = u32::from_le_bytes([data[16], data[17], data[18], data[19]]);
+    let strings_start = u32::from_le_bytes([data[28], data[29], data[30], data[31]]) as usize;
+
+    if chunk_type != 0x0001
+        || chunk_hdr_size < 28
+        || pool_size < chunk_hdr_size
+        || 8usize.saturating_add(pool_size) > data.len()
+        || string_count == 0
+        || strings_start < chunk_hdr_size
+        || strings_start > pool_size
+    {
+        return false;
+    }
+
+    let pool_bytes = &data[8 + strings_start..8 + pool_size];
+    pool_bytes.windows(8).any(|w| w == b"manifest")
+        || pool_bytes
+            .windows(16)
+            .any(|w| w == b"m\x00a\x00n\x00i\x00f\x00e\x00s\x00t\x00")
+}
+
+fn validate_plain_xml_manifest(
+    data: &[u8],
+    max_xml_depth: usize,
+    report: &mut DetectionReport,
+) -> ApkManifestStatus {
+    let mut reader = Reader::from_reader(Cursor::new(data));
+    reader.config_mut().trim_text(true);
+    let mut buf = Vec::new();
+    let mut depth = 0usize;
+    let mut root_checked = false;
+    let mut root_valid = false;
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(e)) => {
+                depth += 1;
+                if depth > max_xml_depth {
+                    report.inspection = Inspection::Limited;
+                    report.warnings.push(WarningItem::new(
+                        "budget.xml_depth_exceeded",
+                        format!(
+                            "XML element depth ({}) exceeded allowed maximum ({})",
+                            depth, max_xml_depth
+                        ),
+                    ));
+                    return ApkManifestStatus::BudgetExceeded;
+                }
+                if !root_checked {
+                    root_checked = true;
+                    root_valid = has_valid_manifest_root(&e);
+                    if !root_valid {
+                        return ApkManifestStatus::Invalid;
+                    }
+                }
+            }
+            Ok(Event::Empty(e)) => {
+                let empty_depth = depth + 1;
+                if empty_depth > max_xml_depth {
+                    report.inspection = Inspection::Limited;
+                    report.warnings.push(WarningItem::new(
+                        "budget.xml_depth_exceeded",
+                        format!(
+                            "XML element depth ({}) exceeded allowed maximum ({})",
+                            empty_depth, max_xml_depth
+                        ),
+                    ));
+                    return ApkManifestStatus::BudgetExceeded;
+                }
+                if !root_checked {
+                    root_checked = true;
+                    root_valid = has_valid_manifest_root(&e);
+                    if !root_valid {
+                        return ApkManifestStatus::Invalid;
+                    }
+                }
+            }
+            Ok(Event::End(_)) => {
+                depth = depth.saturating_sub(1);
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => return ApkManifestStatus::Invalid,
+            _ => {}
+        }
+        buf.clear();
+    }
+
+    if root_valid {
+        ApkManifestStatus::Valid
+    } else {
+        ApkManifestStatus::Invalid
+    }
+}
+
+fn has_valid_manifest_root(elem: &quick_xml::events::BytesStart<'_>) -> bool {
+    if elem.local_name().as_ref() != "manifest" {
+        return false;
+    }
+    let mut has_package = false;
+    let mut has_android_ns = false;
+    for attr in elem.attributes().flatten() {
+        let key: &str = attr.key.as_ref();
+        if key == "package" && !attr.value.is_empty() {
+            has_package = true;
+        } else if key == "xmlns:android"
+            && attr
+                .value
+                .as_bytes()
+                .windows(7)
+                .any(|w| w.eq_ignore_ascii_case(b"android"))
+        {
+            has_android_ns = true;
+        }
+    }
+    has_package || has_android_ns
+}
+
+pub(super) fn verify_apk_manifest_stream<R: Read>(
+    stream: R,
+    options: &DetectOptions,
+    report: &mut DetectionReport,
+) -> ApkManifestStatus {
+    let remaining_total = options
+        .max_total_decompressed_bytes
+        .saturating_sub(report.stats.decompressed_bytes);
+    let allowed = options.max_single_decompressed_bytes.min(remaining_total);
+    if allowed == 0 {
+        report.inspection = Inspection::Limited;
+        report.warnings.push(WarningItem::new(
+            "budget.total_decompressed_exceeded",
+            "Cumulative decompressed byte budget exceeded",
+        ));
+        return ApkManifestStatus::BudgetExceeded;
+    }
+
+    let mut limit_reader = DecompressLimitReader::new(stream, allowed);
+    let mut data = Vec::with_capacity(allowed.min(16 * 1024));
+    let read_res = limit_reader.read_to_end(&mut data);
+    report.stats.decompressed_bytes += limit_reader.bytes_read();
+
+    if limit_reader.is_exceeded() {
+        report.inspection = Inspection::Limited;
+        if report.stats.decompressed_bytes >= options.max_total_decompressed_bytes {
+            report.warnings.push(WarningItem::new(
+                "budget.total_decompressed_exceeded",
+                "Cumulative decompressed byte budget exceeded",
+            ));
+        } else {
+            report.warnings.push(WarningItem::new(
+                "budget.xml_output_exceeded",
+                "Decompressed size of AndroidManifest.xml exceeded single entry limit",
+            ));
+        }
+        return ApkManifestStatus::BudgetExceeded;
+    }
+
+    if read_res.is_err() {
+        return ApkManifestStatus::Invalid;
+    }
+
+    if data.starts_with(&[0x03, 0x00, 0x08, 0x00]) {
+        if validate_axml_manifest(&data) {
+            ApkManifestStatus::Valid
+        } else {
+            ApkManifestStatus::Invalid
+        }
+    } else {
+        validate_plain_xml_manifest(&data, options.max_xml_depth, report)
+    }
+}
+
+pub(super) fn apply_apk(report: &mut DetectionReport, has_dex: bool) {
+    apply_pkg(report, "apk", "package", "apk", &["apk", "xapk"]);
+    report.evidence.push(EvidenceItem::new("zip.apk.manifest"));
+    if has_dex {
+        report.evidence.push(EvidenceItem::new("zip.apk.dex"));
+    }
+}
 
 /// Inspects ZIP archive for package derivatives: APK, IPA, JAR, or KMZ.
 pub fn check_zip_packages<R: Read + Seek>(
     archive: &mut ZipArchive<R>,
+    options: &DetectOptions,
     report: &mut DetectionReport,
 ) -> bool {
-    // 1. Android Package (APK): AndroidManifest.xml and classes.dex
-    let has_manifest = archive.by_name("AndroidManifest.xml").is_ok();
-    let has_dex = archive.by_name("classes.dex").is_ok();
-    if has_manifest || has_dex {
-        apply_pkg(report, "apk", "package", "apk", &["apk", "xapk"]);
-        if has_manifest {
-            report.evidence.push(EvidenceItem::new("zip.apk.manifest"));
+    // 1. Android Package (APK): requires structurally valid AndroidManifest.xml (DEX is optional)
+    let manifest_status = match archive.by_name("AndroidManifest.xml") {
+        Ok(manifest) => Some(verify_apk_manifest_stream(manifest, options, report)),
+        Err(_) => None,
+    };
+    match manifest_status {
+        Some(ApkManifestStatus::Valid) => {
+            let has_dex = archive.by_name("classes.dex").is_ok();
+            apply_apk(report, has_dex);
+            return true;
         }
-        if has_dex {
-            report.evidence.push(EvidenceItem::new("zip.apk.dex"));
+        Some(ApkManifestStatus::BudgetExceeded) => {
+            return true;
         }
-        return true;
+        Some(ApkManifestStatus::Invalid) | None => {}
     }
 
     // 1b. Android App Bundle (AAB): BundleConfig.pb

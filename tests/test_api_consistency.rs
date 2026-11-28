@@ -221,3 +221,101 @@ fn test_static_rule_index_invariants() {
         );
     }
 }
+
+#[test]
+fn test_slice_vs_reader_budget_boundary_and_window_parity() {
+    use kindprobe::Inspection;
+
+    // 1. Plain text longer than 4 KiB with initial_window_size == max_source_bytes_read == 4096:
+    //    both slice and reader must return txt + Complete without out-of-window ISO probe overflow.
+    let plain_text = "Plain UTF-8 diagnostic log line for budget consistency checks.\n".repeat(700); // > 40 KiB
+    let text_bytes = plain_text.as_bytes();
+    assert!(text_bytes.len() > 40 * 1024);
+
+    let tight_opts = DetectOptions {
+        initial_window_size: 4096,
+        max_source_bytes_read: 4096,
+        ..Default::default()
+    };
+    let slice_tight = detect_bytes(text_bytes, &tight_opts).expect("slice tight");
+    let slice_tight_core = detect_bytes_core(text_bytes, &tight_opts).expect("slice tight core");
+    let mut cur_tight = Cursor::new(text_bytes);
+    let reader_tight = detect_reader(&mut cur_tight, &tight_opts).expect("reader tight");
+    let mut cur_tight_core = Cursor::new(text_bytes);
+    let reader_tight_core =
+        detect_reader_core(&mut cur_tight_core, &tight_opts).expect("reader tight core");
+
+    for (rep, label) in [(&slice_tight, "slice"), (&reader_tight, "reader")] {
+        assert_eq!(rep.format_id.as_deref(), Some("txt"), "{label}");
+        assert_eq!(rep.inspection, Inspection::Complete, "{label}");
+        assert_eq!(rep.stats.source_bytes_read, 4096, "{label}");
+        assert!(rep.warnings.is_empty(), "{label}: {:?}", rep.warnings);
+    }
+    assert_eq!(slice_tight_core.format_id, Some("txt"));
+    assert_eq!(slice_tight_core.inspection, Inspection::Complete);
+    assert_eq!(reader_tight_core.format_id, Some("txt"));
+    assert_eq!(reader_tight_core.inspection, Inspection::Complete);
+
+    // 2. Relaxed budget on the same plain text must also avoid out-of-window ISO seeks/reads.
+    let relaxed_opts = DetectOptions::default();
+    let slice_relaxed = detect_bytes(text_bytes, &relaxed_opts).expect("slice relaxed");
+    let mut cur_relaxed = Cursor::new(text_bytes);
+    let reader_relaxed = detect_reader(&mut cur_relaxed, &relaxed_opts).expect("reader relaxed");
+    assert_eq!(slice_relaxed.format_id.as_deref(), Some("txt"));
+    assert_eq!(reader_relaxed.format_id.as_deref(), Some("txt"));
+    assert_eq!(slice_relaxed.stats.source_bytes_read, 4096);
+    assert_eq!(reader_relaxed.stats.source_bytes_read, 4096);
+
+    // 3. Unknown binary > 32 KiB at budget boundary (4096, 4101, 4102) keeps slice/reader parity.
+    let mut unknown_bin = vec![0x00u8; 40 * 1024];
+    unknown_bin[..4].copy_from_slice(&[0xDE, 0xAD, 0xBE, 0xEF]);
+    for budget in [4096usize, 4101, 4102] {
+        let opts = DetectOptions {
+            initial_window_size: 4096,
+            max_source_bytes_read: budget,
+            ..Default::default()
+        };
+        let sb = detect_bytes(&unknown_bin, &opts).unwrap();
+        let mut c = Cursor::new(&unknown_bin);
+        let sr = detect_reader(&mut c, &opts).unwrap();
+        assert_eq!(sb.identification, sr.identification, "budget={budget}");
+        assert_eq!(sb.inspection, sr.inspection, "budget={budget}");
+        assert_eq!(sb.inspection, Inspection::Complete, "budget={budget}");
+        assert_eq!(
+            sb.stats.source_bytes_read, sr.stats.source_bytes_read,
+            "budget={budget}"
+        );
+    }
+
+    // 4. Huge initial_window_size paired with tiny max_source_bytes_read must clamp allocation
+    //    and still detect inputs smaller than max_source_bytes_read as Complete without OOM.
+    let clamped_opts = DetectOptions {
+        initial_window_size: usize::MAX / 2,
+        max_source_bytes_read: 4096,
+        ..Default::default()
+    };
+    let small_png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4";
+    let sb_small = detect_bytes(small_png, &clamped_opts).expect("clamped slice");
+    let mut cur_small = Cursor::new(small_png.as_slice());
+    let sr_small = detect_reader(&mut cur_small, &clamped_opts).expect("clamped reader");
+    assert_eq!(sb_small.format_id.as_deref(), Some("png"));
+    assert_eq!(sr_small.format_id.as_deref(), Some("png"));
+    assert_eq!(sb_small.inspection, Inspection::Complete);
+    assert_eq!(sr_small.inspection, Inspection::Complete);
+
+    // 5. Large initial_window_size covering ISO PVD reuses header buffer with 0 extra bytes read.
+    let mut iso_data = vec![0u8; 0x8000 + 2048];
+    iso_data[0x8000..0x8000 + 6].copy_from_slice(b"\x01CD001");
+    let iso_window_opts = DetectOptions {
+        initial_window_size: iso_data.len(),
+        max_source_bytes_read: iso_data.len(),
+        ..Default::default()
+    };
+    let iso_slice = detect_bytes(&iso_data, &iso_window_opts).expect("iso window slice");
+    let mut iso_cur = Cursor::new(&iso_data);
+    let iso_reader = detect_reader(&mut iso_cur, &iso_window_opts).expect("iso window reader");
+    assert_eq!(iso_slice.format_id.as_deref(), Some("iso"));
+    assert_eq!(iso_reader.format_id.as_deref(), Some("iso"));
+    assert_eq!(iso_slice.stats.source_bytes_read, iso_data.len());
+    assert_eq!(iso_reader.stats.source_bytes_read, iso_data.len());
+}

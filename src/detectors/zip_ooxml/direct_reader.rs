@@ -104,6 +104,79 @@ enum DirectEntryOutcome<T> {
     Fallback,
 }
 
+pub(super) enum DirectManifestOutcome {
+    Done(super::packages::ApkManifestStatus),
+    Fallback,
+}
+
+pub(super) fn verify_apk_manifest_direct<R: Read + Seek>(
+    reader: &mut BudgetReader<R>,
+    meta: &ZipEntryMeta,
+    cd_offset: u64,
+    options: &DetectOptions,
+    report: &mut DetectionReport,
+) -> Result<DirectManifestOutcome, DetectError> {
+    match position_at_direct_entry(reader, meta, cd_offset) {
+        Ok(true) => {}
+        Ok(false) => {
+            if reader.is_budget_exceeded() {
+                report.inspection = Inspection::Limited;
+                report.warnings.push(WarningItem::new(
+                    "budget.source_read_exceeded",
+                    "Total source read budget exceeded during detection",
+                ));
+                return Ok(DirectManifestOutcome::Done(
+                    super::packages::ApkManifestStatus::BudgetExceeded,
+                ));
+            }
+            return Ok(DirectManifestOutcome::Fallback);
+        }
+        Err(e) => {
+            if reader.is_budget_exceeded() {
+                report.inspection = Inspection::Limited;
+                report.warnings.push(WarningItem::new(
+                    "budget.source_read_exceeded",
+                    "Total source read budget exceeded during detection",
+                ));
+                return Ok(DirectManifestOutcome::Done(
+                    super::packages::ApkManifestStatus::BudgetExceeded,
+                ));
+            }
+            return Err(e);
+        }
+    }
+
+    let compressed = (&mut *reader).take(meta.compressed_size as u64);
+    let status = match meta.compression_method {
+        0 => super::packages::verify_apk_manifest_stream(compressed, options, report),
+        8 => super::packages::verify_apk_manifest_stream(
+            DeflateDecoder::new(compressed),
+            options,
+            report,
+        ),
+        _ => return Ok(DirectManifestOutcome::Fallback),
+    };
+
+    if status != super::packages::ApkManifestStatus::Valid && reader.is_budget_exceeded() {
+        report.inspection = Inspection::Limited;
+        if !report
+            .warnings
+            .iter()
+            .any(|w| w.code == "budget.source_read_exceeded")
+        {
+            report.warnings.push(WarningItem::new(
+                "budget.source_read_exceeded",
+                "Total source read budget exceeded during detection",
+            ));
+        }
+        return Ok(DirectManifestOutcome::Done(
+            super::packages::ApkManifestStatus::BudgetExceeded,
+        ));
+    }
+
+    Ok(DirectManifestOutcome::Done(status))
+}
+
 fn position_at_direct_entry<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
     meta: &ZipEntryMeta,

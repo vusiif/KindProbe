@@ -6,19 +6,41 @@ use std::io::{Cursor, Write};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
+fn build_minimal_axml_manifest() -> Vec<u8> {
+    // Minimal compiled Android Binary XML (AXML): ResXMLTree_header (8) + ResStringPool_header (28) + "manifest"
+    let pool_str = b"\x08\x08manifest\x00";
+    let pool_size = 28u32 + pool_str.len() as u32;
+    let total_size = 8u32 + pool_size;
+    let mut axml = Vec::with_capacity(total_size as usize);
+    axml.extend_from_slice(&0x0003u16.to_le_bytes()); // RES_XML_TYPE
+    axml.extend_from_slice(&0x0008u16.to_le_bytes()); // headerSize
+    axml.extend_from_slice(&total_size.to_le_bytes());
+    axml.extend_from_slice(&0x0001u16.to_le_bytes()); // RES_STRING_POOL_TYPE
+    axml.extend_from_slice(&0x001Cu16.to_le_bytes()); // headerSize (28)
+    axml.extend_from_slice(&pool_size.to_le_bytes());
+    axml.extend_from_slice(&1u32.to_le_bytes()); // stringCount = 1
+    axml.extend_from_slice(&0u32.to_le_bytes()); // styleCount
+    axml.extend_from_slice(&0x0100u32.to_le_bytes()); // UTF8_FLAG
+    axml.extend_from_slice(&28u32.to_le_bytes()); // stringsStart
+    axml.extend_from_slice(&0u32.to_le_bytes()); // stylesStart
+    axml.extend_from_slice(pool_str);
+    axml
+}
+
 #[test]
 fn test_detect_apk_and_jar_in_zip() {
     let opts = DetectOptions::default();
 
-    // 1. Android APK in ZIP container
+    // 1. Android APK in ZIP container (valid AXML AndroidManifest.xml + classes.dex)
+    let axml = build_minimal_axml_manifest();
     let mut apk_buf = Cursor::new(Vec::new());
     {
         let mut zip = ZipWriter::new(&mut apk_buf);
         let zip_opts = SimpleFileOptions::default();
         zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
-        zip.write_all(b"fake android manifest binary xml").unwrap();
+        zip.write_all(&axml).unwrap();
         zip.start_file("classes.dex", zip_opts).unwrap();
-        zip.write_all(b"fake dex bytecode").unwrap();
+        zip.write_all(b"dex\n035\0fake dex bytecode").unwrap();
         zip.finish().unwrap();
     }
     apk_buf.set_position(0);
@@ -46,6 +68,86 @@ fn test_detect_apk_and_jar_in_zip() {
         compare_extension(&rep_apk, Some(OsStr::new("jar"))),
         ExtensionStatus::Mismatch
     );
+
+    // 1b. DEX-less valid APK (resource/split APK with valid AXML AndroidManifest.xml only)
+    let mut split_apk = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut split_apk);
+        let zip_opts = SimpleFileOptions::default();
+        zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
+        zip.write_all(&axml).unwrap();
+        zip.finish().unwrap();
+    }
+    let rep_split_fast = detect_bytes(&split_apk.into_inner(), &opts).expect("detect dexless apk");
+    assert_eq!(rep_split_fast.format_id.as_deref(), Some("apk"));
+    assert!(rep_split_fast
+        .evidence
+        .iter()
+        .any(|e| e.code == "zip.apk.manifest"));
+    assert!(!rep_split_fast
+        .evidence
+        .iter()
+        .any(|e| e.code == "zip.apk.dex"));
+
+    // 1c. Plain XML AndroidManifest.xml (source/uncompiled) is also accepted via ZipArchive fallback (Zip64/large64 or standard)
+    let mut xml_apk = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut xml_apk);
+        let zip_opts = SimpleFileOptions::default().large_file(true);
+        zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.demo"><application/></manifest>"#,
+        )
+        .unwrap();
+        zip.finish().unwrap();
+    }
+    let rep_xml_fallback =
+        detect_bytes(&xml_apk.into_inner(), &opts).expect("detect xml apk fallback");
+    assert_eq!(rep_xml_fallback.format_id.as_deref(), Some("apk"));
+
+    // 1d. Archive containing only classes.dex (no valid AndroidManifest.xml) must NOT confirm APK
+    let mut dex_only_zip = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut dex_only_zip);
+        let zip_opts = SimpleFileOptions::default();
+        zip.start_file("classes.dex", zip_opts).unwrap();
+        zip.write_all(b"dex\n035\0").unwrap();
+        zip.finish().unwrap();
+    }
+    let rep_dex_only = detect_bytes(&dex_only_zip.into_inner(), &opts).expect("dex only zip");
+    assert_eq!(rep_dex_only.format_id.as_deref(), Some("zip"));
+
+    // 1e. Spoofed AndroidManifest.xml (non-AXML, non-manifest XML) must remain plain ZIP
+    let mut spoof_zip = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut spoof_zip);
+        let zip_opts = SimpleFileOptions::default();
+        zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
+        zip.write_all(b"fake android manifest binary xml").unwrap();
+        zip.start_file("classes.dex", zip_opts).unwrap();
+        zip.write_all(b"fake dex").unwrap();
+        zip.finish().unwrap();
+    }
+    let rep_spoof = detect_bytes(&spoof_zip.into_inner(), &opts).expect("spoofed apk zip");
+    assert_eq!(rep_spoof.format_id.as_deref(), Some("zip"));
+
+    // 1f. Oversized AndroidManifest.xml exceeding budget must stop cleanly with Inspection::Limited
+    let mut huge_manifest_apk = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut huge_manifest_apk);
+        let zip_opts = SimpleFileOptions::default();
+        zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
+        zip.write_all(&vec![b' '; 256]).unwrap();
+        zip.finish().unwrap();
+    }
+    let small_decomp_opts = DetectOptions {
+        max_single_decompressed_bytes: 32,
+        ..Default::default()
+    };
+    let rep_budget = detect_bytes(&huge_manifest_apk.into_inner(), &small_decomp_opts)
+        .expect("budget limited apk manifest");
+    assert_eq!(rep_budget.identification, Identification::ContainerOnly);
+    assert_eq!(rep_budget.inspection, kindprobe::Inspection::Limited);
 
     // 2. Java JAR in ZIP container
     let mut jar_buf = Cursor::new(Vec::new());

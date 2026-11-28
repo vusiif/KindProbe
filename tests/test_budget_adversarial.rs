@@ -167,6 +167,43 @@ fn test_cfb_entries_budget_and_stats() {
         .warnings
         .iter()
         .any(|w| w.code == "budget.entries_exceeded"));
+
+    // 3. Pre-parse directory sector cap stops excessive directory chains before CompoundFile::open
+    //    even if subsequent chained sectors point out-of-bounds or contain malformed data.
+    let mut forged_cfb = vec![0u8; 512 * 4];
+    forged_cfb[..8].copy_from_slice(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]);
+    forged_cfb[24..26].copy_from_slice(&0x003Eu16.to_le_bytes()); // minor version
+    forged_cfb[26..28].copy_from_slice(&0x0003u16.to_le_bytes()); // major v3
+    forged_cfb[28..30].copy_from_slice(&0xFFFEu16.to_le_bytes()); // byte order
+    forged_cfb[30..32].copy_from_slice(&9u16.to_le_bytes()); // 512-byte sectors
+    forged_cfb[32..34].copy_from_slice(&6u16.to_le_bytes()); // 64-byte mini sectors
+    forged_cfb[44..48].copy_from_slice(&1u32.to_le_bytes()); // num FAT sectors
+    forged_cfb[48..52].copy_from_slice(&1u32.to_le_bytes()); // first dir sector = 1
+    forged_cfb[76..80].copy_from_slice(&0u32.to_le_bytes()); // DIFAT[0] = FAT sector 0
+    for idx in 1..109 {
+        let off = 76 + idx * 4;
+        forged_cfb[off..off + 4].copy_from_slice(&0xFFFFFFFFu32.to_le_bytes());
+    }
+    // FAT sector 0 (file offset 512): sector 1 points to invalid/huge sector 99999 (never reached!)
+    forged_cfb[512..516].copy_from_slice(&0xFFFFFFFDu32.to_le_bytes()); // FATSECT
+    forged_cfb[516..520].copy_from_slice(&99_999u32.to_le_bytes()); // dir sector 1 -> unreachable
+                                                                    // Dir sector 1 (file offset 1024): 4 active entries (> max_entries = 2)
+    for slot in 0..4 {
+        let entry_off = 1024 + slot * 128;
+        forged_cfb[entry_off + 66] = if slot == 0 { 5 } else { 2 }; // Root + 3 streams
+    }
+    let precheck_opts = DetectOptions {
+        max_entries: 2,
+        ..Default::default()
+    };
+    let rep_precheck =
+        kindprobe::detect_bytes(&forged_cfb, &precheck_opts).expect("precheck cfb report");
+    assert_eq!(rep_precheck.identification, Identification::ContainerOnly);
+    assert_eq!(rep_precheck.inspection, Inspection::Limited);
+    assert!(rep_precheck
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.entries_exceeded"));
 }
 
 #[test]

@@ -13,7 +13,12 @@ KindProbe 是一个离线、本地、只读的 Rust CLI 与核心库（依规格
 - **内容优先**：识别完全基于文件内部结构与魔数证据，绝不依赖扩展名做身份确认。
 - **扩展名诊断分离**：扩展名仅在内容识别后独立执行匹配诊断（`match` / `mismatch` / `missing` / `unrecognized` / `undetermined`），错误后缀不改变内容结论。
 - **句柄级安全核验**：`detect_path` 先打开 `File` 句柄，再在已打开句柄上执行 `fstat`（`file.metadata()?.is_file()`）核验普通文件，拒绝目录、管道与设备，杜绝路径式检查与打开之间的 TOCTOU 竞态。
-- **严格资源预算**：所有读取均经过 `BudgetReader` 计数适配器，对头窗（4 KiB）、总源读取（8 MiB）、ZIP 目录窗口（1 MiB）、容器条目数（10,000）、单 XML 解压输出（256 KiB）、总解压输出（1 MiB）、XML 嵌套深度（64）等关键资源设防，杜绝内存耗尽、拒绝服务与 XML 炸弹。进程级 Docker/OS 时间与内存护栏仅作为测试保护，不虚报为库内置保证。
+- **严格资源预算**：所有读取均经过 `BudgetReader` 计数适配器，按如下作用范围对内存、I/O 与解析深度设防（进程级 Docker/OS 时间与内存护栏仅作为测试保护，不虚报为库内置保证）：
+  - `initial_window_size`（默认 `4 KiB`）：流式入口仅按 `initial_window_size.min(max_source_bytes_read)` 分配头窗缓冲区（超出可读预算时不预分配），并与切片路径共用头窗复用与探针顺序；
+  - `max_source_bytes_read`（默认 `8 MiB`）：通过 `BudgetReader` 强制限制底层总读取字节数及越窗探针（如 ISO/DMG），超限即中止并标记 `Inspection::Limited`；
+  - `max_zip_directory_window`（默认 `1 MiB`）：限制 ZIP 中央目录预检查与 `ZipArchive` 目录加载读取量；
+  - `max_entries`（默认 `10,000`）：ZIP 在构建 `ZipArchive` 前由中央目录预检查强拦截；CFB 在 `CompoundFile::open` 构建目录树前预扫 MS-CFB 目录扇区链（限制活动条目、扇区链路与空项容量并防止环链），遍历根目录时再次核验；同时绑定最大 seek 次数上限；
+  - `max_single_decompressed_bytes`（默认 `256 KiB`）、`max_total_decompressed_bytes`（默认 `1 MiB`）、`max_xml_depth`（默认 `64`）：通过 `DecompressLimitReader` 与流式 XML 解析器在读取 OOXML/包内部条目时实时强制截断，防解压炸弹与深层递归。
 - **拒绝伪确认**：严禁仅凭 `word/` 目录或文件名判定 DOCX；严禁仅凭 CFB 流名判定 DOC（必须验证 MS-DOC FIB `0xA5EC`、`nFib >= 0x00C1` 及表流存在性）。未实际核验的内部结构绝不虚报证据。
 - **库无副作用**：Rust 核心库不打印标准输出、不写文件、不联网、不启动外部异步运行时。
 - **明确不做的功能**：不修改扩展名、不重命名、不提取正文、不解压到磁盘、不进行宏执行或安全查毒、不进行无界递归探测、不集成 Toss 私有类型。

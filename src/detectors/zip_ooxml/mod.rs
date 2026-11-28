@@ -16,10 +16,13 @@ use crate::model::{
 };
 
 use cd_check::precheck_zip_central_directory;
-use direct_reader::{stream_zip_xml_bounded, try_detect_ooxml_from_cd_cache, XmlPartSpec};
+use direct_reader::{
+    stream_zip_xml_bounded, try_detect_ooxml_from_cd_cache, verify_apk_manifest_direct,
+    DirectManifestOutcome, XmlPartSpec,
+};
 use epub::check_epub_or_odf;
 use opc::{parse_content_types, parse_package_relationships, resolve_target_path};
-use packages::check_zip_packages;
+use packages::{apply_apk, check_zip_packages, ApkManifestStatus};
 use schemas::classify_ooxml_content_type;
 use xml::{verify_main_part_xml, MainPartXmlOutcome};
 
@@ -181,161 +184,185 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     }
 
     // Fast short-circuit: non-OOXML and non-EPUB/ODF archives (APK, IPA, JAR, KMZ, plain ZIP)
-    // do not need ZipArchive instantiation, second EOCD search, or stream rewinding.
+    // do not need ZipArchive instantiation, second EOCD search, or stream rewinding unless fallback is required.
     if !has_content_types && !has_rels && !has_ooxml_subdirs && !cd_check.has_mimetype {
-        report.stats.entries_inspected = cd_check.cd_total_entries;
-        report
-            .evidence
-            .push(EvidenceItem::new("zip.central_directory"));
+        let mut defer_apk_to_archive = false;
 
-        // 1. Android Package (APK): AndroidManifest.xml and/or classes.dex
-        if cd_check.has_apk_manifest || cd_check.has_apk_dex {
-            report.identification = Identification::Format;
-            report.format_id = Some("apk".to_string());
-            report.category = "package".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("apk".to_string());
-            report.accepted_extensions = vec!["apk".to_string(), "xapk".to_string()];
-            if cd_check.has_apk_manifest {
-                report.evidence.push(EvidenceItem::new("zip.apk.manifest"));
+        // 1. Android Package (APK): requires structural AndroidManifest.xml verification (DEX is optional)
+        if cd_check.has_apk_manifest {
+            if !cd_check.is_zip64 {
+                if let Some(meta) = cd_check.apk_manifest_entry.as_ref() {
+                    match verify_apk_manifest_direct(
+                        reader,
+                        meta,
+                        cd_check.cd_offset,
+                        options,
+                        &mut report,
+                    )? {
+                        DirectManifestOutcome::Done(ApkManifestStatus::Valid) => {
+                            report.stats.entries_inspected = cd_check.cd_total_entries;
+                            report
+                                .evidence
+                                .push(EvidenceItem::new("zip.central_directory"));
+                            apply_apk(&mut report, cd_check.has_apk_dex);
+                            return Ok(report);
+                        }
+                        DirectManifestOutcome::Done(ApkManifestStatus::BudgetExceeded) => {
+                            report.stats.entries_inspected = cd_check.cd_total_entries;
+                            report
+                                .evidence
+                                .push(EvidenceItem::new("zip.central_directory"));
+                            return Ok(report);
+                        }
+                        DirectManifestOutcome::Done(ApkManifestStatus::Invalid) => {}
+                        DirectManifestOutcome::Fallback => {
+                            defer_apk_to_archive = true;
+                        }
+                    }
+                } else {
+                    defer_apk_to_archive = true;
+                }
+            } else {
+                defer_apk_to_archive = true;
             }
-            if cd_check.has_apk_dex {
-                report.evidence.push(EvidenceItem::new("zip.apk.dex"));
+        }
+
+        if !defer_apk_to_archive {
+            report.stats.entries_inspected = cd_check.cd_total_entries;
+            report
+                .evidence
+                .push(EvidenceItem::new("zip.central_directory"));
+
+            // 1b. Android App Bundle (AAB): BundleConfig.pb
+            if cd_check.has_aab_bundle {
+                report.identification = Identification::Format;
+                report.format_id = Some("aab".to_string());
+                report.category = "package".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("aab".to_string());
+                report.accepted_extensions = vec!["aab".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.aab.bundle"));
+                return Ok(report);
             }
-            return Ok(report);
-        }
 
-        // 1b. Android App Bundle (AAB): BundleConfig.pb
-        if cd_check.has_aab_bundle {
-            report.identification = Identification::Format;
-            report.format_id = Some("aab".to_string());
-            report.category = "package".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("aab".to_string());
-            report.accepted_extensions = vec!["aab".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.aab.bundle"));
-            return Ok(report);
-        }
+            // 2. iOS Application Archive (IPA): Payload/*.app/Info.plist
+            if cd_check.has_ipa_payload {
+                report.identification = Identification::Format;
+                report.format_id = Some("ipa".to_string());
+                report.category = "package".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("ipa".to_string());
+                report.accepted_extensions = vec!["ipa".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.ipa.payload"));
+                return Ok(report);
+            }
 
-        // 2. iOS Application Archive (IPA): Payload/*.app/Info.plist
-        if cd_check.has_ipa_payload {
-            report.identification = Identification::Format;
-            report.format_id = Some("ipa".to_string());
-            report.category = "package".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("ipa".to_string());
-            report.accepted_extensions = vec!["ipa".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.ipa.payload"));
-            return Ok(report);
-        }
+            // 3. Java Archive (JAR): META-INF/MANIFEST.MF
+            if cd_check.has_jar_manifest {
+                report.identification = Identification::Format;
+                report.format_id = Some("jar".to_string());
+                report.category = "package".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("jar".to_string());
+                report.accepted_extensions =
+                    vec!["jar".to_string(), "war".to_string(), "ear".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.jar.manifest"));
+                return Ok(report);
+            }
 
-        // 3. Java Archive (JAR): META-INF/MANIFEST.MF
-        if cd_check.has_jar_manifest {
-            report.identification = Identification::Format;
-            report.format_id = Some("jar".to_string());
-            report.category = "package".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("jar".to_string());
-            report.accepted_extensions =
-                vec!["jar".to_string(), "war".to_string(), "ear".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.jar.manifest"));
-            return Ok(report);
-        }
+            // 4. Keyhole Markup Zip (KMZ): doc.kml
+            if cd_check.has_kmz_kml {
+                report.identification = Identification::Format;
+                report.format_id = Some("kmz".to_string());
+                report.category = "geospatial".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("kmz".to_string());
+                report.accepted_extensions = vec!["kmz".to_string(), "kml".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.kmz.kml"));
+                return Ok(report);
+            }
 
-        // 4. Keyhole Markup Zip (KMZ): doc.kml
-        if cd_check.has_kmz_kml {
-            report.identification = Identification::Format;
-            report.format_id = Some("kmz".to_string());
-            report.category = "geospatial".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("kmz".to_string());
-            report.accepted_extensions = vec!["kmz".to_string(), "kml".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.kmz.kml"));
-            return Ok(report);
-        }
+            // 4b. NumPy NPZ archive: contains *.npy arrays
+            if cd_check.has_npz_array {
+                report.identification = Identification::Format;
+                report.format_id = Some("npz".to_string());
+                report.category = "scientific".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("npz".to_string());
+                report.accepted_extensions = vec!["npz".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.npz.array"));
+                return Ok(report);
+            }
 
-        // 4b. NumPy NPZ archive: contains *.npy arrays
-        if cd_check.has_npz_array {
-            report.identification = Identification::Format;
-            report.format_id = Some("npz".to_string());
-            report.category = "scientific".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("npz".to_string());
-            report.accepted_extensions = vec!["npz".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.npz.array"));
-            return Ok(report);
-        }
+            // 4c. Python Wheel (.whl), VS Code Extension (.vsix), NuGet (.nupkg), Firefox Add-on (.xpi)
+            if cd_check.has_whl_dist_info {
+                report.identification = Identification::Format;
+                report.format_id = Some("whl".to_string());
+                report.category = "package".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("whl".to_string());
+                report.accepted_extensions = vec!["whl".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.whl.wheel"));
+                return Ok(report);
+            }
+            if cd_check.has_vsix_manifest {
+                report.identification = Identification::Format;
+                report.format_id = Some("vsix".to_string());
+                report.category = "package".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("vsix".to_string());
+                report.accepted_extensions = vec!["vsix".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.vsix.manifest"));
+                return Ok(report);
+            }
+            if cd_check.has_nupkg_nuspec {
+                report.identification = Identification::Format;
+                report.format_id = Some("nupkg".to_string());
+                report.category = "package".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("nupkg".to_string());
+                report.accepted_extensions = vec!["nupkg".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.nupkg.nuspec"));
+                return Ok(report);
+            }
+            if cd_check.has_xpi_manifest {
+                report.identification = Identification::Format;
+                report.format_id = Some("xpi".to_string());
+                report.category = "package".to_string();
+                report.container_id = Some("zip".to_string());
+                report.verification = Verification::Structure;
+                report.inspection = Inspection::Complete;
+                report.recommended_extension = Some("xpi".to_string());
+                report.accepted_extensions = vec!["xpi".to_string()];
+                report.evidence.push(EvidenceItem::new("zip.xpi.manifest"));
+                return Ok(report);
+            }
 
-        // 4c. Python Wheel (.whl), VS Code Extension (.vsix), NuGet (.nupkg), Firefox Add-on (.xpi)
-        if cd_check.has_whl_dist_info {
+            // 5. Plain ZIP archive
             report.identification = Identification::Format;
-            report.format_id = Some("whl".to_string());
-            report.category = "package".to_string();
+            report.format_id = Some("zip".to_string());
+            report.category = "archive".to_string();
             report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("whl".to_string());
-            report.accepted_extensions = vec!["whl".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.whl.wheel"));
+            report.recommended_extension = Some("zip".to_string());
+            report.accepted_extensions = vec!["zip".to_string()];
             return Ok(report);
         }
-        if cd_check.has_vsix_manifest {
-            report.identification = Identification::Format;
-            report.format_id = Some("vsix".to_string());
-            report.category = "package".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("vsix".to_string());
-            report.accepted_extensions = vec!["vsix".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.vsix.manifest"));
-            return Ok(report);
-        }
-        if cd_check.has_nupkg_nuspec {
-            report.identification = Identification::Format;
-            report.format_id = Some("nupkg".to_string());
-            report.category = "package".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("nupkg".to_string());
-            report.accepted_extensions = vec!["nupkg".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.nupkg.nuspec"));
-            return Ok(report);
-        }
-        if cd_check.has_xpi_manifest {
-            report.identification = Identification::Format;
-            report.format_id = Some("xpi".to_string());
-            report.category = "package".to_string();
-            report.container_id = Some("zip".to_string());
-            report.verification = Verification::Structure;
-            report.inspection = Inspection::Complete;
-            report.recommended_extension = Some("xpi".to_string());
-            report.accepted_extensions = vec!["xpi".to_string()];
-            report.evidence.push(EvidenceItem::new("zip.xpi.manifest"));
-            return Ok(report);
-        }
-
-        // 5. Plain ZIP archive
-        report.identification = Identification::Format;
-        report.format_id = Some("zip".to_string());
-        report.category = "archive".to_string();
-        report.container_id = Some("zip".to_string());
-        report.recommended_extension = Some("zip".to_string());
-        report.accepted_extensions = vec!["zip".to_string()];
-        return Ok(report);
     }
 
     // Incomplete OOXML short-circuit: OOXML indicators exist but [Content_Types].xml is absent
@@ -438,7 +465,7 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         if check_epub_or_odf(&mut archive, &mut report) {
             return Ok(report);
         }
-        if check_zip_packages(&mut archive, &mut report) {
+        if check_zip_packages(&mut archive, options, &mut report) {
             return Ok(report);
         }
 

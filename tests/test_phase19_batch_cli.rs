@@ -94,12 +94,23 @@ fn test_phase20_parallel_batch_80_files_jsonl() {
         }
     }
 
+    let out_j1 = Command::new(bin_path())
+        .args(["--batch", "-j", "1", "--jsonl"])
+        .arg(&root)
+        .output()
+        .expect("run serial batch");
+    assert_eq!(out_j1.status.code(), Some(0));
+
     let out = Command::new(bin_path())
         .args(["--batch", "-j", "4", "--jsonl"])
         .arg(&root)
         .output()
         .expect("run parallel batch");
     assert_eq!(out.status.code(), Some(0));
+    assert_eq!(
+        out.stdout, out_j1.stdout,
+        "-j 4 must emit exact same ordered JSONL output as -j 1"
+    );
     let lines: Vec<serde_json::Value> = String::from_utf8_lossy(&out.stdout)
         .lines()
         .map(|l| serde_json::from_str(l).expect("valid jsonl"))

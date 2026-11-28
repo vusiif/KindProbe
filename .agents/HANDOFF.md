@@ -1,11 +1,13 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- Synced `CHANGELOG.md` (`[0.2.0] - 2026-11-27`) and `README.md` metrics (`1,399` extension mappings, `776` static rules across 60 generated modules + core registry, `37` real fixtures, `255` unit/integration tests + `5` doctests).
-- Preparing final `--locked` release check, `v0.2.0` tag, and GitHub Release workflow trigger.
+- Fixed `-j` batch execution (`src/cli/batch.rs`) with true concurrent worker threads, bounded in-flight window/work queue, streaming directory walk preserving sorted DFS order, immediate first-line JSONL flushing, and explicit traversal/stdout write error handling, plus barrier/order/write-failure tests (`src/cli/batch.rs`, `tests/test_phase19_batch_cli.rs`).
+- Aligned slice and reader budget/probe semantics and clamped stream header buffer allocation to `initial_window_size.min(max_source_bytes_read)` (`src/detectors/mod.rs`, `src/detectors/disks/iso.rs`), with budget boundary parity tests (`tests/test_api_consistency.rs`).
+- Added MS-CFB pre-parse directory chain and entry budget enforcement prior to `CompoundFile::open` (`src/detectors/cfb/mod.rs`, `tests/test_budget_adversarial.rs`) and documented exact budget scopes in `README.md`.
+- Unified structural `AndroidManifest.xml` (AXML & XML) validation across ZIP fast path and `ZipArchive` fallback (`src/detectors/zip_ooxml/packages.rs`, `src/detectors/zip_ooxml/direct_reader.rs`, `src/detectors/zip_ooxml/cd_check.rs`, `src/detectors/zip_ooxml/mod.rs`), covering DEX-less valid APKs and rejecting `classes.dex`-only or spoofed manifests (`tests/test_packages_and_audio_extended.rs`).
 
 ## [当前状态] (Current State)
-- Release preparation checks running on `main`.
+- All 5 audit findings addressed; awaiting final verification + auto-commit on `main`.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- None once `v0.2.0` tag is pushed and `.github/workflows/release.yml` finishes cleanly.
+- Push to remote or cut next patch release tag when requested.

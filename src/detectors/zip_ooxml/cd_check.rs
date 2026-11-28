@@ -25,6 +25,7 @@ pub struct ZipCdPreCheckResult {
     pub has_ooxml_subdirs: bool,
     pub has_apk_manifest: bool,
     pub has_apk_dex: bool,
+    pub apk_manifest_entry: Option<ZipEntryMeta>,
     pub has_aab_bundle: bool,
     pub has_npz_array: bool,
     pub has_ipa_payload: bool,
@@ -209,6 +210,7 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
     let mut has_ooxml_subdirs = false;
     let mut has_apk_manifest = false;
     let mut has_apk_dex = false;
+    let mut apk_manifest_entry: Option<ZipEntryMeta> = None;
     let mut has_aab_bundle = false;
     let mut has_npz_array = false;
     let mut has_ipa_payload = false;
@@ -402,6 +404,9 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
                 has_ooxml_subdirs = true;
             } else if raw_bytes == b"AndroidManifest.xml" {
                 has_apk_manifest = true;
+                if apk_manifest_entry.is_none() {
+                    apk_manifest_entry = make_meta(raw_bytes);
+                }
             } else if raw_bytes == b"classes.dex" {
                 has_apk_dex = true;
             } else if raw_bytes == b"BundleConfig.pb" {
@@ -507,6 +512,7 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         has_ooxml_subdirs,
         has_apk_manifest,
         has_apk_dex,
+        apk_manifest_entry,
         has_aab_bundle,
         has_npz_array,
         has_ipa_payload,

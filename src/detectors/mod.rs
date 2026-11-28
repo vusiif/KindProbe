@@ -115,13 +115,39 @@ fn probe_dmg_stream_core<R: Read + Seek>(reader: &mut BudgetReader<R>) -> Option
     None
 }
 
-pub fn detect_bytes_non_container_core(
-    bytes: &[u8],
+fn can_probe_beyond_header(bytes_read: usize, max_source_bytes_read: usize, needed: usize) -> bool {
+    max_source_bytes_read.saturating_sub(bytes_read) >= needed
+}
+
+fn truncated_report(fmt: String, source_bytes_read: usize) -> DetectionReport {
+    DetectionReport {
+        schema_version: 1,
+        format_id: None,
+        category: "unknown".to_string(),
+        container_id: None,
+        identification: Identification::Unknown,
+        verification: Verification::None,
+        inspection: Inspection::Complete,
+        recommended_extension: None,
+        accepted_extensions: Vec::new(),
+        extension_status: ExtensionStatus::Undetermined,
+        evidence: Vec::new(),
+        warnings: vec![WarningItem::new(
+            "input.truncated",
+            format!("Input header matches truncated signature for {}", fmt),
+        )],
+        stats: crate::model::DetectionStats {
+            source_bytes_read,
+            ..Default::default()
+        },
+        candidates: Some(vec![fmt]),
+    }
+}
+
+fn probe_non_container_header_core(
+    header: &[u8],
     options: &DetectOptions,
 ) -> Result<Option<DetectionCore>, DetectError> {
-    let header_len = bytes.len().min(options.initial_window_size);
-    let header = &bytes[..header_len];
-
     if header.is_empty() {
         return Ok(Some(DetectionCore::empty()));
     }
@@ -153,19 +179,61 @@ pub fn detect_bytes_non_container_core(
         return Ok(None);
     }
 
-    if bytes.len() >= (disks::iso::ISO_OFFSET as usize) + 6
-        && options.max_source_bytes_read >= header.len().saturating_add(6)
+    // Reuse bytes already in the initial header window before text or seeks.
+    if let Some(iso_core) = disks::probe_iso_buffer_core(header) {
+        return Ok(Some(iso_core));
+    }
+
+    // Classify text/structured text from header before attempting out-of-window ISO/DMG seeks.
+    if let Some(core) = text::probe_text_core(header) {
+        return Ok(Some(core));
+    }
+
+    Ok(None)
+}
+
+pub fn detect_bytes_non_container_core(
+    bytes: &[u8],
+    options: &DetectOptions,
+) -> Result<Option<DetectionCore>, DetectError> {
+    let header_len = bytes
+        .len()
+        .min(options.initial_window_size)
+        .min(options.max_source_bytes_read);
+    let header = &bytes[..header_len];
+    let header_is_eof = header_len == bytes.len();
+
+    if let Some(core) = probe_non_container_header_core(header, options)? {
+        return Ok(Some(core));
+    }
+
+    if (header.len() >= 4
+        && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
+        || (header.len() >= 8 && header.starts_with(CFB_MAGIC))
     {
+        return Ok(None);
+    }
+
+    if header_is_eof {
+        if let Some(dmg_core) = probe_dmg_slice_core(header) {
+            return Ok(Some(dmg_core));
+        }
+        return Ok(Some(DetectionCore::unknown()));
+    }
+
+    let mut bytes_read = header.len();
+    if header.len() < (disks::iso::ISO_OFFSET as usize) + 6
+        && can_probe_beyond_header(bytes_read, options.max_source_bytes_read, 6)
+    {
+        if bytes.len() >= (disks::iso::ISO_OFFSET as usize) + 6 {
+            bytes_read = bytes_read.saturating_add(6);
+        }
         if let Some(iso_core) = disks::probe_iso_buffer_core(bytes) {
             return Ok(Some(iso_core));
         }
     }
 
-    if let Some(core) = text::probe_text_core(header) {
-        return Ok(Some(core));
-    }
-
-    if options.max_source_bytes_read >= header.len().saturating_add(8) {
+    if can_probe_beyond_header(bytes_read, options.max_source_bytes_read, 8) {
         if let Some(dmg_core) = probe_dmg_slice_core(bytes) {
             return Ok(Some(dmg_core));
         }
@@ -180,8 +248,12 @@ pub fn detect_bytes_non_container(
     bytes: &[u8],
     options: &DetectOptions,
 ) -> Result<Option<DetectionReport>, DetectError> {
-    let header_len = bytes.len().min(options.initial_window_size);
+    let header_len = bytes
+        .len()
+        .min(options.initial_window_size)
+        .min(options.max_source_bytes_read);
     let header = &bytes[..header_len];
+    let header_is_eof = header_len == bytes.len();
 
     if header.is_empty() {
         return Ok(Some(
@@ -200,31 +272,7 @@ pub fn detect_bytes_non_container(
             return Ok(Some(*rep));
         }
         SignatureMatch::Truncated(fmt) => {
-            return Ok(Some(DetectionReport {
-                schema_version: 1,
-                format_id: None,
-                category: "unknown".to_string(),
-                container_id: None,
-                identification: Identification::Unknown,
-                verification: Verification::None,
-                inspection: Inspection::Complete,
-                recommended_extension: None,
-                accepted_extensions: Vec::new(),
-                extension_status: ExtensionStatus::Undetermined,
-                evidence: Vec::new(),
-                warnings: vec![WarningItem::new(
-                    "input.truncated",
-                    format!("Input header matches truncated signature for {}", fmt),
-                )],
-                stats: crate::model::DetectionStats {
-                    source_bytes_read: header.len(),
-                    seek_count: 0,
-                    entries_inspected: 0,
-                    decompressed_bytes: 0,
-                    duration_micros: 0,
-                },
-                candidates: Some(vec![fmt]),
-            }));
+            return Ok(Some(truncated_report(fmt, header.len())));
         }
         SignatureMatch::None => (),
     }
@@ -256,14 +304,9 @@ pub fn detect_bytes_non_container(
         return Ok(None);
     }
 
-    if bytes.len() >= (disks::iso::ISO_OFFSET as usize) + 6
-        && options.max_source_bytes_read >= header.len().saturating_add(6)
-    {
-        if let disks::IsoMatch::Confirmed(mut rep) = disks::probe_iso_buffer(bytes) {
-            rep.stats.source_bytes_read = header.len().saturating_add(6);
-            rep.stats.seek_count = 1;
-            return Ok(Some(*rep));
-        }
+    if let disks::IsoMatch::Confirmed(mut rep) = disks::probe_iso_buffer(header) {
+        rep.stats.source_bytes_read = header.len();
+        return Ok(Some(*rep));
     }
 
     if let Some(mut rep) = text::probe_text(header) {
@@ -271,12 +314,51 @@ pub fn detect_bytes_non_container(
         return Ok(Some(rep));
     }
 
-    if options.max_source_bytes_read >= header.len().saturating_add(8) {
+    if header_is_eof {
+        if let Some(dmg_core) = probe_dmg_slice_core(header) {
+            return Ok(Some(dmg_core.to_report(
+                crate::model::DetectionStats {
+                    source_bytes_read: header.len(),
+                    ..Default::default()
+                },
+                ExtensionStatus::Undetermined,
+            )));
+        }
+        return Ok(Some(DetectionCore::unknown().to_report(
+            crate::model::DetectionStats {
+                source_bytes_read: header.len(),
+                ..Default::default()
+            },
+            ExtensionStatus::Undetermined,
+        )));
+    }
+
+    let mut bytes_read = header.len();
+    let mut seek_count = 0usize;
+    if header.len() < (disks::iso::ISO_OFFSET as usize) + 6
+        && can_probe_beyond_header(bytes_read, options.max_source_bytes_read, 6)
+    {
+        if bytes.len() >= (disks::iso::ISO_OFFSET as usize) + 6 {
+            bytes_read = bytes_read.saturating_add(6);
+        }
+        seek_count = seek_count.saturating_add(1);
+        if let disks::IsoMatch::Confirmed(mut rep) = disks::probe_iso_buffer(bytes) {
+            rep.stats.source_bytes_read = bytes_read;
+            rep.stats.seek_count = seek_count;
+            return Ok(Some(*rep));
+        }
+    }
+
+    if can_probe_beyond_header(bytes_read, options.max_source_bytes_read, 8) {
+        if bytes.len() >= 512 {
+            bytes_read = bytes_read.saturating_add(8);
+        }
+        seek_count = seek_count.saturating_add(1);
         if let Some(dmg_core) = probe_dmg_slice_core(bytes) {
             return Ok(Some(dmg_core.to_report(
                 crate::model::DetectionStats {
-                    source_bytes_read: header.len().saturating_add(8),
-                    seek_count: 1,
+                    source_bytes_read: bytes_read,
+                    seek_count,
                     ..Default::default()
                 },
                 ExtensionStatus::Undetermined,
@@ -286,7 +368,8 @@ pub fn detect_bytes_non_container(
 
     Ok(Some(DetectionCore::unknown().to_report(
         crate::model::DetectionStats {
-            source_bytes_read: header.len(),
+            source_bytes_read: bytes_read,
+            seek_count,
             ..Default::default()
         },
         ExtensionStatus::Undetermined,
@@ -436,19 +519,44 @@ pub fn detect_slice_non_container(
 }
 
 enum HeaderReadOutcome {
-    Ready(usize),
+    Ready {
+        total_read: usize,
+        reached_eof: bool,
+    },
     BudgetExceeded,
 }
 
 fn read_stream_header_and_rewind<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
     header_buf: &mut [u8],
+    options: &DetectOptions,
 ) -> Result<HeaderReadOutcome, DetectError> {
     let mut total_read = 0;
+    let mut reached_eof = false;
     while total_read < header_buf.len() {
         match reader.read(&mut header_buf[total_read..]) {
-            Ok(0) => break, // True EOF reached
+            Ok(0) => {
+                reached_eof = true;
+                break;
+            }
             Ok(bytes) => total_read += bytes,
+            Err(e) => {
+                if reader.is_budget_exceeded() {
+                    return Ok(HeaderReadOutcome::BudgetExceeded);
+                }
+                return Err(DetectError::Io(e));
+            }
+        }
+    }
+
+    if !reached_eof
+        && options.max_source_bytes_read < options.initial_window_size
+        && total_read == options.max_source_bytes_read
+    {
+        let mut probe = [0u8; 1];
+        match reader.read(&mut probe) {
+            Ok(0) => reached_eof = true,
+            Ok(_) => {}
             Err(e) => {
                 if reader.is_budget_exceeded() {
                     return Ok(HeaderReadOutcome::BudgetExceeded);
@@ -465,7 +573,10 @@ fn read_stream_header_and_rewind<R: Read + Seek>(
         return Err(DetectError::Io(e));
     }
 
-    Ok(HeaderReadOutcome::Ready(total_read))
+    Ok(HeaderReadOutcome::Ready {
+        total_read,
+        reached_eof,
+    })
 }
 
 /// Zero-allocation stream detector returning DetectionCore directly for all non-ZIP/non-CFB formats.
@@ -473,19 +584,26 @@ pub fn detect_stream_core<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
     options: &DetectOptions,
 ) -> Result<DetectionCore, DetectError> {
+    let header_cap = options
+        .initial_window_size
+        .min(options.max_source_bytes_read);
     let mut stack_buf = [0u8; 4096];
     let mut heap_buf;
-    let header_buf: &mut [u8] = if options.initial_window_size <= 4096 {
-        &mut stack_buf[..options.initial_window_size]
+    let header_buf: &mut [u8] = if header_cap <= 4096 {
+        &mut stack_buf[..header_cap]
     } else {
-        heap_buf = vec![0u8; options.initial_window_size];
+        heap_buf = vec![0u8; header_cap];
         &mut heap_buf[..]
     };
 
-    let total_read = match read_stream_header_and_rewind(reader, header_buf)? {
-        HeaderReadOutcome::Ready(n) => n,
-        HeaderReadOutcome::BudgetExceeded => return Ok(DetectionCore::budget_exceeded()),
-    };
+    let (total_read, reached_eof) =
+        match read_stream_header_and_rewind(reader, header_buf, options)? {
+            HeaderReadOutcome::Ready {
+                total_read,
+                reached_eof,
+            } => (total_read, reached_eof),
+            HeaderReadOutcome::BudgetExceeded => return Ok(DetectionCore::budget_exceeded()),
+        };
     let header = &header_buf[..total_read];
 
     if header.is_empty() {
@@ -521,20 +639,33 @@ pub fn detect_stream_core<R: Read + Seek>(
         return Ok(DetectionCore::truncated("cfb"));
     }
 
-    if header.len() >= options.initial_window_size
-        || header.len() >= (disks::iso::ISO_OFFSET as usize) + 6
-    {
-        if let Some(core) = disks::probe_iso_stream_core(reader) {
-            return Ok(core);
-        }
+    if let Some(iso_core) = disks::probe_iso_buffer_core(header) {
+        return Ok(iso_core);
     }
 
     if let Some(core) = text::probe_text_core(header) {
         return Ok(core);
     }
 
-    if let Some(dmg_core) = probe_dmg_stream_core(reader) {
-        return Ok(dmg_core);
+    if reached_eof {
+        if let Some(dmg_core) = probe_dmg_slice_core(header) {
+            return Ok(dmg_core);
+        }
+        return Ok(DetectionCore::unknown());
+    }
+
+    if header.len() < (disks::iso::ISO_OFFSET as usize) + 6
+        && can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 6)
+    {
+        if let Some(core) = disks::probe_iso_stream_core(reader) {
+            return Ok(core);
+        }
+    }
+
+    if can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 8) {
+        if let Some(dmg_core) = probe_dmg_stream_core(reader) {
+            return Ok(dmg_core);
+        }
     }
 
     Ok(DetectionCore::unknown())
@@ -544,22 +675,29 @@ pub fn detect_stream<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
     options: &DetectOptions,
 ) -> Result<DetectionReport, DetectError> {
-    // Read initial header window (stack-allocated buffer for default 4KB, avoiding heap allocations)
+    // Clamp header allocation to the readable budget ceiling (stack buffer up to 4 KiB)
+    let header_cap = options
+        .initial_window_size
+        .min(options.max_source_bytes_read);
     let mut stack_buf = [0u8; 4096];
     let mut heap_buf;
-    let header_buf: &mut [u8] = if options.initial_window_size <= 4096 {
-        &mut stack_buf[..options.initial_window_size]
+    let header_buf: &mut [u8] = if header_cap <= 4096 {
+        &mut stack_buf[..header_cap]
     } else {
-        heap_buf = vec![0u8; options.initial_window_size];
+        heap_buf = vec![0u8; header_cap];
         &mut heap_buf[..]
     };
-    let total_read = match read_stream_header_and_rewind(reader, header_buf)? {
-        HeaderReadOutcome::Ready(n) => n,
-        HeaderReadOutcome::BudgetExceeded => {
-            return Ok(DetectionCore::budget_exceeded()
-                .to_report(Default::default(), ExtensionStatus::Undetermined));
-        }
-    };
+    let (total_read, reached_eof) =
+        match read_stream_header_and_rewind(reader, header_buf, options)? {
+            HeaderReadOutcome::Ready {
+                total_read,
+                reached_eof,
+            } => (total_read, reached_eof),
+            HeaderReadOutcome::BudgetExceeded => {
+                return Ok(DetectionCore::budget_exceeded()
+                    .to_report(Default::default(), ExtensionStatus::Undetermined));
+            }
+        };
     let header = &header_buf[..total_read];
 
     // If stream is completely empty
@@ -590,27 +728,7 @@ pub fn detect_stream<R: Read + Seek>(
     // Step 1: Check signatures (PNG, JPEG, GIF, PDF)
     match probe_signatures(header) {
         SignatureMatch::Confirmed(rep) => return Ok(*rep),
-        SignatureMatch::Truncated(fmt) => {
-            return Ok(DetectionReport {
-                schema_version: 1,
-                format_id: None,
-                category: "unknown".to_string(),
-                container_id: None,
-                identification: Identification::Unknown,
-                verification: Verification::None,
-                inspection: Inspection::Complete,
-                recommended_extension: None,
-                accepted_extensions: Vec::new(),
-                extension_status: ExtensionStatus::Undetermined,
-                evidence: Vec::new(),
-                warnings: vec![WarningItem::new(
-                    "input.truncated",
-                    format!("Input header matches truncated signature for {}", fmt),
-                )],
-                stats: Default::default(),
-                candidates: Some(vec![fmt]),
-            });
-        }
+        SignatureMatch::Truncated(fmt) => return Ok(truncated_report(fmt, 0)),
         SignatureMatch::None => (),
     }
 
@@ -665,13 +783,9 @@ pub fn detect_stream<R: Read + Seek>(
         });
     }
 
-    // Step 4: Check ISO 9660 volume descriptor at offset 32768 (only if stream didn't hit EOF early)
-    if header.len() >= options.initial_window_size
-        || header.len() >= (disks::iso::ISO_OFFSET as usize) + 6
-    {
-        if let Some(rep) = disks::probe_iso_stream(reader) {
-            return Ok(rep);
-        }
+    // Step 4: Check ISO 9660 volume descriptor from already-read header if large enough
+    if let Some(rep) = disks::probe_iso_buffer(header).into_report() {
+        return Ok(rep);
     }
 
     // Step 5: Check structured and plain text formats (JSON, XML, HTML, YAML, TOML, CSV, TXT)
@@ -679,8 +793,24 @@ pub fn detect_stream<R: Read + Seek>(
         return Ok(rep);
     }
 
-    if let Some(dmg_core) = probe_dmg_stream_core(reader) {
-        return Ok(dmg_core.to_report(Default::default(), ExtensionStatus::Undetermined));
+    if reached_eof {
+        if let Some(dmg_core) = probe_dmg_slice_core(header) {
+            return Ok(dmg_core.to_report(Default::default(), ExtensionStatus::Undetermined));
+        }
+    } else {
+        if header.len() < (disks::iso::ISO_OFFSET as usize) + 6
+            && can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 6)
+        {
+            if let Some(rep) = disks::probe_iso_stream(reader) {
+                return Ok(rep);
+            }
+        }
+
+        if can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 8) {
+            if let Some(dmg_core) = probe_dmg_stream_core(reader) {
+                return Ok(dmg_core.to_report(Default::default(), ExtensionStatus::Undetermined));
+            }
+        }
     }
 
     // Step 6: Unknown format
