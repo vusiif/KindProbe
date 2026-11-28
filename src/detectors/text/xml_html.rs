@@ -142,6 +142,21 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("mathml", "document", Some("xml"), "mml", &["mml", "mathml", "xml"], "sig.text.mathml"));
     }
+    if (head.starts_with(b"<urlset") || head.starts_with(b"<sitemapindex") || (is_xml_head && (contains_sub(b"<urlset") || contains_sub(b"<sitemapindex"))))
+        && trimmed.contains("sitemaps.org/schemas/sitemap")
+    {
+        return Some(make_core("sitemap", "text", Some("xml"), "xml", &["xml"], "sig.text.sitemap"));
+    }
+    if (head.starts_with(b"<root") || (is_xml_head && contains_sub(b"<root")))
+        && trimmed.contains("System.Resources.ResXResourceReader")
+    {
+        return Some(make_core("resx", "text", Some("xml"), "resx", &["resx", "xml"], "sig.text.resx"));
+    }
+    if (head.starts_with(b"<application") || (is_xml_head && contains_sub(b"<application")))
+        && trimmed.contains("wadl.dev.java.net")
+    {
+        return Some(make_core("wadl", "text", Some("xml"), "wadl", &["wadl", "xml"], "sig.text.wadl"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head

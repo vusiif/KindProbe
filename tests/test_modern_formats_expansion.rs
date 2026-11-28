@@ -765,6 +765,82 @@ fn test_round18_mathml_gleam_rkt_ninja_nomad_pkl_elm_odin_vala_f90_cobol_ada_pas
 }
 
 #[test]
+fn test_round19_sitemap_resx_wadl_purs_gitattributes_codeowners_npmrc_yarnlock_gemfile_podfile_brewfile_hx_prql_jq_udev_nft_iptables_zone() {
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>https://example.com/</loc></url></urlset>",
+        "sitemap",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><root><resheader name=\"reader\"><value>System.Resources.ResXResourceReader</value></resheader></root>",
+        "resx",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><application xmlns=\"http://wadl.dev.java.net/2009/02\"></application>",
+        "wadl",
+    );
+    assert_both_paths(
+        b"module Main where\n\nimport Prelude\nimport Effect.Console (log)\n",
+        "purs",
+    );
+    assert_both_paths(
+        b"* text=auto\n*.png binary\n*.rs text eol=lf\n",
+        "gitattributes",
+    );
+    assert_both_paths(
+        b"* @org/core\n/src/ @org/rust-team\n",
+        "codeowners",
+    );
+    assert_both_paths(
+        b"registry=https://registry.npmjs.org/\nsave-exact=true\n",
+        "npmrc",
+    );
+    assert_both_paths(
+        b"# yarn lockfile v1\n\nfoo@^1.0.0:\n  version \"1.0.0\"\n  resolved \"https://registry.yarnpkg.com/foo/-/foo-1.0.0.tgz\"\n",
+        "yarnlock",
+    );
+    assert_both_paths(
+        b"source 'https://rubygems.org'\ngem 'rails', '~> 7.1'\n",
+        "gemfile",
+    );
+    assert_both_paths(
+        b"platform :ios, '16.0'\ntarget 'MyApp' do\n  pod 'Alamofire'\nend\n",
+        "podfile",
+    );
+    assert_both_paths(
+        b"tap \"homebrew/cask\"\nbrew \"ripgrep\"\ncask \"ghostty\"\n",
+        "brewfile",
+    );
+    assert_both_paths(
+        b"class Main {\n  static function main() {\n    trace(\"Hello Haxe\");\n  }\n}\n",
+        "hx",
+    );
+    assert_both_paths(
+        b"from invoices\nfilter total > 100\nderive { tax = total * 0.1 }\nselect { id, tax }\n",
+        "prql",
+    );
+    assert_both_paths(
+        b"def active_names: .[] | select(.active) | .name;\n",
+        "jq",
+    );
+    assert_both_paths(
+        b"ACTION==\"add\", SUBSYSTEM==\"usb\", ATTR{idVendor}==\"1234\", MODE=\"0666\"\n",
+        "udev",
+    );
+    assert_both_paths(
+        b"table inet filter {\n  chain input {\n    type filter hook input priority 0; accept;\n  }\n}\n",
+        "nft",
+    );
+    assert_both_paths(
+        b"*filter\n:INPUT ACCEPT [0:0]\n-A INPUT -p tcp --dport 22 -j ACCEPT\nCOMMIT\n",
+        "iptables",
+    );
+    assert_both_paths(
+        b"$TTL 86400\n@ IN SOA ns1.example.com. admin.example.com. ( 1 3600 900 604800 86400 )\n@ IN NS ns1.example.com.\n",
+        "zone",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

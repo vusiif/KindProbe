@@ -221,6 +221,19 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // jq filter (.jq) before Python `def ...:` scan
+    if window.contains("def ")
+        && (window.contains("| select(") || window.contains("| map("))
+        && w_bytes.contains(&b';')
+    {
+        return Some(make_source_core(
+            "jq",
+            &["jq"],
+            "sig.text.jq",
+            Verification::Structure,
+        ));
+    }
+
     // Racket (.rkt)
     if window.trim_start().starts_with("#lang racket")
         || window.trim_start().starts_with("#lang typed/racket")
@@ -606,6 +619,20 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "ex",
             &["ex", "exs"],
             "sig.text.elixir",
+            Verification::Structure,
+        ));
+    }
+
+    // PureScript (.purs) before Haskell (.hs)
+    if window.lines().any(|l| l.trim_start().starts_with("module "))
+        && window.contains("where")
+        && (window.contains("import Prelude") || window.contains("import Effect"))
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "purs",
+            &["purs"],
+            "sig.text.purescript",
             Verification::Structure,
         ));
     }
@@ -1461,6 +1488,157 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "robots",
             &["txt"],
             "sig.text.robots",
+            Verification::Structure,
+        ));
+    }
+
+    // .gitattributes
+    if window.contains("text=auto")
+        || (window.contains("filter=lfs") && window.contains("diff=lfs"))
+    {
+        return Some(make_source_core(
+            "gitattributes",
+            &["gitattributes"],
+            "sig.text.gitattributes",
+            Verification::Structure,
+        ));
+    }
+
+    // CODEOWNERS
+    if window.lines().filter(|l| {
+        let t = l.trim();
+        !t.starts_with('#') && (t.starts_with("* ") || t.starts_with('/')) && t.contains(" @")
+    }).count() >= 2
+    {
+        return Some(make_source_core(
+            "codeowners",
+            &["codeowners"],
+            "sig.text.codeowners",
+            Verification::Structure,
+        ));
+    }
+
+    // .npmrc
+    if window.contains("registry=https://") || window.contains("//registry.npmjs.org/:") {
+        return Some(make_source_core(
+            "npmrc",
+            &["npmrc"],
+            "sig.text.npmrc",
+            Verification::Structure,
+        ));
+    }
+
+    // yarn.lock
+    if window.contains("yarn lockfile v1") && window.contains("resolved \"") {
+        return Some(make_source_core(
+            "yarnlock",
+            &["lock"],
+            "sig.text.yarnlock",
+            Verification::Structure,
+        ));
+    }
+
+    // Gemfile
+    if (window.contains("source 'https://rubygems.org'") || window.contains("source \"https://rubygems.org\""))
+        && window.contains("gem ")
+    {
+        return Some(make_source_core(
+            "gemfile",
+            &["gemfile"],
+            "sig.text.gemfile",
+            Verification::Structure,
+        ));
+    }
+
+    // CocoaPods Podfile
+    if window.contains("platform :ios") && window.contains("target ") && window.contains("pod ") {
+        return Some(make_source_core(
+            "podfile",
+            &["podfile"],
+            "sig.text.podfile",
+            Verification::Structure,
+        ));
+    }
+
+    // Homebrew Brewfile
+    if (window.contains("tap \"") || window.contains("brew \""))
+        && (window.contains("brew \"") || window.contains("cask \""))
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "brewfile",
+            &["brewfile"],
+            "sig.text.brewfile",
+            Verification::Structure,
+        ));
+    }
+
+    // Haxe (.hx)
+    if window.contains("class ")
+        && window.contains("static function main(")
+        && window.contains("trace(")
+    {
+        return Some(make_source_core(
+            "hx",
+            &["hx"],
+            "sig.text.haxe",
+            Verification::Structure,
+        ));
+    }
+
+    // PRQL (.prql)
+    if window.contains("from ")
+        && window.contains("filter ")
+        && (window.contains("derive ") || window.contains("select "))
+        && !w_bytes.contains(&b';')
+    {
+        return Some(make_source_core(
+            "prql",
+            &["prql"],
+            "sig.text.prql",
+            Verification::Structure,
+        ));
+    }
+
+    // udev rules (.rules)
+    if window.contains("ACTION==\"") && window.contains("SUBSYSTEM==\"") {
+        return Some(make_source_core(
+            "udev",
+            &["rules"],
+            "sig.text.udev",
+            Verification::Structure,
+        ));
+    }
+
+    // nftables (.nft)
+    if window.contains("table inet ")
+        && window.contains("chain ")
+        && (window.contains("type filter hook") || window.contains("accept") || window.contains("drop"))
+    {
+        return Some(make_source_core(
+            "nft",
+            &["nft", "conf"],
+            "sig.text.nftables",
+            Verification::Structure,
+        ));
+    }
+
+    // iptables-save (.rules / .v4)
+    if window.contains("*filter") && window.contains(":INPUT ") && window.contains("COMMIT") {
+        return Some(make_source_core(
+            "iptables",
+            &["rules", "v4"],
+            "sig.text.iptables",
+            Verification::Structure,
+        ));
+    }
+
+    // DNS Zone file (.zone)
+    if window.contains("$TTL ") && window.contains("IN SOA ") && window.contains("IN NS ") {
+        return Some(make_source_core(
+            "zone",
+            &["zone"],
+            "sig.text.dns_zone",
             Verification::Structure,
         ));
     }
