@@ -119,3 +119,44 @@ fn test_phase20_parallel_batch_80_files_jsonl() {
 
     let _ = fs::remove_dir_all(&root);
 }
+
+#[test]
+fn test_batch_invalid_jobs_and_chinese_output() {
+    let root = make_temp_dir("zh_batch");
+    fs::write(
+        root.join("sample.png"),
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4",
+    )
+    .unwrap();
+
+    // 1. -j 0 must fail cleanly naming the -j option
+    let out_j0 = Command::new(bin_path())
+        .args(["--json", "--batch", "-j", "0"])
+        .arg(&root)
+        .output()
+        .expect("run -j 0");
+    assert_eq!(out_j0.status.code(), Some(2));
+    let j0_json: serde_json::Value =
+        serde_json::from_str(String::from_utf8_lossy(&out_j0.stdout).trim()).unwrap();
+    assert_eq!(j0_json["error"]["code"], "error.invalid_arguments");
+    assert!(j0_json["error"]["message"]
+        .as_str()
+        .unwrap()
+        .contains("-j"));
+
+    // 2. Chinese text output in batch mode should localize category and summary
+    let out_zh = Command::new(bin_path())
+        .env("LC_ALL", "zh_CN.UTF-8")
+        .env("KINDPROBE_TEST_WIN_LANGID", "2052")
+        .args(["--batch"])
+        .arg(&root)
+        .output()
+        .expect("run zh batch");
+    assert_eq!(out_zh.status.code(), Some(0));
+    let stdout_zh = String::from_utf8_lossy(&out_zh.stdout);
+    let stderr_zh = String::from_utf8_lossy(&out_zh.stderr);
+    assert!(stdout_zh.contains("png (图像)"));
+    assert!(stderr_zh.contains("已扫描 1 个文件"));
+
+    let _ = fs::remove_dir_all(&root);
+}

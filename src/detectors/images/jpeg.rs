@@ -31,9 +31,7 @@ pub fn probe_jpeg(header: &[u8]) -> JpegProbeResult {
         }
 
         JpegProbeResult::Confirmed { has_segment }
-    } else if (header.len() >= 2 && header[0] == 0xFF && header[1] == 0xD8 && header.len() < 3)
-        || (header.len() == 1 && header[0] == 0xFF)
-    {
+    } else if header.len() == 2 && header[0] == 0xFF && header[1] == 0xD8 {
         JpegProbeResult::Truncated
     } else {
         JpegProbeResult::None

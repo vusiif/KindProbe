@@ -67,6 +67,10 @@ impl<T: Eq + std::hash::Hash> FastNameSet<T> {
 fn find_eocd_in_slice(slice: &[u8]) -> Option<(usize, usize, u64)> {
     for i in (0..=slice.len().saturating_sub(22)).rev() {
         if &slice[i..i + 4] == b"PK\x05\x06" {
+            let comment_len = u16::from_le_bytes([slice[i + 20], slice[i + 21]]) as usize;
+            if i + 22 + comment_len != slice.len() {
+                continue;
+            }
             let total_ent = u16::from_le_bytes([slice[i + 10], slice[i + 11]]) as usize;
             let size = u32::from_le_bytes([
                 slice[i + 12],
@@ -239,16 +243,31 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
     }
 
     let mut pos = 0;
+    let mut actual_entries = 0usize;
     let mut seen_raw_names: FastNameSet<&[u8]> = FastNameSet::with_expected_len(cd_total_entries);
     let mut seen_normalized_names: FastNameSet<std::borrow::Cow<str>> =
         FastNameSet::with_expected_len(cd_total_entries);
     let mut duplicate_entry: Option<String> = None;
     let mut conflicting_norm: Option<String> = None;
     let mut overlap_or_oob = false;
+    let mut corrupted_cd = false;
 
     while pos + 46 <= cd_bytes.len() {
         if &cd_bytes[pos..pos + 4] != b"PK\x01\x02" {
+            corrupted_cd = true;
             break;
+        }
+        actual_entries += 1;
+        if actual_entries > options.max_entries {
+            report.inspection = Inspection::Limited;
+            report.warnings.push(WarningItem::new(
+                "budget.entries_exceeded",
+                format!(
+                    "ZIP entry count exceeded budget limit ({})",
+                    options.max_entries
+                ),
+            ));
+            return Ok(None);
         }
         let compressed_size = u32::from_le_bytes([
             cd_bytes[pos + 20],
@@ -283,8 +302,19 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             }
         }
         let fn_start = pos + 46;
-        let fn_end = fn_start + fn_len;
-        if fn_end > cd_bytes.len() {
+        let Some(fn_end) = fn_start.checked_add(fn_len) else {
+            corrupted_cd = true;
+            break;
+        };
+        let Some(next_pos) = fn_end
+            .checked_add(extra_len)
+            .and_then(|v| v.checked_add(comment_len))
+        else {
+            corrupted_cd = true;
+            break;
+        };
+        if next_pos > cd_bytes.len() {
+            corrupted_cd = true;
             break;
         }
         let raw_bytes = &cd_bytes[fn_start..fn_end];
@@ -345,7 +375,14 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         {
             conflicting_norm = Some(norm.into_owned());
         }
-        pos = fn_end + extra_len + comment_len;
+        pos = next_pos;
+    }
+
+    if !overlap_or_oob
+        && (pos != cd_bytes.len()
+            || (cd_total_entries != 0xFFFF && actual_entries != cd_total_entries))
+    {
+        corrupted_cd = true;
     }
 
     if overlap_or_oob {
@@ -353,6 +390,15 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         report.warnings.push(WarningItem::new(
             "zip.truncated_or_corrupted",
             "ZIP local file header or compressed payload overlaps central directory",
+        ));
+        return Ok(None);
+    }
+
+    if corrupted_cd {
+        report.inspection = Inspection::Limited;
+        report.warnings.push(WarningItem::new(
+            "zip.truncated_or_corrupted",
+            "ZIP central directory is truncated or contains invalid entry headers",
         ));
         return Ok(None);
     }
@@ -382,7 +428,7 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
     }
 
     Ok(Some(ZipCdPreCheckResult {
-        cd_total_entries,
+        cd_total_entries: actual_entries,
         cd_size,
         cd_offset,
         has_content_types,

@@ -47,6 +47,7 @@ pub struct BudgetReader<R> {
     max_read_bytes: usize,
     total_read_bytes: usize,
     seek_count: usize,
+    max_seek_count: Option<usize>,
     budget_exceeded: Arc<AtomicBool>,
     window_state: Option<WindowState>,
 }
@@ -58,9 +59,15 @@ impl<R> BudgetReader<R> {
             max_read_bytes,
             total_read_bytes: 0,
             seek_count: 0,
+            max_seek_count: None,
             budget_exceeded: Arc::new(AtomicBool::new(false)),
             window_state: None,
         }
+    }
+
+    pub fn with_max_seeks(mut self, max_seek_count: usize) -> Self {
+        self.max_seek_count = Some(max_seek_count);
+        self
     }
 
     pub fn start_window(
@@ -107,12 +114,27 @@ impl<R> BudgetReader<R> {
 
 impl<R: Read> Read for BudgetReader<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+
         if self.total_read_bytes >= self.max_read_bytes {
-            self.budget_exceeded.store(true, Ordering::Relaxed);
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "budget.source_read_exceeded: total source read budget exhausted",
-            ));
+            // Probe 1 byte to distinguish natural EOF at the exact budget boundary from overflow.
+            let mut probe = [0u8; 1];
+            loop {
+                match self.inner.read(&mut probe) {
+                    Ok(0) => return Ok(0),
+                    Ok(_) => {
+                        self.budget_exceeded.store(true, Ordering::Relaxed);
+                        return Err(io::Error::new(
+                            io::ErrorKind::UnexpectedEof,
+                            "budget.source_read_exceeded: total source read budget exhausted",
+                        ));
+                    }
+                    Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                    Err(e) => return Err(e),
+                }
+            }
         }
 
         let mut remaining = self.max_read_bytes - self.total_read_bytes;
@@ -152,6 +174,14 @@ impl<R: Read> Read for BudgetReader<R> {
 
 impl<R: Seek> Seek for BudgetReader<R> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        if let Some(limit) = self.max_seek_count {
+            if self.seek_count >= limit {
+                self.budget_exceeded.store(true, Ordering::Relaxed);
+                return Err(io::Error::other(
+                    "budget.source_read_exceeded: seek operation budget exhausted",
+                ));
+            }
+        }
         self.seek_count += 1;
         self.inner.seek(pos)
     }

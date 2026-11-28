@@ -82,10 +82,35 @@ where
     match result {
         Ok(val) => Some(val),
         Err(warn) => {
+            if warn.code == "ooxml.conflicting_relationships" {
+                report.inspection = Inspection::Ambiguous;
+            }
             report.warnings.push(warn);
             None
         }
     }
+}
+
+fn finalize_zip_package(
+    report: &mut DetectionReport,
+    entries_inspected: usize,
+    format_id: &str,
+    category: &str,
+    rec_ext: &str,
+    accepted_exts: &[&str],
+    evidence_code: &str,
+) {
+    report.stats.entries_inspected = entries_inspected;
+    report.evidence.push(EvidenceItem::new("zip.central_directory"));
+    report.identification = Identification::Format;
+    report.format_id = Some(format_id.to_string());
+    report.category = category.to_string();
+    report.container_id = Some("zip".to_string());
+    report.verification = Verification::Structure;
+    report.inspection = Inspection::Complete;
+    report.recommended_extension = Some(rec_ext.to_string());
+    report.accepted_extensions = accepted_exts.iter().map(|s| s.to_string()).collect();
+    report.evidence.push(EvidenceItem::new(evidence_code));
 }
 
 fn finalize_ooxml_outcome(
@@ -177,19 +202,41 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     let has_rels = cd_check.has_rels;
     let has_ooxml_subdirs = cd_check.has_ooxml_subdirs;
 
-    // Windows MSIX / APPX package (may contain [Content_Types].xml)
+    // OPC-based ZIP packages that legitimately contain [Content_Types].xml / _rels/.rels
     if cd_check.has_msix_manifest {
-        report.stats.entries_inspected = cd_check.cd_total_entries;
-        report.evidence.push(EvidenceItem::new("zip.central_directory"));
-        report.identification = Identification::Format;
-        report.format_id = Some("msix".to_string());
-        report.category = "package".to_string();
-        report.container_id = Some("zip".to_string());
-        report.verification = Verification::Structure;
-        report.inspection = Inspection::Complete;
-        report.recommended_extension = Some("msix".to_string());
-        report.accepted_extensions = vec!["msix".to_string(), "appx".to_string()];
-        report.evidence.push(EvidenceItem::new("zip.msix.manifest"));
+        finalize_zip_package(
+            &mut report,
+            cd_check.cd_total_entries,
+            "msix",
+            "package",
+            "msix",
+            &["msix", "appx"],
+            "zip.msix.manifest",
+        );
+        return Ok(report);
+    }
+    if cd_check.has_vsix_manifest && !has_ooxml_subdirs {
+        finalize_zip_package(
+            &mut report,
+            cd_check.cd_total_entries,
+            "vsix",
+            "package",
+            "vsix",
+            &["vsix"],
+            "zip.vsix.manifest",
+        );
+        return Ok(report);
+    }
+    if cd_check.has_nupkg_nuspec && !has_ooxml_subdirs {
+        finalize_zip_package(
+            &mut report,
+            cd_check.cd_total_entries,
+            "nupkg",
+            "package",
+            "nupkg",
+            &["nupkg"],
+            "zip.nupkg.nuspec",
+        );
         return Ok(report);
     }
 

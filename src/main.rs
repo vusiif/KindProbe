@@ -283,6 +283,8 @@ fn print_version() {
 
 enum ArgErrorType {
     UnrecognizedOption(String),
+    InvalidOptionValue { option: String, value: String },
+    MissingOptionValue(String),
     MultipleFiles,
     MissingFile,
 }
@@ -291,6 +293,12 @@ fn print_arg_error(json_mode: bool, lang: AppLanguage, err: ArgErrorType) -> i32
     if json_mode {
         let msg = match &err {
             ArgErrorType::UnrecognizedOption(s) => format!("unrecognized option '{}'", s),
+            ArgErrorType::InvalidOptionValue { option, value } => {
+                format!("invalid value '{}' for option '{}'", value, option)
+            }
+            ArgErrorType::MissingOptionValue(opt) => {
+                format!("option '{}' requires a value", opt)
+            }
             ArgErrorType::MultipleFiles => "multiple file arguments provided".to_string(),
             ArgErrorType::MissingFile => {
                 "missing file argument; use --help for usage information".to_string()
@@ -312,6 +320,12 @@ fn print_arg_error(json_mode: bool, lang: AppLanguage, err: ArgErrorType) -> i32
             (AppLanguage::Chinese, ArgErrorType::UnrecognizedOption(s)) => {
                 eprintln!("错误: 未识别的选项 '{}'", s);
             }
+            (AppLanguage::Chinese, ArgErrorType::InvalidOptionValue { option, value }) => {
+                eprintln!("错误: 选项 '{}' 的参数值 '{}' 无效", option, value);
+            }
+            (AppLanguage::Chinese, ArgErrorType::MissingOptionValue(opt)) => {
+                eprintln!("错误: 选项 '{}' 缺少参数值", opt);
+            }
             (AppLanguage::Chinese, ArgErrorType::MultipleFiles) => {
                 eprintln!("错误: 提供了多个文件参数");
             }
@@ -320,6 +334,12 @@ fn print_arg_error(json_mode: bool, lang: AppLanguage, err: ArgErrorType) -> i32
             }
             (AppLanguage::English, ArgErrorType::UnrecognizedOption(s)) => {
                 eprintln!("Error: unrecognized option '{}'", s);
+            }
+            (AppLanguage::English, ArgErrorType::InvalidOptionValue { option, value }) => {
+                eprintln!("Error: invalid value '{}' for option '{}'", value, option);
+            }
+            (AppLanguage::English, ArgErrorType::MissingOptionValue(opt)) => {
+                eprintln!("Error: option '{}' requires a value", opt);
             }
             (AppLanguage::English, ArgErrorType::MultipleFiles) => {
                 eprintln!("Error: multiple file arguments provided");
@@ -342,21 +362,57 @@ fn format_identification_cn(id: kindprobe::model::Identification) -> &'static st
 
 fn format_category_cn(cat: &str) -> &'static str {
     match cat {
-        "image" => "图像",
-        "document" => "文档",
-        "container" => "容器",
-        "executable" => "可执行文件",
-        "audio" => "音频",
-        "video" => "视频",
         "archive" => "归档压缩",
+        "audio" => "音频",
+        "automotive" => "车载总线",
+        "bioinformatics" => "生物信息",
+        "blockchain" => "区块链",
+        "bytecode" => "字节码",
+        "cad" => "CAD/工业设计",
+        "calendar" => "日程",
+        "capture" => "网络抓包",
+        "code" | "source" => "源码与脚本",
+        "configuration" => "配置文件",
+        "contact" => "联系人",
+        "container" => "容器",
+        "crypto" => "加密与证书",
+        "data" => "结构化数据",
         "database" => "数据库",
-        "network" => "网络数据包",
+        "disk" | "disk_image" => "磁盘镜像",
+        "document" => "文档",
+        "ebook" => "电子书",
+        "emulation" => "仿真器镜像",
+        "engineering" => "工程数据",
+        "exchange" => "数据交换",
+        "executable" => "可执行文件",
+        "finance" => "金融票据",
+        "firmware" => "固件",
         "font" => "字体",
-        "text" => "文本与源码",
-        "rom" => "ROM固件",
-        "disk_image" => "磁盘镜像",
+        "forensics" => "数字取证",
+        "game" | "game_asset" => "游戏资源",
+        "geospatial" | "gis" => "地理空间",
+        "hardware" => "硬件描述",
+        "image" => "图像",
+        "location" => "位置数据",
+        "material" => "材质数据",
+        "media" | "multimedia" => "多媒体",
+        "model" => "三维与AI模型",
+        "navigation" => "导航数据",
+        "network" => "网络数据",
         "package" => "安装包",
-        "crypto" => "证书与密钥",
+        "robotics" => "机器人数据",
+        "rom" => "ROM固件",
+        "schema" => "数据模式",
+        "scientific" => "科学数据",
+        "security" => "安全凭据",
+        "system" => "系统文件",
+        "telecom" => "通信数据",
+        "text" => "文本与源码",
+        "texture" => "纹理贴图",
+        "translation" => "本地化翻译",
+        "video" => "视频",
+        "virtualization" => "虚拟化镜像",
+        "web" => "Web资源",
         "unknown" => "未知",
         _ => "未知",
     }
@@ -486,6 +542,7 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "zip.conflicting_entries" => "Zip 中发现冲突或重复的条目名称",
         "zip.truncated_or_corrupted" => "解析 Zip 压缩包或查找核心目录失败",
         "ooxml.content_type_not_found" => "未找到对应部件的内容类型",
+        "ooxml.conflicting_relationships" => "OOXML _rels/.rels 中存在多个冲突的 officeDocument 核心关系",
         "ooxml.content_types" => "未找到有效的 openxmlformats 内容类型覆盖项",
         "ooxml.content_types_missing" => "Zip 容器中缺少 [Content_Types].xml",
         "ooxml.content_types_read_error" => "读取 [Content_Types].xml 失败",
@@ -642,6 +699,7 @@ fn process_batch_file(
     path: &std::path::Path,
     options: &DetectOptions,
     jsonl_mode: bool,
+    lang: AppLanguage,
     out: &mut impl Write,
     err_out: &mut impl Write,
 ) -> (usize, usize, usize) {
@@ -664,7 +722,14 @@ fn process_batch_file(
                 let _ = out.write_all(b"\n");
             } else {
                 let fmt = core.format_id.unwrap_or("unknown");
-                let _ = writeln!(out, "{} -> {} ({})", path_str, fmt, core.category);
+                match lang {
+                    AppLanguage::Chinese => {
+                        let _ = writeln!(out, "{} -> {} ({})", path_str, fmt, format_category_cn(core.category));
+                    }
+                    AppLanguage::English => {
+                        let _ = writeln!(out, "{} -> {} ({})", path_str, fmt, core.category);
+                    }
+                }
             }
             if core.identification == Identification::Format {
                 (1, 0, 0)
@@ -686,7 +751,14 @@ fn process_batch_file(
                 );
                 let _ = out.write_all(b"\n");
             } else {
-                let _ = writeln!(err_out, "Error [{}]: {} ({})", code, path_str, err);
+                match lang {
+                    AppLanguage::Chinese => {
+                        let _ = writeln!(err_out, "错误 [{}]: {} ({})", code, path_str, err);
+                    }
+                    AppLanguage::English => {
+                        let _ = writeln!(err_out, "Error [{}]: {} ({})", code, path_str, err);
+                    }
+                }
             }
             (0, 0, 1)
         }
@@ -737,11 +809,23 @@ fn run_batch(
                     );
                     let _ = out.write_all(b"\n");
                 } else {
-                    eprintln!("Error [{}]: {} ({})", code, path_str, e);
+                    match lang {
+                        AppLanguage::Chinese => {
+                            eprintln!("错误 [{}]: {} ({})", code, path_str, e);
+                        }
+                        AppLanguage::English => {
+                            eprintln!("Error [{}]: {} ({})", code, path_str, e);
+                        }
+                    }
                 }
                 continue;
             }
         };
+
+        let is_symlink_dir = meta.file_type().is_symlink() && path.is_dir();
+        if is_symlink_dir {
+            continue;
+        }
 
         if meta.is_dir() && (recursive || is_root) {
             match std::fs::read_dir(&path) {
@@ -750,14 +834,15 @@ fn run_batch(
                         .filter_map(|res| res.ok())
                         .filter_map(|entry| {
                             let ft = entry.file_type().ok()?;
+                            let child_path = entry.path();
                             // Skip symlinked directories to avoid traversal cycles
-                            if ft.is_symlink() && ft.is_dir() {
+                            if ft.is_symlink() && child_path.is_dir() {
                                 return None;
                             }
                             if !recursive && ft.is_dir() {
                                 return None;
                             }
-                            Some(entry.path())
+                            Some(child_path)
                         })
                         .collect();
                     children.sort();
@@ -781,7 +866,14 @@ fn run_batch(
                         );
                         let _ = out.write_all(b"\n");
                     } else {
-                        eprintln!("Error [io.read_error]: {} ({})", path_str, e);
+                        match lang {
+                            AppLanguage::Chinese => {
+                                eprintln!("错误 [io.read_error]: {} ({})", path_str, e);
+                            }
+                            AppLanguage::English => {
+                                eprintln!("Error [io.read_error]: {} ({})", path_str, e);
+                            }
+                        }
                     }
                 }
             }
@@ -805,7 +897,7 @@ fn run_batch(
         let mut stderr = std::io::stderr();
         for path in &file_paths {
             let (id_inc, unk_inc, err_inc) =
-                process_batch_file(path, &options, jsonl_mode, &mut out, &mut stderr);
+                process_batch_file(path, &options, jsonl_mode, lang, &mut out, &mut stderr);
             identified += id_inc;
             unknown += unk_inc;
             errors += err_inc;
@@ -821,11 +913,12 @@ fn run_batch(
         }
 
         let chunk_size = file_paths.len().div_ceil(num_threads);
-        let chunk_results: Vec<BatchChunkResult> = std::thread::scope(|s| {
+        let chunk_results: Vec<Result<BatchChunkResult, usize>> = std::thread::scope(|s| {
             let handles: Vec<_> = file_paths
                 .chunks(chunk_size)
                 .map(|chunk| {
                     let opts_ref = &options;
+                    let chunk_len = chunk.len();
                     s.spawn(move || {
                         let mut res = BatchChunkResult {
                             local_out: Vec::with_capacity(chunk.len() * 128),
@@ -836,6 +929,7 @@ fn run_batch(
                                 path,
                                 opts_ref,
                                 jsonl_mode,
+                                lang,
                                 &mut res.local_out,
                                 &mut res.local_err,
                             );
@@ -845,23 +939,36 @@ fn run_batch(
                         }
                         res
                     })
+                    .join()
+                    .map_err(|_| chunk_len)
                 })
                 .collect();
-
             handles
-                .into_iter()
-                .map(|h| h.join().unwrap_or_default())
-                .collect()
         });
 
         let mut stderr = std::io::stderr();
         for res in chunk_results {
-            identified += res.id_cnt;
-            unknown += res.unk_cnt;
-            errors += res.err_cnt;
-            let _ = out.write_all(&res.local_out);
-            if !res.local_err.is_empty() {
-                let _ = stderr.write_all(&res.local_err);
+            match res {
+                Ok(chunk_res) => {
+                    identified += chunk_res.id_cnt;
+                    unknown += chunk_res.unk_cnt;
+                    errors += chunk_res.err_cnt;
+                    let _ = out.write_all(&chunk_res.local_out);
+                    if !chunk_res.local_err.is_empty() {
+                        let _ = stderr.write_all(&chunk_res.local_err);
+                    }
+                }
+                Err(lost_count) => {
+                    errors += lost_count;
+                    match lang {
+                        AppLanguage::Chinese => {
+                            let _ = writeln!(stderr, "错误 [batch.worker_panic]: 批处理工作线程异常终止（{} 个文件未完成）", lost_count);
+                        }
+                        AppLanguage::English => {
+                            let _ = writeln!(stderr, "Error [batch.worker_panic]: batch worker thread panicked ({} files failed)", lost_count);
+                        }
+                    }
+                }
             }
         }
     }
@@ -924,21 +1031,22 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
             batch_mode = true;
             jsonl_mode = true;
         } else if arg == OsStr::new("-j") || arg == OsStr::new("--jobs") {
+            let opt_str = arg.to_string_lossy().into_owned();
             i += 1;
             if i >= args.len() {
-                return print_arg_error(
-                    json_mode,
-                    lang,
-                    ArgErrorType::UnrecognizedOption(arg.to_string_lossy().into_owned()),
-                );
+                return print_arg_error(json_mode, lang, ArgErrorType::MissingOptionValue(opt_str));
             }
-            match args[i].to_string_lossy().parse::<usize>() {
+            let val_str = args[i].to_string_lossy().into_owned();
+            match val_str.parse::<usize>() {
                 Ok(n) if n >= 1 => jobs = Some(n),
                 _ => {
                     return print_arg_error(
                         json_mode,
                         lang,
-                        ArgErrorType::UnrecognizedOption(args[i].to_string_lossy().into_owned()),
+                        ArgErrorType::InvalidOptionValue {
+                            option: opt_str,
+                            value: val_str,
+                        },
                     );
                 }
             }

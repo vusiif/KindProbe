@@ -104,7 +104,12 @@ pub fn probe_pcap_core(header: &[u8]) -> Option<DetectionCore> {
 /// Probes Packet Capture formats: classic libpcap (PCAP) and PCAP Next Generation (PCAPNG).
 pub fn probe_pcap(header: &[u8]) -> PcapMatch {
     if header.len() < 4 {
-        if !header.is_empty() && (header[0] == 0xD4 || header[0] == 0xA1 || header[0] == 0x0A) {
+        if header.len() >= 2
+            && (header.starts_with(&[0xD4, 0xC3])
+                || header.starts_with(&[0xA1, 0xB2])
+                || header.starts_with(&[0x4D, 0x3C])
+                || header.starts_with(&[0x0A, 0x0D]))
+        {
             return PcapMatch::Truncated("pcap".to_string());
         }
         return PcapMatch::None;

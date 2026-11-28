@@ -29,9 +29,7 @@ pub fn probe_sevenz(header: &[u8]) -> SevenZProbeResult {
         }
 
         SevenZProbeResult::Confirmed { has_start_header }
-    } else if (header.len() >= 2 && header.starts_with(b"7z") && header.len() < 6)
-        || (header.len() == 1 && header[0] == 0x37)
-    {
+    } else if header.len() >= 2 && header.len() < 6 && SEVENZ_SIGNATURE.starts_with(header) {
         SevenZProbeResult::Truncated
     } else {
         SevenZProbeResult::None

@@ -298,11 +298,12 @@ CLI 错误输出信封（退出码 4 或 1，使用 `--json` 时输出）：
 
 ## 5. 依赖与第三方许可清单
 
-| 依赖 crate | 版本 | 许可证 | 用途 |
+| 依赖 crate | 版本（Cargo.lock） | 许可证 | 用途 |
 |---|---|---|---|
-| `zip` | 2.6.1 | MIT | ZIP 中央目录解析（受 `BudgetReader` 严格限制） |
-| `quick-xml` | 0.36.2 | MIT | 流式 XML pull parser（限制深度 <= 64） |
-| `cfb` | 0.10.0 | MIT | OLE2 扇区与流导航（附带 FIB 自研校验层） |
+| `zip` | 9.8.2 | MIT | ZIP 中央目录解析（受 `BudgetReader` 严格限制） |
+| `flate2` | 1.1.10 | MIT / Apache-2.0 | Gzip 流式预览解压（`tar.gz` / `svgz`） |
+| `quick-xml` | 0.42.0 | MIT | 流式 XML pull parser（限制深度 <= 64） |
+| `cfb` | 0.10.0 | MIT | OLE2 扇区与流导航（附带 FIB/BIFF/PPT 自研校验层） |
 | `serde` | 1.0.229 | MIT / Apache-2.0 | 结构化模型序列化 |
 | `serde_json` | 1.0.154 | MIT / Apache-2.0 | CLI JSON v1 输出格式 |
 
@@ -312,12 +313,11 @@ CLI 错误输出信封（退出码 4 或 1，使用 `--json` 时输出）：
 - **Siegfried**: Apache-2.0，仅作为测试期间独立复测对照工具。
 - **Microsoft MS-DOC / MS-CFB**: 依据 Microsoft Open Specifications 技术公开规范查证实现。
 
-### 5.1 离线代码生成管线 (Offline Codegen Pipeline)
+### 5.1 离线代码生成管线与手工规则分卷
 
-项目内置零依赖的离线代码生成工具 `tools/codegen.py`，支持直接从权威数据库（如 Apache Tika `tika-mimetypes.xml`）自动提取静态声明式规则和规范扩展名注册表：
-- **纯固定偏移与预算控制**：严格提取固定偏移且 `offset + len <= 4096` 的二进制魔数规则，完美适配 `BudgetReader` 读取窗口；
-- **分卷模块化**：生成的声明式规则按大类输出至 `src/detectors/rules/generated/`（`media.rs`、`images.rs`、`documents.rs`、`archives.rs`），单文件保持在 35~70 行，零运行时堆分配（`&'static [SignatureRule]`）；
-- **单一真实信源（SSOT）扩展名检索**：提取权威扩展名映射并在 `src/extension/registry.rs` 中按 ASCII 字典序严格升序排列，支持零哈希开销的 $O(\log N)$ 二分查找，并通过编译期与单元测试（`test_registry_is_strictly_sorted_without_duplicates`）守护排序严格性。
+仓库保留了早期离线代码生成脚本 `tools/codegen.py`（对应初期 8 个大类分卷与 `SORTED_EXTENSION_REGISTRY`）；随着多轮格式扩展，当前生产规则已扩充至 `src/detectors/rules/generated/` 下 **59 个领域模块（774 条声明式规则）** 及 `src/extension/registry.rs` 中 **1,399 项 `EXTENSION_REGISTRY` 映射**：
+- **纯固定偏移与预算控制**：所有声明式规则均为固定偏移与紧凑字节模式（当前最大结束偏移 `1084` 字节），适配 `BudgetReader` 默认 `4096` 字节初始窗口；
+- **编译期分桶索引**：静态规则与扩展名注册表均通过编译期 256 桶索引及字典序二分检索（`test_registry_is_strictly_sorted_without_duplicates`、`test_all_declarative_rule_extensions_registered` 守护）实现零堆分配匹配；`tools/codegen.py` 目前仅作历史生成参考，切勿直接覆盖现有 59 模块产物。
 
 ---
 

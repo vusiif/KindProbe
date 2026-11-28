@@ -135,3 +135,71 @@ fn test_phase17_forged_ppt_current_user_rejected() {
         .iter()
         .any(|w| w.code == "cfb.invalid_powerpoint_stream"));
 }
+
+#[test]
+fn test_step3_eocd_forged_entry_count_and_xml_empty_depth() {
+    use kindprobe::budget::BudgetReader;
+    use std::io::Read as _;
+
+    // 1. Forged ZIP EOCD total_entries=1 while actual CD contains 5 PK\x01\x02 entries
+    //    (tested with max_entries=3): actual parsed count must trigger budget.entries_exceeded.
+    let mut raw = Vec::new();
+    {
+        let mut zw = ZipWriter::new(Cursor::new(&mut raw));
+        let zo = SimpleFileOptions::default();
+        for idx in 0..5 {
+            zw.start_file(format!("f{}.txt", idx), zo).unwrap();
+            zw.write_all(b"hi").unwrap();
+        }
+        zw.finish().unwrap();
+    }
+    let eocd_pos = raw.windows(4).rposition(|w| w == b"PK\x05\x06").unwrap();
+    raw[eocd_pos + 8..eocd_pos + 10].copy_from_slice(&1u16.to_le_bytes());
+    raw[eocd_pos + 10..eocd_pos + 12].copy_from_slice(&1u16.to_le_bytes());
+
+    let opts = DetectOptions {
+        max_entries: 3,
+        ..DetectOptions::default()
+    };
+    let rep = detect_bytes(&raw, &opts).unwrap();
+    assert_eq!(rep.identification, Identification::ContainerOnly);
+    assert_eq!(rep.inspection, Inspection::Limited);
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.entries_exceeded"));
+
+    // 2. Empty XML element (<leaf/>) at depth > max_xml_depth must trigger budget.xml_depth_exceeded
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r/></w:p></w:body></w:document>"#;
+    let rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"#;
+    let ct = r#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#;
+    let mut empty_elem_docx = Vec::new();
+    {
+        let mut zw = ZipWriter::new(Cursor::new(&mut empty_elem_docx));
+        let zo = SimpleFileOptions::default();
+        zw.start_file("_rels/.rels", zo).unwrap();
+        zw.write_all(rels.as_bytes()).unwrap();
+        zw.start_file("[Content_Types].xml", zo).unwrap();
+        zw.write_all(ct.as_bytes()).unwrap();
+        zw.start_file("word/document.xml", zo).unwrap();
+        zw.write_all(xml.as_bytes()).unwrap();
+        zw.finish().unwrap();
+    }
+    let depth_opts = DetectOptions {
+        max_xml_depth: 3, // root(1) -> body(2) -> p(3) -> <w:r/>(4)
+        ..DetectOptions::default()
+    };
+    let rep_depth = detect_bytes(&empty_elem_docx, &depth_opts).unwrap();
+    assert_eq!(rep_depth.inspection, Inspection::Limited);
+    assert!(rep_depth
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.xml_depth_exceeded"));
+
+    // 3. BudgetReader exact boundary EOF must not trigger budget_exceeded
+    let mut br = BudgetReader::new(Cursor::new(b"abcd".to_vec()), 4);
+    let mut buf = [0u8; 4];
+    assert_eq!(br.read(&mut buf).unwrap(), 4);
+    assert_eq!(br.read(&mut buf).unwrap(), 0);
+    assert!(!br.is_budget_exceeded());
+}

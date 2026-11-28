@@ -105,6 +105,31 @@ pub fn make_mp4_core() -> DetectionCore {
     }
 }
 
+fn extract_ftyp_major_brand(header: &[u8]) -> Result<&[u8], bool> {
+    let box_size = u32::from_be_bytes([header[0], header[1], header[2], header[3]]) as usize;
+    if box_size == 1 {
+        if header.len() < 20 {
+            return Err(true);
+        }
+        let large_size = u64::from_be_bytes([
+            header[8], header[9], header[10], header[11], header[12], header[13], header[14],
+            header[15],
+        ]);
+        if large_size < 24 {
+            return Err(false);
+        }
+        Ok(&header[16..20])
+    } else {
+        if box_size < 16 {
+            return Err(false);
+        }
+        if header.len() < 12 {
+            return Err(true);
+        }
+        Ok(&header[8..12])
+    }
+}
+
 pub fn probe_mp4_core(header: &[u8]) -> Mp4MatchCore {
     if header.len() < 8 {
         if header.len() >= 4 && (header.starts_with(&[0, 0, 0]) || header.starts_with(b"ftyp")) {
@@ -113,19 +138,14 @@ pub fn probe_mp4_core(header: &[u8]) -> Mp4MatchCore {
         return Mp4MatchCore::None;
     }
 
-    let box_size = u32::from_be_bytes([header[0], header[1], header[2], header[3]]) as usize;
     let box_type = &header[4..8];
 
     if box_type == b"ftyp" {
-        if box_size < 16 && box_size != 1 {
-            return Mp4MatchCore::None;
-        }
-
-        if header.len() < 12 {
-            return Mp4MatchCore::Truncated("mp4");
-        }
-
-        let major_brand = &header[8..12];
+        let major_brand = match extract_ftyp_major_brand(header) {
+            Ok(b) => b,
+            Err(true) => return Mp4MatchCore::Truncated("mp4"),
+            Err(false) => return Mp4MatchCore::None,
+        };
         if major_brand == b"qt  " {
             return Mp4MatchCore::Confirmed(make_mov_core());
         }
@@ -240,21 +260,15 @@ pub fn probe_mp4(header: &[u8]) -> Mp4Match {
         return Mp4Match::None;
     }
 
-    let box_size = u32::from_be_bytes([header[0], header[1], header[2], header[3]]) as usize;
     let box_type = &header[4..8];
 
     // Check for ftyp box
     if box_type == b"ftyp" {
-        if box_size < 16 && box_size != 1 {
-            return Mp4Match::None;
-        }
-
-        // Header must be at least 12 bytes to inspect major brand
-        if header.len() < 12 {
-            return Mp4Match::Truncated("mp4".to_string());
-        }
-
-        let major_brand = &header[8..12];
+        let major_brand = match extract_ftyp_major_brand(header) {
+            Ok(b) => b,
+            Err(true) => return Mp4Match::Truncated("mp4".to_string()),
+            Err(false) => return Mp4Match::None,
+        };
         let mut evidence = vec![EvidenceItem::new("sig.mp4.ftyp")];
 
         // Check if QuickTime MOV: major_brand == b"qt  "

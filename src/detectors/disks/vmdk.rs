@@ -76,7 +76,7 @@ pub fn probe_vmdk_core(header: &[u8]) -> Option<DetectionCore> {
 /// Probes VMware Virtual Disk (VMDK) format.
 pub fn probe_vmdk(header: &[u8]) -> VmdkMatch {
     if header.len() < 4 {
-        if !header.is_empty() && (header.starts_with(b"KD") || header.starts_with(b"# ")) {
+        if header.len() >= 2 && header.starts_with(b"KD") {
             return VmdkMatch::Truncated("vmdk".to_string());
         }
         return VmdkMatch::None;

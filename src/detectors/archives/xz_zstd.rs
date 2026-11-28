@@ -131,10 +131,10 @@ pub fn probe_xz_zstd(header: &[u8]) -> XzZstdMatch {
     }
 
     // 3. Truncated XZ / Zstd prefixes
-    if !header.is_empty() && header.len() < 6 && XZ_MAGIC.starts_with(header) {
+    if header.len() >= 2 && header.len() < 6 && XZ_MAGIC.starts_with(header) {
         return XzZstdMatch::Truncated("xz".to_string());
     }
-    if !header.is_empty() && header.len() < 4 && ZSTD_MAGIC.starts_with(header) {
+    if header.len() >= 2 && header.len() < 4 && ZSTD_MAGIC.starts_with(header) {
         return XzZstdMatch::Truncated("zstd".to_string());
     }
 

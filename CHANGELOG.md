@@ -12,7 +12,7 @@
 ### Security
 - **Streaming OOXML XML Parsing**: `BufReader<DecompressLimitReader>` streaming pull-parsing for `_rels/.rels`, `[Content_Types].xml`, and main document parts (eliminates 256 KiB decompression buffer peaks).
 - **Structural Anti-Spoofing**: `[MS-PPT]` `RecordHeader` & `CurrentUserAtom` validation (`0x0FF6`, `0xE391C05F`/`0xF3D1C4DF`) and ZIP Central Directory overlap/OOB local header rejection.
-- **Resilience & Fuzzing**: `EINTR` (`ErrorKind::Interrupted`) retry loops in `BudgetReader` and `DecompressLimitReader`, standalone `cargo-fuzz` targets (`fuzz/`), differential fuzz regression tests, and RustSec CI audit (`rustsec/audit-check@v2`).
+- **Resilience & Fuzzing**: `EINTR` (`ErrorKind::Interrupted`) retry loops in `BudgetReader` and `DecompressLimitReader`, standalone `cargo-fuzz` targets (`fuzz/`), differential fuzz regression tests, and RustSec CI audit (`taiki-e/install-action@cargo-audit` + `cargo audit`).
 
 ## [0.1.0] - 2026-11-23
 - Initial release with content-first detection engine, bounded `BudgetReader`, JSON v1 CLI contract, and 1000+ format rules.

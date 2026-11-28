@@ -33,7 +33,7 @@ pub fn probe_disk_signatures_core(header: &[u8]) -> DiskMatchCore {
     }
 
     // 2. VMDK
-    if header.len() < 4 && !header.is_empty() && (header.starts_with(b"KD") || header.starts_with(b"# ")) {
+    if header.len() < 4 && header.len() >= 2 && header.starts_with(b"KD") {
         return DiskMatchCore::Truncated("vmdk");
     }
     if let Some(core) = probe_vmdk_core(header) {

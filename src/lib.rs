@@ -141,7 +141,8 @@ pub fn detect_bytes(
         Some(rep) => rep,
         None => {
             let mut cursor = Cursor::new(bytes);
-            let mut budget_reader = BudgetReader::new(&mut cursor, options.max_source_bytes_read);
+            let mut budget_reader = BudgetReader::new(&mut cursor, options.max_source_bytes_read)
+                .with_max_seeks(options.max_entries.saturating_mul(8).max(4096));
             let mut rep = detectors::detect_stream(&mut budget_reader, options)?;
             budget_reader.populate_stats(&mut rep.stats);
             if budget_reader.is_budget_exceeded() {
@@ -175,7 +176,8 @@ pub fn detect_reader_core<R: Read + Seek>(
     reader: &mut R,
     options: &DetectOptions,
 ) -> Result<DetectionCore, DetectError> {
-    let mut budget_reader = BudgetReader::new(reader, options.max_source_bytes_read);
+    let mut budget_reader = BudgetReader::new(reader, options.max_source_bytes_read)
+        .with_max_seeks(options.max_entries.saturating_mul(8).max(4096));
     let mut core = detectors::detect_stream_core(&mut budget_reader, options)?;
 
     if budget_reader.is_budget_exceeded() {
@@ -233,7 +235,8 @@ pub fn detect_reader<R: Read + Seek>(
     options: &DetectOptions,
 ) -> Result<DetectionReport, DetectError> {
     let start = Instant::now();
-    let mut budget_reader = BudgetReader::new(reader, options.max_source_bytes_read);
+    let mut budget_reader = BudgetReader::new(reader, options.max_source_bytes_read)
+        .with_max_seeks(options.max_entries.saturating_mul(8).max(4096));
 
     let mut report = detectors::detect_stream(&mut budget_reader, options)?;
 

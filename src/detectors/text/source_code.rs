@@ -893,8 +893,7 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Groovy (.groovy / .gvy)
-    if (window.contains("@Grab(") || (window.contains("def ") && window.contains("println ")))
-        && !window.contains("def ")
+    if window.contains("@Grab(")
         || (window.contains("def ") && window.contains("println ") && !window.contains("def main(") && !window.contains(':'))
     {
         return Some(make_source_core(

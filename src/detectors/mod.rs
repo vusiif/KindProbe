@@ -151,7 +151,7 @@ pub fn detect_bytes_non_container_core(
     }
 
     if bytes.len() >= (disks::iso::ISO_OFFSET as usize) + 6
-        && options.max_source_bytes_read >= (disks::iso::ISO_OFFSET as usize) + 6
+        && options.max_source_bytes_read >= header.len().saturating_add(6)
     {
         if let Some(iso_core) = disks::probe_iso_buffer_core(bytes) {
             return Ok(Some(iso_core));
@@ -162,8 +162,10 @@ pub fn detect_bytes_non_container_core(
         return Ok(Some(core));
     }
 
-    if let Some(dmg_core) = probe_dmg_slice_core(bytes) {
-        return Ok(Some(dmg_core));
+    if options.max_source_bytes_read >= header.len().saturating_add(8) {
+        if let Some(dmg_core) = probe_dmg_slice_core(bytes) {
+            return Ok(Some(dmg_core));
+        }
     }
 
     Ok(Some(DetectionCore::unknown()))
@@ -252,10 +254,11 @@ pub fn detect_bytes_non_container(
     }
 
     if bytes.len() >= (disks::iso::ISO_OFFSET as usize) + 6
-        && options.max_source_bytes_read >= (disks::iso::ISO_OFFSET as usize) + 6
+        && options.max_source_bytes_read >= header.len().saturating_add(6)
     {
         if let disks::IsoMatch::Confirmed(mut rep) = disks::probe_iso_buffer(bytes) {
-            rep.stats.source_bytes_read = header.len();
+            rep.stats.source_bytes_read = header.len().saturating_add(6);
+            rep.stats.seek_count = 1;
             return Ok(Some(*rep));
         }
     }
@@ -265,14 +268,17 @@ pub fn detect_bytes_non_container(
         return Ok(Some(rep));
     }
 
-    if let Some(dmg_core) = probe_dmg_slice_core(bytes) {
-        return Ok(Some(dmg_core.to_report(
-            crate::model::DetectionStats {
-                source_bytes_read: header.len(),
-                ..Default::default()
-            },
-            ExtensionStatus::Undetermined,
-        )));
+    if options.max_source_bytes_read >= header.len().saturating_add(8) {
+        if let Some(dmg_core) = probe_dmg_slice_core(bytes) {
+            return Ok(Some(dmg_core.to_report(
+                crate::model::DetectionStats {
+                    source_bytes_read: header.len().saturating_add(8),
+                    seek_count: 1,
+                    ..Default::default()
+                },
+                ExtensionStatus::Undetermined,
+            )));
+        }
     }
 
     Ok(Some(DetectionCore::unknown().to_report(
@@ -510,7 +516,9 @@ pub fn detect_stream_core<R: Read + Seek>(
         return Ok(DetectionCore::truncated("cfb"));
     }
 
-    if header.len() >= options.initial_window_size {
+    if header.len() >= options.initial_window_size
+        || header.len() >= (disks::iso::ISO_OFFSET as usize) + 6
+    {
         if let Some(core) = disks::probe_iso_stream_core(reader) {
             return Ok(core);
         }
@@ -651,8 +659,10 @@ pub fn detect_stream<R: Read + Seek>(
         });
     }
 
-    // Step 4: Check ISO 9660 volume descriptor at offset 32768 (only if stream size >= window)
-    if header.len() >= options.initial_window_size {
+    // Step 4: Check ISO 9660 volume descriptor at offset 32768 (only if stream didn't hit EOF early)
+    if header.len() >= options.initial_window_size
+        || header.len() >= (disks::iso::ISO_OFFSET as usize) + 6
+    {
         if let Some(rep) = disks::probe_iso_stream(reader) {
             return Ok(rep);
         }

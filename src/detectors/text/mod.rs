@@ -76,6 +76,10 @@ pub fn probe_text_core(header: &[u8]) -> Option<DetectionCore> {
 }
 
 fn probe_text_str_core(text: &str) -> Option<DetectionCore> {
+    // 1-byte buffers are too short to safely confirm plain text (avoids false positives on 1-byte binary prefixes).
+    if text.len() < 2 {
+        return None;
+    }
     let trimmed = text.trim_start();
     if trimmed.is_empty() {
         return Some(make_plain_text_core());

@@ -31,7 +31,7 @@ pub fn evaluate_single_rule_core(header: &[u8], rule: &SignatureRule) -> RuleMat
 
         let available = &header[pat.offset..];
         if available.len() < pat.bytes.len() {
-            if !available.is_empty() {
+            if available.len() >= 2 || (pat.offset > 0 && !available.is_empty()) {
                 let is_trunc = match pat.mask {
                     Some(m) => available.iter().zip(m).zip(pat.bytes).all(|((&b, &mk), &p)| (b & mk) == p),
                     None => pat.bytes.starts_with(available),
@@ -86,7 +86,11 @@ pub fn evaluate_single_rule_core(header: &[u8], rule: &SignatureRule) -> RuleMat
     }
 
     if header.len() < rule.min_header_len {
-        return RuleMatchCore::Truncated(rule.format_id);
+        return if header.len() >= 2 {
+            RuleMatchCore::Truncated(rule.format_id)
+        } else {
+            RuleMatchCore::None
+        };
     }
 
     if let Some(validator) = rule.validator {

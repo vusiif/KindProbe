@@ -39,6 +39,37 @@ fn is_normalized_opc_path(raw: &str) -> bool {
 }
 
 /// Normalizes an OPC relative or absolute path relative to package root.
+/// Returns `None` if traversal segments (`..`) escape above package root
+/// or the resulting normalized path is empty.
+pub fn try_normalize_opc_path(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    let stripped = trimmed.trim_start_matches('/');
+    if is_normalized_opc_path(stripped) {
+        return (!stripped.is_empty()).then(|| stripped.to_string());
+    }
+    let s = trimmed.replace('\\', "/");
+    let parts = s.split('/');
+    let mut stack = Vec::new();
+
+    for p in parts {
+        let seg = p.trim();
+        if seg.is_empty() || seg == "." {
+            continue;
+        }
+        if seg == ".." {
+            stack.pop()?;
+        } else {
+            stack.push(seg);
+        }
+    }
+    if stack.is_empty() {
+        None
+    } else {
+        Some(stack.join("/"))
+    }
+}
+
+/// Normalizes an OPC relative or absolute path relative to package root.
 /// Returns normalized path without leading slash, e.g. "word/document.xml".
 pub fn normalize_opc_path(raw: &str) -> String {
     let trimmed = raw.trim();
@@ -77,6 +108,7 @@ pub fn normalize_opc_path_cow<'a>(raw: &'a str) -> std::borrow::Cow<'a, str> {
 }
 
 /// Resolves a target relative to a base directory within an OPC package.
+/// Rejects paths that escape the package root (`..` past root).
 pub fn resolve_target_path(base_dir: &str, target: &str) -> Option<String> {
     let trimmed = target.trim();
     let has_backslash = trimmed.as_bytes().contains(&b'\\');
@@ -87,24 +119,14 @@ pub fn resolve_target_path(base_dir: &str, target: &str) -> Option<String> {
     };
     let t = t_cow.as_ref();
     if t.starts_with('/') {
-        let norm = normalize_opc_path(t);
-        if norm.is_empty() {
-            None
-        } else {
-            Some(norm)
-        }
+        try_normalize_opc_path(t)
     } else {
         let combined = if base_dir.is_empty() {
-            t.to_string()
+            std::borrow::Cow::Borrowed(t)
         } else {
-            format!("{}/{}", base_dir, t)
+            std::borrow::Cow::Owned(format!("{}/{}", base_dir, t))
         };
-        let norm = normalize_opc_path(&combined);
-        if norm.is_empty() {
-            None
-        } else {
-            Some(norm)
-        }
+        try_normalize_opc_path(&combined)
     }
 }
 
@@ -138,8 +160,13 @@ pub fn parse_package_relationships<R: BufRead>(reader: R) -> Result<Option<Strin
                     if is_office_doc {
                         if let Some(target_str) = rel_target {
                             if !target_str.is_empty() {
+                                if target_val.is_some() {
+                                    return Err(WarningItem::new(
+                                        "ooxml.conflicting_relationships",
+                                        "Multiple officeDocument core relationships found in _rels/.rels",
+                                    ));
+                                }
                                 target_val = Some(target_str.into_owned());
-                                break;
                             }
                         }
                     }
@@ -169,7 +196,11 @@ pub fn parse_content_types<R: BufRead>(
     reader.config_mut().trim_text(false);
     reader.config_mut().check_comments = false;
 
-    let target_ext = normalized_target.rsplit('.').next().unwrap_or("");
+    let file_name = normalized_target
+        .rsplit('/')
+        .next()
+        .unwrap_or(normalized_target);
+    let target_ext = file_name.rsplit_once('.').map(|(_, ext)| ext).unwrap_or("");
 
     let mut matched_override: Option<String> = None;
     let mut matched_default: Option<String> = None;

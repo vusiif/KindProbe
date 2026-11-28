@@ -658,9 +658,7 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
         }
     }
 
-    if (header.len() >= 3 && header.starts_with(b"%PD"))
-        || (!header.is_empty() && header[0] == b'%' && header.len() < 5)
-    {
+    if header.len() >= 2 && header.len() < 5 && PDF_SIGNATURE.starts_with(header) {
         return SignatureMatchCore::Truncated(Cow::Borrowed("pdf"));
     }
 
@@ -902,9 +900,7 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         }
     }
 
-    if (header.len() >= 3 && header.starts_with(b"%PD"))
-        || (!header.is_empty() && header[0] == b'%' && header.len() < 5)
-    {
+    if header.len() >= 2 && header.len() < 5 && PDF_SIGNATURE.starts_with(header) {
         return SignatureMatch::Truncated("pdf".to_string());
     }
 

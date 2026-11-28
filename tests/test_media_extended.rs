@@ -198,3 +198,54 @@ fn test_detect_media_truncated() {
     assert_eq!(rep_id3.identification, Identification::Unknown);
     assert_eq!(rep_id3.candidates.as_deref(), Some(&["mp3".to_string()][..]));
 }
+
+#[test]
+fn test_mp4_64bit_extended_box_and_short_text_not_truncated() {
+    use kindprobe::detect_bytes_core;
+
+    let opts = DetectOptions::default();
+
+    // 1. 64-bit extended size ftyp box (box_size == 1, largesize at 8..16, major_brand at 16..20)
+    let mut mp4_64 = Vec::new();
+    mp4_64.extend_from_slice(&1u32.to_be_bytes());
+    mp4_64.extend_from_slice(b"ftyp");
+    mp4_64.extend_from_slice(&28u64.to_be_bytes());
+    mp4_64.extend_from_slice(b"isom");
+    mp4_64.extend_from_slice(&0x200u32.to_be_bytes());
+    mp4_64.extend_from_slice(b"mp41");
+
+    let rep64 = detect_bytes(&mp4_64, &opts).unwrap();
+    let core64 = detect_bytes_core(&mp4_64, &opts).unwrap();
+    assert_eq!(rep64.format_id.as_deref(), Some("mp4"));
+    assert_eq!(core64.format_id, Some("mp4"));
+
+    // 2. 1-byte ASCII samples must stay Unknown (not misclassified as Truncated binary like pcx/pcap/gif/7z/zstd),
+    //    while 2-byte non-binary ASCII snippets resolve cleanly to plain text.
+    for sample in [b"\n".as_slice(), b"G", b"7", b"("] {
+        let rep = detect_bytes(sample, &opts).unwrap();
+        let core = detect_bytes_core(sample, &opts).unwrap();
+        assert_eq!(rep.identification, Identification::Unknown, "1-byte sample {:?} gave {:?}", sample, rep);
+        assert_eq!(rep.candidates, None, "1-byte sample {:?} falsely gave truncated candidate {:?}", sample, rep.candidates);
+        assert_eq!(core.identification, Identification::Unknown);
+        assert_eq!(core.candidate, None);
+    }
+    for sample in [b"%?".as_slice(), b"hi", b"hello"] {
+        let rep = detect_bytes(sample, &opts).unwrap();
+        let core = detect_bytes_core(sample, &opts).unwrap();
+        assert_eq!(
+            rep.format_id.as_deref(),
+            Some("txt"),
+            "short text {:?} misclassified as {:?}",
+            sample,
+            rep
+        );
+        assert_eq!(core.format_id, Some("txt"));
+    }
+
+    // 3. Java --enable-preview class file (minor = 0xFFFF, major = 65)
+    let java_preview = [0xCA, 0xFE, 0xBA, 0xBE, 0xFF, 0xFF, 0x00, 0x41];
+    let rep_java = detect_bytes(&java_preview, &opts).unwrap();
+    let core_java = detect_bytes_core(&java_preview, &opts).unwrap();
+    assert_eq!(rep_java.format_id.as_deref(), Some("class"));
+    assert_eq!(core_java.format_id, Some("class"));
+}

@@ -31,7 +31,13 @@ pub fn probe_database_signatures_core(header: &[u8]) -> DatabaseMatchCore {
     }
 
     // 2. PCAP / PCAPNG
-    if header.len() < 4 && !header.is_empty() && (header[0] == 0xD4 || header[0] == 0xA1 || header[0] == 0x0A) {
+    if header.len() < 4
+        && header.len() >= 2
+        && (header.starts_with(&[0xD4, 0xC3])
+            || header.starts_with(&[0xA1, 0xB2])
+            || header.starts_with(&[0x4D, 0x3C])
+            || header.starts_with(&[0x0A, 0x0D]))
+    {
         return DatabaseMatchCore::Truncated("pcap");
     }
     if let Some(core) = probe_pcap_core(header) {

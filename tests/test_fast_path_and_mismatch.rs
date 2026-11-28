@@ -150,3 +150,30 @@ fn test_fast_path_truncated_and_unrecognized_fallback() {
     let rep_none = detect_bytes(&png_bytes, &opts_none).unwrap();
     assert_eq!(rep_none.format_id.as_deref(), Some("png"));
 }
+
+#[test]
+fn test_fast_path_does_not_bypass_content_priority() {
+    // 1. Valid PNG containing "%PDF-" within first 1024 bytes disguised with .pdf hint
+    let mut png_with_pdf = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89".to_vec();
+    png_with_pdf.extend_from_slice(b"%PDF-1.7\n");
+    let pdf_hint = DetectOptions {
+        extension_hint: Some("pdf".to_string()),
+        ..DetectOptions::default()
+    };
+    let rep_png = detect_bytes(&png_with_pdf, &pdf_hint).unwrap();
+    assert_eq!(rep_png.format_id.as_deref(), Some("png"));
+
+    // 2. RTF renamed to .txt must still be detected as rtf, not txt
+    let rtf_bytes = br"{\rtf1\ansi\deff0{\fonttbl{\f0 Arial;}}hello}";
+    let txt_hint = DetectOptions {
+        extension_hint: Some("txt".to_string()),
+        ..DetectOptions::default()
+    };
+    let rep_rtf = detect_bytes(rtf_bytes, &txt_hint).unwrap();
+    assert_eq!(rep_rtf.format_id.as_deref(), Some("rtf"));
+
+    // 3. VMDK text descriptor renamed to .txt must still be detected as vmdk, not txt
+    let vmdk_desc = b"# Disk DescriptorFile\nversion=1\n";
+    let rep_vmdk = detect_bytes(vmdk_desc, &txt_hint).unwrap();
+    assert_eq!(rep_vmdk.format_id.as_deref(), Some("vmdk"));
+}

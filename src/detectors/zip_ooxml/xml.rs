@@ -57,6 +57,10 @@ pub fn verify_main_part_xml<R: BufRead>(
                 }
             }
             Ok((resolve, Event::Empty(ref e))) => {
+                if current_depth + 1 > max_depth {
+                    depth_exceeded = true;
+                    break;
+                }
                 if !root_seen {
                     root_seen = true;
                     if e.local_name().into_inner().as_bytes() == expected_local {

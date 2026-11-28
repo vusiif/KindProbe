@@ -73,3 +73,27 @@ fn test_compare_extension_pure_function() {
         assert_eq!(compare_extension(&unknown_rep, Some(non_utf8_ext)), ExtensionStatus::Undetermined);
     }
 }
+
+#[test]
+fn test_all_declarative_rule_extensions_registered() {
+    use kindprobe::detectors::rules::registry::DECLARATIVE_RULES;
+    use kindprobe::extension::find_registered_format;
+
+    for rule in DECLARATIVE_RULES {
+        assert!(
+            find_registered_format(rule.recommended_ext).is_some(),
+            "Missing recommended_ext '{}' (for {}) in EXTENSION_REGISTRY",
+            rule.recommended_ext,
+            rule.format_id
+        );
+        for ext in rule.accepted_exts {
+            let norm = ext.to_ascii_lowercase();
+            assert!(
+                find_registered_format(&norm).is_some(),
+                "Missing accepted_ext '{}' (for {}) in EXTENSION_REGISTRY",
+                ext,
+                rule.format_id
+            );
+        }
+    }
+}
