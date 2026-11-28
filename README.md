@@ -2,7 +2,7 @@
 
 > 独立离线文件真实格式识别工具与 Rust 库（依据内容证据识别格式，推荐规范扩展名）。
 
-**当前版本：`v0.2.0`（支持 1006+ 格式扩展名索引、零分配 `DetectionCore`、流式 XML 与容器防欺骗校验、SWAR 文本快筛及多核并行批量 CLI）**  
+**当前版本：`v0.2.0`（支持 1,399 项扩展名映射、776 条静态特征规则、零分配 `DetectionCore`、流式 XML 与容器防欺骗校验、SWAR 文本快筛及多核并行批量 CLI）**  
 **项目许可证：GNU General Public License v3.0 或任何更新版本（SPDX：`GPL-3.0-or-later`），详见 [LICENSE](LICENSE)。第三方依赖与数据源保留各自许可证，见下文及 `research/`。**
 
 ---
@@ -315,7 +315,7 @@ CLI 错误输出信封（退出码 4 或 1，使用 `--json` 时输出）：
 
 ### 5.1 离线代码生成管线与手工规则分卷
 
-仓库保留了早期离线代码生成脚本 `tools/codegen.py`（对应初期 8 个大类分卷与 `SORTED_EXTENSION_REGISTRY`）；随着多轮格式扩展，当前生产规则已扩充至 `src/detectors/rules/generated/` 下 **59 个领域模块（774 条声明式规则）** 及 `src/extension/registry.rs` 中 **1,399 项 `EXTENSION_REGISTRY` 映射**：
+仓库保留了早期离线代码生成脚本 `tools/codegen.py`（对应初期 8 个大类分卷与 `SORTED_EXTENSION_REGISTRY`）；随着多轮格式扩展，当前生产规则已扩充至 `src/detectors/rules/generated/` 下 **60 个领域模块与核心声明规则（合计 776 条静态特征规则，已通过 `test_static_rule_index_invariants` 守护无重复与索引完整）** 及 `src/extension/registry.rs` 中 **1,399 项 `EXTENSION_REGISTRY` 映射**：
 - **纯固定偏移与预算控制**：所有声明式规则均为固定偏移与紧凑字节模式（当前最大结束偏移 `1084` 字节），适配 `BudgetReader` 默认 `4096` 字节初始窗口；
 - **编译期分桶索引**：静态规则与扩展名注册表均通过编译期 256 桶索引及字典序二分检索（`test_registry_is_strictly_sorted_without_duplicates`、`test_all_declarative_rule_extensions_registered` 守护）实现零堆分配匹配；`tools/codegen.py` 目前仅作历史生成参考，切勿直接覆盖现有 59 模块产物。
 
@@ -353,8 +353,8 @@ python3 scripts/run_acceptance.py
 ### 6.3 本地全量回归与对抗模糊测试 (In-Repo Native Suite)
 无需 Docker 环境，在任何受支持平台（Linux/Windows/macOS）直接运行：
 ```bash
-# 运行全量 118 个集成与单元测试（覆盖 85+ 格式、真实样本句柄矩阵、全量对抗变异模糊）
-cargo test
+# 运行全量测试（255 个集成与单元测试函数及 5 条 doctest，覆盖数百种格式、37 项真实/标准结构样本句柄矩阵、对抗变异模糊与预算校验）
+cargo test --all-targets
 ```
-- **真实文件样本矩阵 (`fixtures/real/`)**：包含 25 个干净真实的跨领域格式切片（FLV, AMR, AC3, CAF, DRC, MNG, XCF, EXR, FITS, ICNS, JP2, BPG, Netpbm, DICOM, PostScript, RTF, DWG, CPIO, Lzip, Cabinet, SQLite3, PCAP, Parquet 等），通过 `test_real_fixtures_matrix` 执行端到端真实 OS 句柄与扩展名正反校验；
+- **真实文件样本矩阵 (`fixtures/real/`)**：包含 37 个干净合规的跨领域格式样本（FLV, AMR, AC3, CAF, DRC, MNG, XCF, EXR, FITS, ICNS, JP2, BPG, Netpbm, DICOM, PostScript, RTF, DWG, CPIO, Lzip, Cabinet, SQLite3, PCAP, Parquet, XLSX, PPTX, Wasm, ELF, PE, WebP, WAV, MP3, MP4, FLAC, Ogg, WOFF2 等），通过 `test_real_fixtures_matrix` 执行端到端真实 OS 句柄与扩展名正反校验；
 - **确定性对抗模糊套件 (`test_adversarial_fuzzing`)**：零外部依赖，使用确定性伪随机变异引擎执行数千次混沌随机流注入、魔数任意边界截断与随机位翻转，自动化守护 No-Panic、预算严格锁定与幂等不变量。

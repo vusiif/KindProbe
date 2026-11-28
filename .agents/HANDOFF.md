@@ -1,13 +1,11 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- Committed and pushed rule deduplication + index rebuild (`fcd9708`) cleanly to `origin/main`.
-- **Batch 6 — Packaging Metadata & Real Fixtures Expansion**:
-  - Added crates.io packaging metadata to `Cargo.toml` (`repository`, `homepage`, `documentation`, `readme`, `keywords`, `categories`, `exclude`).
-  - Added 12 compliant binary fixtures under `fixtures/real/` covering OOXML (`sample.xlsx`, `sample.pptx`), executables (`sample.wasm`, `sample.elf`, `sample.exe`), media (`sample.webp`, `sample.wav`, `sample.mp3`, `sample.mp4`, `sample.flac`, `sample.ogg`), and fonts (`sample.woff2`), bringing `test_real_fixtures_matrix.rs` to 37 verified fixture formats.
+- Synced `CHANGELOG.md` (`[0.2.0] - 2026-11-27`) and `README.md` metrics (`1,399` extension mappings, `776` static rules across 60 generated modules + core registry, `37` real fixtures, `255` unit/integration tests + `5` doctests).
+- Preparing final `--locked` release check, `v0.2.0` tag, and GitHub Release workflow trigger.
 
 ## [当前状态] (Current State)
-- Pending `cargo test --test test_real_fixtures_matrix` and full CI verification gate + auto-commit.
+- Release preparation checks running on `main`.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Run full CI verification gate (`fmt`, `clippy`, `doc`, `--all-targets`), verify `cargo package --list --allow-dirty`, and auto-commit.
+- None once `v0.2.0` tag is pushed and `.github/workflows/release.yml` finishes cleanly.
