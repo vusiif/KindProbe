@@ -138,15 +138,9 @@ pub fn probe_macho(header: &[u8]) -> MachoMatch {
         return build_macho_report("macho", "dylib", ver, evidence);
     }
 
-    if magic == [0xCA, 0xFE, 0xBA, 0xBE] {
-        if is_java_class_version(header) {
-            return build_macho_report(
-                "class",
-                "class",
-                Verification::Structure,
-                vec![EvidenceItem::new("sig.java.class")],
-            );
-        }
+    if (magic == [0xCA, 0xFE, 0xBA, 0xBE] && !is_java_class_version(header))
+        || magic == [0xBE, 0xBA, 0xFE, 0xCA]
+    {
         return build_macho_report(
             "macho",
             "dylib",
@@ -161,18 +155,12 @@ pub fn probe_macho(header: &[u8]) -> MachoMatch {
         );
     }
 
-    if magic == [0xBE, 0xBA, 0xFE, 0xCA] {
+    if magic == [0xCA, 0xFE, 0xBA, 0xBE] {
         return build_macho_report(
-            "macho",
-            "dylib",
-            ver,
-            vec![
-                EvidenceItem::new("sig.macho.fat_magic"),
-                EvidenceItem::with_desc(
-                    "sig.macho.universal",
-                    "Universal Binary (Multi-architecture FAT)",
-                ),
-            ],
+            "class",
+            "class",
+            Verification::Structure,
+            vec![EvidenceItem::new("sig.java.class")],
         );
     }
 

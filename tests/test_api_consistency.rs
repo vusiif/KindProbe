@@ -159,3 +159,54 @@ fn test_core_vs_report_api_parity_across_domains() {
         assert_eq!(reader_core.format_id, core.format_id, "{label}");
     }
 }
+
+#[test]
+fn test_static_rule_index_invariants() {
+    use kindprobe::detectors::rules::static_index::{BY_FORMAT, OFFSET_GROUPS};
+    use kindprobe::detectors::rules::{DECLARATIVE_RULES, GENERATED_RULES};
+
+    // 1. BY_FORMAT must stay strictly sorted so binary_search_by_key never misses an entry
+    for pair in BY_FORMAT.windows(2) {
+        assert!(
+            pair[0].0 <= pair[1].0,
+            "BY_FORMAT out of order: {:?} > {:?}",
+            pair[0].0,
+            pair[1].0
+        );
+    }
+    for &(fid, rule) in BY_FORMAT {
+        assert_eq!(fid, rule.format_id);
+    }
+
+    // 2. OFFSET_GROUPS must stay sorted by ascending offset
+    for pair in OFFSET_GROUPS.windows(2) {
+        assert!(
+            pair[0].offset < pair[1].offset,
+            "OFFSET_GROUPS out of order: {} >= {}",
+            pair[0].offset,
+            pair[1].offset
+        );
+    }
+
+    // 3. Every rule in DECLARATIVE_RULES + GENERATED_RULES must be lookup-able via BY_FORMAT
+    for rule in DECLARATIVE_RULES.iter() {
+        assert!(
+            BY_FORMAT
+                .binary_search_by_key(&rule.format_id, |&(fid, _)| fid)
+                .is_ok(),
+            "missing BY_FORMAT entry for declarative rule {}",
+            rule.format_id
+        );
+    }
+    for group in GENERATED_RULES {
+        for rule in *group {
+            assert!(
+                BY_FORMAT
+                    .binary_search_by_key(&rule.format_id, |&(fid, _)| fid)
+                    .is_ok(),
+                "missing BY_FORMAT entry for generated rule {}",
+                rule.format_id
+            );
+        }
+    }
+}

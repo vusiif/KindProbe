@@ -31,26 +31,34 @@ pub fn make_pe_core(verification: Verification, is_dll: bool) -> DetectionCore {
     }
 }
 
+fn valid_pe_header_offset(header: &[u8]) -> Option<usize> {
+    if header.len() < 0x40 {
+        return None;
+    }
+    let pe_offset =
+        u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
+    let pe_sig_end = pe_offset.checked_add(4)?;
+    if pe_offset >= 0x40
+        && pe_sig_end <= header.len()
+        && &header[pe_offset..pe_sig_end] == b"PE\0\0"
+    {
+        Some(pe_offset)
+    } else {
+        None
+    }
+}
+
 pub fn probe_pe_core(header: &[u8]) -> Option<DetectionCore> {
     if header.len() < 2 || !header.starts_with(b"MZ") {
         return None;
     }
 
-    let (verification, is_dll) = if header.len() >= 0x40 {
-        let pe_offset =
-            u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
-        let pe_sig_end = pe_offset.checked_add(4);
-        if pe_offset >= 0x40
-            && pe_sig_end.is_some_and(|end| end <= header.len())
-            && &header[pe_offset..pe_offset + 4] == b"PE\0\0"
-        {
+    let (verification, is_dll) = match valid_pe_header_offset(header) {
+        Some(pe_offset) => {
             let (dll_flag, _) = extract_pe_metadata(header, pe_offset);
             (Verification::Structure, dll_flag)
-        } else {
-            (Verification::Signature, false)
         }
-    } else {
-        (Verification::Signature, false)
+        None => (Verification::Signature, false),
     };
 
     Some(make_pe_core(verification, is_dll))
@@ -70,24 +78,14 @@ pub fn probe_pe(header: &[u8]) -> PeMatch {
     }
 
     let mut evidence = vec![EvidenceItem::new("sig.pe.mz_header")];
-    let (verification, is_dll) = if header.len() >= 0x40 {
-        let pe_offset =
-            u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
-        if pe_offset >= 0x40
-            && pe_offset
-                .checked_add(4)
-                .is_some_and(|end| end <= header.len())
-            && &header[pe_offset..pe_offset + 4] == b"PE\0\0"
-        {
+    let (verification, is_dll) = match valid_pe_header_offset(header) {
+        Some(pe_offset) => {
             evidence.push(EvidenceItem::new("sig.pe.signature"));
             let (dll_flag, meta_items) = extract_pe_metadata(header, pe_offset);
             evidence.extend(meta_items);
             (Verification::Structure, dll_flag)
-        } else {
-            (Verification::Signature, false)
         }
-    } else {
-        (Verification::Signature, false)
+        None => (Verification::Signature, false),
     };
 
     let rec_ext = if is_dll { "dll" } else { "exe" };

@@ -119,6 +119,32 @@ fn has_wave_fmt_chunk(header: &[u8]) -> bool {
     false
 }
 
+enum RiffSubtype {
+    Wav { has_fmt: bool },
+    Webp { has_vp8: bool },
+    Avi,
+}
+
+fn parse_riff_subtype(header: &[u8]) -> Option<RiffSubtype> {
+    let form_type = &header[8..12];
+    if form_type == b"WAVE" {
+        return Some(RiffSubtype::Wav {
+            has_fmt: has_wave_fmt_chunk(header),
+        });
+    }
+    if form_type == b"WEBP" {
+        let has_vp8 = header.len() >= 16
+            && (&header[12..16] == b"VP8 "
+                || &header[12..16] == b"VP8L"
+                || &header[12..16] == b"VP8X");
+        return Some(RiffSubtype::Webp { has_vp8 });
+    }
+    if form_type == b"AVI " {
+        return Some(RiffSubtype::Avi);
+    }
+    None
+}
+
 pub fn probe_riff_core(header: &[u8]) -> RiffMatchCore {
     if header.len() < 4 {
         if header.len() >= 2 && header.starts_with(b"RI") {
@@ -135,29 +161,12 @@ pub fn probe_riff_core(header: &[u8]) -> RiffMatchCore {
         return RiffMatchCore::Truncated("wav");
     }
 
-    let form_type = &header[8..12];
-
-    // 1. WAV audio (form_type == b"WAVE")
-    if form_type == b"WAVE" {
-        return RiffMatchCore::Confirmed(make_wav_core(has_wave_fmt_chunk(header)));
+    match parse_riff_subtype(header) {
+        Some(RiffSubtype::Wav { has_fmt }) => RiffMatchCore::Confirmed(make_wav_core(has_fmt)),
+        Some(RiffSubtype::Webp { has_vp8 }) => RiffMatchCore::Confirmed(make_webp_core(has_vp8)),
+        Some(RiffSubtype::Avi) => RiffMatchCore::Confirmed(make_avi_core()),
+        None => RiffMatchCore::None,
     }
-
-    // 2. WebP image (form_type == b"WEBP")
-    if form_type == b"WEBP" {
-        let has_vp8 = header.len() >= 16
-            && (&header[12..16] == b"VP8 "
-                || &header[12..16] == b"VP8L"
-                || &header[12..16] == b"VP8X");
-
-        return RiffMatchCore::Confirmed(make_webp_core(has_vp8));
-    }
-
-    // 3. AVI video (form_type == b"AVI ")
-    if form_type == b"AVI " {
-        return RiffMatchCore::Confirmed(make_avi_core());
-    }
-
-    RiffMatchCore::None
 }
 
 /// Probes RIFF container and parses WAVE / WEBP / AVI subtypes.
@@ -177,92 +186,83 @@ pub fn probe_riff(header: &[u8]) -> RiffMatch {
         return RiffMatch::Truncated("wav".to_string());
     }
 
-    let form_type = &header[8..12];
     let mut evidence = vec![EvidenceItem::new("sig.riff.header")];
 
-    // 1. WAV audio (form_type == b"WAVE")
-    if form_type == b"WAVE" {
-        evidence.push(EvidenceItem::new("sig.wav.wave_header"));
-        let has_fmt = has_wave_fmt_chunk(header);
+    match parse_riff_subtype(header) {
+        Some(RiffSubtype::Wav { has_fmt }) => {
+            evidence.push(EvidenceItem::new("sig.wav.wave_header"));
+            let verification = if has_fmt {
+                evidence.push(EvidenceItem::new("sig.wav.fmt_chunk"));
+                Verification::Structure
+            } else {
+                Verification::Signature
+            };
 
-        let verification = if has_fmt {
-            evidence.push(EvidenceItem::new("sig.wav.fmt_chunk"));
-            Verification::Structure
-        } else {
-            Verification::Signature
-        };
+            RiffMatch::Confirmed(Box::new(DetectionReport {
+                schema_version: 1,
+                format_id: Some("wav".to_string()),
+                category: "audio".to_string(),
+                container_id: Some("riff".to_string()),
+                identification: Identification::Format,
+                verification,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("wav".to_string()),
+                accepted_extensions: vec!["wav".to_string(), "wave".to_string()],
+                extension_status: ExtensionStatus::Undetermined,
+                evidence,
+                warnings: Vec::new(),
+                stats: Default::default(),
+                candidates: None,
+            }))
+        }
+        Some(RiffSubtype::Webp { has_vp8 }) => {
+            evidence.push(EvidenceItem::new("sig.webp.header"));
+            let verification = if has_vp8 {
+                evidence.push(EvidenceItem::new("sig.webp.vp8"));
+                Verification::Structure
+            } else {
+                Verification::Signature
+            };
 
-        return RiffMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("wav".to_string()),
-            category: "audio".to_string(),
-            container_id: Some("riff".to_string()),
-            identification: Identification::Format,
-            verification,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("wav".to_string()),
-            accepted_extensions: vec!["wav".to_string(), "wave".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence,
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
+            RiffMatch::Confirmed(Box::new(DetectionReport {
+                schema_version: 1,
+                format_id: Some("webp".to_string()),
+                category: "image".to_string(),
+                container_id: Some("riff".to_string()),
+                identification: Identification::Format,
+                verification,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("webp".to_string()),
+                accepted_extensions: vec!["webp".to_string()],
+                extension_status: ExtensionStatus::Undetermined,
+                evidence,
+                warnings: Vec::new(),
+                stats: Default::default(),
+                candidates: None,
+            }))
+        }
+        Some(RiffSubtype::Avi) => {
+            evidence.push(EvidenceItem::new("sig.avi.header"));
+            RiffMatch::Confirmed(Box::new(DetectionReport {
+                schema_version: 1,
+                format_id: Some("avi".to_string()),
+                category: "video".to_string(),
+                container_id: Some("riff".to_string()),
+                identification: Identification::Format,
+                verification: Verification::Signature,
+                inspection: Inspection::Complete,
+                recommended_extension: Some("avi".to_string()),
+                accepted_extensions: vec!["avi".to_string()],
+                extension_status: ExtensionStatus::Undetermined,
+                evidence,
+                warnings: Vec::new(),
+                stats: Default::default(),
+                candidates: None,
+            }))
+        }
+        None => {
+            // Unknown RIFF form_type: let downstream specialized rules evaluate
+            RiffMatch::None
+        }
     }
-
-    // 2. WebP image (form_type == b"WEBP")
-    if form_type == b"WEBP" {
-        evidence.push(EvidenceItem::new("sig.webp.header"));
-        let has_vp8 = header.len() >= 16
-            && (&header[12..16] == b"VP8 "
-                || &header[12..16] == b"VP8L"
-                || &header[12..16] == b"VP8X");
-        let verification = if has_vp8 {
-            evidence.push(EvidenceItem::new("sig.webp.vp8"));
-            Verification::Structure
-        } else {
-            Verification::Signature
-        };
-
-        return RiffMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("webp".to_string()),
-            category: "image".to_string(),
-            container_id: Some("riff".to_string()),
-            identification: Identification::Format,
-            verification,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("webp".to_string()),
-            accepted_extensions: vec!["webp".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence,
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
-    }
-
-    // 3. AVI video (form_type == b"AVI ")
-    if form_type == b"AVI " {
-        evidence.push(EvidenceItem::new("sig.avi.header"));
-        return RiffMatch::Confirmed(Box::new(DetectionReport {
-            schema_version: 1,
-            format_id: Some("avi".to_string()),
-            category: "video".to_string(),
-            container_id: Some("riff".to_string()),
-            identification: Identification::Format,
-            verification: Verification::Signature,
-            inspection: Inspection::Complete,
-            recommended_extension: Some("avi".to_string()),
-            accepted_extensions: vec!["avi".to_string()],
-            extension_status: ExtensionStatus::Undetermined,
-            evidence,
-            warnings: Vec::new(),
-            stats: Default::default(),
-            candidates: None,
-        }));
-    }
-
-    // Unknown RIFF form_type: let downstream specialized rules evaluate
-    RiffMatch::None
 }
