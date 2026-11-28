@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_gerber;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -117,7 +118,7 @@ pub static ROBOTICS_FIRMWARE_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.gbr.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_gerber),
     },
     SignatureRule {
         format_id: "dfu",

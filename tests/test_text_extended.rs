@@ -226,6 +226,10 @@ fn test_text_heuristic_and_short_pattern_false_positive_fixes() {
         b"ORC columnar storage overview notes\n".as_slice(),
         b":10:30 meeting scheduled with team\n".as_slice(),
         b"SMK toolkit documentation notes\n".as_slice(),
+        b"$GPS_MODE=high precision config\n".as_slice(),
+        b"BIKING trail route summary notes\n".as_slice(),
+        b"GXT parser design documentation\n".as_slice(),
+        b"%FS placeholder text note here\n".as_slice(),
     ] {
         let rep = detect_bytes(sample, &opts).unwrap();
         assert_eq!(

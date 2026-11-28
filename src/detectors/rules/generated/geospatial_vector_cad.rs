@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_binary_6_from_3;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -156,7 +157,7 @@ pub static GEOSPATIAL_VECTOR_CAD_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.gxt.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_binary_6_from_3),
     },
     SignatureRule {
         format_id: "gpx_trk",

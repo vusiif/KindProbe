@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_binary_6_from_4;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -143,7 +144,7 @@ pub static GAME_ASSETS_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.bik.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_binary_6_from_4),
     },
     SignatureRule {
         format_id: "uasset",

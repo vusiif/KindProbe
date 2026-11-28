@@ -219,6 +219,45 @@ pub(crate) fn validate_binary_6_from_3(header: &[u8]) -> ValidationStatus {
     validate_binary_not_ascii(header, 6, 3)
 }
 
+pub(crate) fn validate_binary_6_from_4(header: &[u8]) -> ValidationStatus {
+    validate_binary_not_ascii(header, 6, 4)
+}
+
+pub(crate) fn validate_nmea(header: &[u8]) -> ValidationStatus {
+    if header.len() < 7 {
+        return ValidationStatus::Truncated;
+    }
+    if header[3..6].iter().all(|b| b.is_ascii_uppercase()) && header[6] == b',' {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+pub(crate) fn validate_kml_open(header: &[u8]) -> ValidationStatus {
+    if header.len() < 5 {
+        return ValidationStatus::Truncated;
+    }
+    if matches!(header[4], b' ' | b'>' | b'\t' | b'\r' | b'\n') {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+pub(crate) fn validate_gerber(header: &[u8]) -> ValidationStatus {
+    if header.len() < 6 {
+        return ValidationStatus::Truncated;
+    }
+    let slice = &header[3..header.len().min(32)];
+    let is_gerber_fs = (header[3] == b'L' || header[3] == b'T') && slice.contains(&b'*');
+    if is_gerber_fs || validate_binary_not_ascii(header, 6, 3) == ValidationStatus::Valid {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
 pub(crate) fn validate_xbm(header: &[u8]) -> ValidationStatus {
     if header.len() < 16 && !header.contains(&b'\n') {
         return ValidationStatus::Truncated;

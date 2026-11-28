@@ -1,14 +1,15 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- Committed short-rule hardening, OOXML single-pass CD reuse, core probe deduplication, `source_code` modularization, and `src/lib.rs` doctests (`432ea71`).
-- Committed 3-byte / pure-ASCII rule hardening (`xbm`, `stl`, `orc`, `ihex`, `smk`, `sp3`) and CLI modularization into `src/cli/{mod,i18n,batch}.rs` (`a418dc9`).
+- Pushed `432ea71`, `a418dc9`, and `3221d19` cleanly to `origin/main`.
+- **Batch 3 — Additional Short-ASCII Rules & OOXML / Matroska Refactor**:
+  - Added structural validators `validate_binary_6_from_4`, `validate_nmea`, `validate_kml_open`, and `validate_gerber` in `src/detectors/rules/engine.rs` and wired them onto `nmea` & `kml` (`cad_and_gnss.rs`), `bik` (`game_assets.rs`), `gxt` (`geospatial_vector_cad.rs`), and `gbr` (`robotics_firmware.rs`).
+  - Added false-positive guards in `tests/test_text_extended.rs` (`$GPS_MODE`, `BIKING`, `GXT`, `%FS`).
+  - Extracted `src/detectors/zip_ooxml/direct_reader.rs` from `zip_ooxml/mod.rs` (shrinking `mod.rs` to ~575 lines) and eliminated `.to_ascii_lowercase()` heap allocation for `.xml` suffix checks.
+  - Deduplicated `probe_matroska` in `src/detectors/media/matroska.rs` to delegate to `probe_matroska_core`.
 
 ## [当前状态] (Current State)
-- Clean baseline on `main` (verified `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --doc`, and `cargo test --all-targets`).
+- Pending final full-suite `cargo test --all-targets` verification after Batch 3 changes.
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Potential next optimizations:
-  1. Harden remaining 3-4 byte ASCII rules without validators (`nmea` `b"$GP"`, `bik` `b"BIK"`, `gxt` `b"GXT"`, `gbr` `b"%FS"`, `sp3` / `kml` `b"<kml"`) and deduplicate redundant generated rule entries (`bpg`, `cso`, `ips`, `bdf`, `tta`, `pcf`, `qoi`, `root`, `s3m`, `cas`/`msx_rom_cas`, `uasset`/`unreal_uasset`) while regenerating `static_index.rs`.
-  2. Split `src/detectors/zip_ooxml/mod.rs` (1,015 lines) by extracting direct LFH streaming into `direct_reader.rs`, and eliminate remaining structural duplication between `probe_*` and `probe_*_core` (`probe_signatures`, `probe_riff`, `probe_mp4`, `probe_elf`, `probe_pe`, `probe_macho`).
-  3. Expand `fixtures/real/` coverage beyond the current 25 fixtures (OOXML/ELF/PE/Wasm/MP3/MP4/WebP) and populate `Cargo.toml` publishing metadata (`repository`, `readme`, `keywords`, `categories`).
+- Optionally deduplicate duplicate generated rule entries (`bpg`, `cso`, `ips`, `bdf`, `tta`, `pcf`, `qoi`, `root`, `s3m`, `cas`/`msx_rom_cas`, `uasset`/`unreal_uasset`) + regenerate `static_index.rs`, and expand real OOXML/ELF/PE fixtures.
