@@ -262,6 +262,44 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // Vyper (.vy) before Python `def` scan
+    if window.contains("@external")
+        && window.contains("def ")
+        && (window.contains("uint256") || window.contains("public(") || window.contains("@view"))
+    {
+        return Some(make_source_core(
+            "vy",
+            &["vy"],
+            "sig.text.vyper",
+            Verification::Structure,
+        ));
+    }
+
+    // Move (.move) before Rust/Kotlin `fun` scan
+    if window.contains("module ")
+        && window.contains("public fun ")
+        && (window.contains("has key") || window.contains("has store") || window.contains("use std::"))
+    {
+        return Some(make_source_core(
+            "move",
+            &["move"],
+            "sig.text.move",
+            Verification::Structure,
+        ));
+    }
+
+    // Cairo (.cairo) before Rust `fn` scan
+    if window.contains("#[starknet::contract]")
+        || (window.contains("use starknet::") && window.contains("fn "))
+    {
+        return Some(make_source_core(
+            "cairo",
+            &["cairo"],
+            "sig.text.cairo",
+            Verification::Structure,
+        ));
+    }
+
     // Emacs Org-mode (.org)
     if window.contains("#+TITLE:")
         || window.contains("#+AUTHOR:")
@@ -1819,6 +1857,77 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "resolv",
             &["conf"],
             "sig.text.resolv",
+            Verification::Structure,
+        ));
+    }
+
+    // Circom ZK circuits (.circom)
+    if window.contains("pragma circom ") && window.contains("template ") && window.contains("signal ") {
+        return Some(make_source_core(
+            "circom",
+            &["circom"],
+            "sig.text.circom",
+            Verification::Structure,
+        ));
+    }
+
+    // InfluxDB Flux (.flux)
+    if window.contains("from(bucket:") && window.contains("|> range(") && window.contains("|> filter(") {
+        return Some(make_source_core(
+            "flux",
+            &["flux"],
+            "sig.text.flux",
+            Verification::Structure,
+        ));
+    }
+
+    // Azure Kusto Query Language (.kql / .csl)
+    if window.contains("| where ")
+        && (window.contains("| summarize ") || window.contains("| project "))
+        && !window.contains("def ")
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "kql",
+            &["kql", "csl"],
+            "sig.text.kql",
+            Verification::Structure,
+        ));
+    }
+
+    // /etc/fstab
+    if (window.contains("UUID=") || window.contains("/dev/"))
+        && (window.contains("ext4") || window.contains("xfs") || window.contains("btrfs") || window.contains("swap") || window.contains("tmpfs"))
+        && window.contains("defaults")
+    {
+        return Some(make_source_core(
+            "fstab",
+            &["fstab"],
+            "sig.text.fstab",
+            Verification::Structure,
+        ));
+    }
+
+    // Textile markup (.textile)
+    if window.contains("h1. ") && (window.contains("h2. ") || window.contains("\n* ") || window.contains("\n# ")) {
+        return Some(make_source_core(
+            "textile",
+            &["textile"],
+            "sig.text.textile",
+            Verification::Structure,
+        ));
+    }
+
+    // CoffeeScript (.coffee)
+    if window.contains("->")
+        && window.contains("console.log ")
+        && !w_bytes.contains(&b'{')
+        && !w_bytes.contains(&b';')
+    {
+        return Some(make_source_core(
+            "coffee",
+            &["coffee"],
+            "sig.text.coffeescript",
             Verification::Structure,
         ));
     }

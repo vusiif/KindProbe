@@ -106,6 +106,31 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         && geo_window.contains("\"info\"")
     {
         ("openapi", "configuration", Some("json"), "json", &["json"], "sig.text.openapi")
+    } else if geo_window.contains("\"runs\"")
+        && geo_window.contains("\"tool\"")
+        && geo_window.contains("\"results\"")
+    {
+        ("sarif", "data", Some("json"), "sarif", &["sarif", "json"], "sig.text.sarif")
+    } else if geo_window.contains("\"bomFormat\"")
+        && geo_window.contains("\"CycloneDX\"")
+        && geo_window.contains("\"specVersion\"")
+    {
+        ("cyclonedx", "data", Some("json"), "json", &["json", "cdx"], "sig.text.cyclonedx")
+    } else if geo_window.contains("\"spdxVersion\"")
+        && geo_window.contains("\"SPDXID\"")
+        && geo_window.contains("\"packages\"")
+    {
+        ("spdx", "data", Some("json"), "json", &["json", "spdx"], "sig.text.spdx")
+    } else if geo_window.contains("\"version\"")
+        && geo_window.contains("\"sources\"")
+        && geo_window.contains("\"mappings\"")
+    {
+        ("sourcemap", "data", Some("json"), "map", &["map"], "sig.text.sourcemap")
+    } else if geo_window.contains("\"short_name\"")
+        && geo_window.contains("\"icons\"")
+        && geo_window.contains("\"start_url\"")
+    {
+        ("webmanifest", "configuration", Some("json"), "webmanifest", &["webmanifest", "json"], "sig.text.webmanifest")
     } else if geo_window.contains("\n//") || geo_window.contains("\n  //") || geo_window.contains("/*") {
         ("json5", "configuration", Some("json"), "json5", &["json5", "jsonc"], "sig.text.json5")
     } else {

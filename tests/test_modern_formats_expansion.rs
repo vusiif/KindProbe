@@ -917,6 +917,78 @@ fn test_round20_xbel_docbook_ivy_nu_sv_org_mediawiki_fennel_hy_lfe_raku_cr_fish_
 }
 
 #[test]
+fn test_round21_sarif_cyclonedx_spdx_sourcemap_webmanifest_junit_cobertura_checkstyle_vy_move_cairo_circom_flux_kql_fstab_textile_coffee() {
+    assert_both_paths(
+        br#"{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"clippy"}},"results":[]}]}"#,
+        "sarif",
+    );
+    assert_both_paths(
+        br#"{"bomFormat":"CycloneDX","specVersion":"1.5","version":1,"components":[]}"#,
+        "cyclonedx",
+    );
+    assert_both_paths(
+        br#"{"spdxVersion":"SPDX-2.3","SPDXID":"SPDXRef-DOCUMENT","packages":[]}"#,
+        "spdx",
+    );
+    assert_both_paths(
+        br#"{"version":3,"sources":["app.ts"],"mappings":"AAAA"}"#,
+        "sourcemap",
+    );
+    assert_both_paths(
+        br#"{"short_name":"KindProbe","start_url":"/","icons":[{"src":"/icon.png"}]}"#,
+        "webmanifest",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><testsuite name=\"unit\" tests=\"1\"><testcase name=\"ok\"/></testsuite>",
+        "junit",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><coverage line-rate=\"0.95\"><packages><package name=\"kp\"/></packages></coverage>",
+        "cobertura",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><checkstyle version=\"10.0\"><file name=\"A.java\"><error line=\"1\"/></file></checkstyle>",
+        "checkstyle",
+    );
+    assert_both_paths(
+        b"@external\ndef get_owner() -> address:\n    return self.owner\nowner: public(address)\n",
+        "vy",
+    );
+    assert_both_paths(
+        b"module 0x1::coin {\n    use std::signer;\n    struct Coin has key { val: u64 }\n    public fun mint(acc: &signer) {}\n}\n",
+        "move",
+    );
+    assert_both_paths(
+        b"#[starknet::contract]\nmod Counter {\n    fn get() -> u32 { 0 }\n}\n",
+        "cairo",
+    );
+    assert_both_paths(
+        b"pragma circom 2.1.0;\ntemplate Multiplier() {\n    signal input a;\n    signal output c;\n}\n",
+        "circom",
+    );
+    assert_both_paths(
+        b"from(bucket: \"metrics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"cpu\")\n",
+        "flux",
+    );
+    assert_both_paths(
+        b"Logs\n| where Level == \"Error\"\n| summarize Count = count() by Service\n| project Service, Count\n",
+        "kql",
+    );
+    assert_both_paths(
+        b"UUID=1234-5678 / ext4 defaults 0 1\n",
+        "fstab",
+    );
+    assert_both_paths(
+        b"h1. Title\n\nh2. Section\n\n* Item one\n",
+        "textile",
+    );
+    assert_both_paths(
+        b"square = (x) -> x * x\nconsole.log square 5\n",
+        "coffee",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

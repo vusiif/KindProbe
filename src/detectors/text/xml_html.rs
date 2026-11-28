@@ -174,6 +174,23 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("ivy", "text", Some("xml"), "xml", &["xml"], "sig.text.ivy"));
     }
+    if (head.starts_with(b"<testsuite") || (is_xml_head && contains_sub(b"<testsuite")))
+        && trimmed.contains("<testcase")
+    {
+        return Some(make_core("junit", "data", Some("xml"), "xml", &["xml"], "sig.text.junit"));
+    }
+    if (head.starts_with(b"<coverage") || (is_xml_head && contains_sub(b"<coverage")))
+        && trimmed.contains("<packages")
+        && trimmed.contains("line-rate=")
+    {
+        return Some(make_core("cobertura", "data", Some("xml"), "xml", &["xml"], "sig.text.cobertura"));
+    }
+    if (head.starts_with(b"<checkstyle") || (is_xml_head && contains_sub(b"<checkstyle")))
+        && trimmed.contains("<file")
+        && trimmed.contains("<error")
+    {
+        return Some(make_core("checkstyle", "data", Some("xml"), "xml", &["xml"], "sig.text.checkstyle"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head
