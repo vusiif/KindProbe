@@ -1086,6 +1086,55 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // HAProxy config (.cfg / haproxy.cfg)
+    if window.contains("global\n")
+        && window.contains("defaults\n")
+        && (window.contains("frontend ") || window.contains("backend ") || window.contains("listen "))
+    {
+        return Some(make_source_core(
+            "haproxy",
+            &["cfg"],
+            "sig.text.haproxy",
+            Verification::Structure,
+        ));
+    }
+
+    // systemd unit file (.service / .timer / .socket)
+    if window.contains("[Unit]")
+        && (window.contains("[Service]") || window.contains("[Timer]") || window.contains("[Socket]"))
+        && (window.contains("ExecStart=") || window.contains("Description="))
+    {
+        return Some(make_source_core(
+            "service",
+            &["service", "timer", "socket"],
+            "sig.text.systemd_unit",
+            Verification::Structure,
+        ));
+    }
+
+    // XDG Desktop Entry (.desktop)
+    if window.contains("[Desktop Entry]")
+        && window.contains("Type=")
+        && window.contains("Name=")
+    {
+        return Some(make_source_core(
+            "desktop",
+            &["desktop"],
+            "sig.text.desktop",
+            Verification::Structure,
+        ));
+    }
+
+    // AppleScript (.applescript / .scpt)
+    if window.contains("tell application \"") && window.contains("end tell") {
+        return Some(make_source_core(
+            "applescript",
+            &["applescript", "scpt"],
+            "sig.text.applescript",
+            Verification::Structure,
+        ));
+    }
+
     // C# (.cs)
     if window.contains("using System")
         && (window.contains("namespace ")

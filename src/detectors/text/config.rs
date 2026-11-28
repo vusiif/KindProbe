@@ -21,10 +21,12 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
                 }
             }
         }
-        // 2. TOML detection: Section headers like [package] (excluding EditorConfig [*])
+        // 2. TOML detection: Section headers like [package] (excluding EditorConfig [*], systemd [Unit], XDG [Desktop Entry])
         if fl.starts_with('[')
             && fl.ends_with(']')
             && fl != "[*]"
+            && fl != "[Unit]"
+            && fl != "[Desktop Entry]"
             && !fl.contains("://")
             && !fl.contains('(')
             && fl.len() >= 3

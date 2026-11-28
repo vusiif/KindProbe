@@ -89,6 +89,34 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("xsd", "text", Some("xml"), "xsd", &["xsd", "xml"], "sig.text.xsd"));
     }
+    if (head.starts_with(b"<definitions") || (is_xml_head && contains_sub(b"<definitions")))
+        && (trimmed.contains("schemas.xmlsoap.org/wsdl") || trimmed.contains("xmlns:wsdl"))
+    {
+        return Some(make_core("wsdl", "text", Some("xml"), "wsdl", &["wsdl", "xml"], "sig.text.wsdl"));
+    }
+    if (head.starts_with(b"<project") || (is_xml_head && contains_sub(b"<project")))
+        && trimmed.contains("<modelVersion>4.0.0</modelVersion>")
+        && trimmed.contains("<artifactId>")
+    {
+        return Some(make_core("pom", "text", Some("xml"), "xml", &["xml", "pom"], "sig.text.pom"));
+    }
+    if head.starts_with(b"<mjml") && trimmed.contains("<mj-body") {
+        return Some(make_core("mjml", "text", Some("xml"), "mjml", &["mjml"], "sig.text.mjml"));
+    }
+    if (head.starts_with(b"<window")
+        || head.starts_with(b"<usercontrol")
+        || head.starts_with(b"<application")
+        || (is_xml_head && (contains_sub(b"<window") || contains_sub(b"<usercontrol"))))
+        && trimmed.contains("schemas.microsoft.com/winfx/2006/xaml")
+    {
+        return Some(make_core("xaml", "text", Some("xml"), "xaml", &["xaml", "xml"], "sig.text.xaml"));
+    }
+    if (head.starts_with(b"<package") || (is_xml_head && contains_sub(b"<package")))
+        && trimmed.contains("<metadata>")
+        && trimmed.contains("<version>")
+    {
+        return Some(make_core("nuspec", "package", Some("xml"), "nuspec", &["nuspec"], "sig.text.nuspec"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head

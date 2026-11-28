@@ -585,6 +585,46 @@ fn test_round14_msix_json5_gherkin_cypher_sparql_wkt_d_caddy() {
 }
 
 #[test]
+fn test_round15_wsdl_pom_mjml_xaml_nuspec_haproxy_service_desktop_applescript() {
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><definitions xmlns=\"http://schemas.xmlsoap.org/wsdl/\" xmlns:wsdl=\"http://schemas.xmlsoap.org/wsdl/\"></definitions>",
+        "wsdl",
+    );
+    assert_both_paths(
+        b"<project><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId><artifactId>kindprobe</artifactId></project>",
+        "pom",
+    );
+    assert_both_paths(
+        b"<mjml><mj-body><mj-section><mj-column><mj-text>Hi</mj-text></mj-column></mj-section></mj-body></mjml>",
+        "mjml",
+    );
+    assert_both_paths(
+        b"<Window xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Title=\"KindProbe\"/>",
+        "xaml",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><package><metadata><id>KindProbe</id><version>0.2.0</version></metadata></package>",
+        "nuspec",
+    );
+    assert_both_paths(
+        b"global\n    daemon\ndefaults\n    mode http\nfrontend http_in\n    bind *:80\n",
+        "haproxy",
+    );
+    assert_both_paths(
+        b"[Unit]\nDescription=KindProbe Daemon\n\n[Service]\nExecStart=/usr/local/bin/kindprobe\n\n[Install]\nWantedBy=multi-user.target\n",
+        "service",
+    );
+    assert_both_paths(
+        b"[Desktop Entry]\nType=Application\nName=KindProbe\nExec=kindprobe\n",
+        "desktop",
+    );
+    assert_both_paths(
+        b"tell application \"Finder\"\n    activate\nend tell\n",
+        "applescript",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();
