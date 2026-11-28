@@ -106,6 +106,8 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         && geo_window.contains("\"info\"")
     {
         ("openapi", "configuration", Some("json"), "json", &["json"], "sig.text.openapi")
+    } else if geo_window.contains("\n//") || geo_window.contains("\n  //") || geo_window.contains("/*") {
+        ("json5", "configuration", Some("json"), "json5", &["json5", "jsonc"], "sig.text.json5")
     } else {
         ("json", "text", None, "json", &["json"], "sig.text.json")
     };

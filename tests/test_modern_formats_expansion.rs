@@ -543,6 +543,48 @@ fn test_round13_typ_mdx_mojo_bzl_just_lean_kdl_ron() {
 }
 
 #[test]
+fn test_round14_msix_json5_gherkin_cypher_sparql_wkt_d_caddy() {
+    let mut buf = Cursor::new(Vec::new());
+    {
+        let mut zw = ZipWriter::new(&mut buf);
+        let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        zw.start_file("AppxManifest.xml", opts).expect("start");
+        zw.write_all(b"<Package/>").expect("write");
+        zw.finish().expect("finish");
+    }
+    assert_both_paths(&buf.into_inner(), "msix");
+
+    assert_both_paths(
+        b"{\n  // JSON5 config\n  name: 'kindprobe',\n  enabled: true,\n}\n",
+        "json5",
+    );
+    assert_both_paths(
+        b"Feature: Format detection\n  Scenario: Probe PNG\n    Given a PNG header\n    When I probe it\n    Then the format is png\n",
+        "gherkin",
+    );
+    assert_both_paths(
+        b"MATCH (u:User)-[:OWNS]->(f:File)\nWHERE u.active = true\nRETURN f.name\n",
+        "cypher",
+    );
+    assert_both_paths(
+        b"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT ?name WHERE {\n  ?person foaf:name ?name .\n}\n",
+        "sparql",
+    );
+    assert_both_paths(
+        b"POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))\n",
+        "wkt",
+    );
+    assert_both_paths(
+        b"import std.stdio;\nvoid main() {\n    writeln(\"Hello D\");\n}\n",
+        "d",
+    );
+    assert_both_paths(
+        b"example.com {\n    encode gzip\n    reverse_proxy localhost:8080\n}\n",
+        "caddy",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

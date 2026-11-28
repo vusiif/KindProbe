@@ -989,6 +989,103 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // JSON5 / JSONC (.json5 / .jsonc)
+    if (ron_trimmed.starts_with('{') || ron_trimmed.starts_with("//") || ron_trimmed.starts_with("/*"))
+        && (window.contains("// ") || window.contains("/*"))
+        && w_bytes.contains(&b'{')
+        && w_bytes.contains(&b'}')
+        && window.contains(": ")
+        && !w_bytes.contains(&b';')
+        && !window.contains("function ")
+        && !window.contains("const ")
+        && !window.contains("import ")
+    {
+        return Some(make_source_core(
+            "json5",
+            &["json5", "jsonc"],
+            "sig.text.json5",
+            Verification::Structure,
+        ));
+    }
+
+    // Gherkin BDD (.feature)
+    if window.contains("Feature:")
+        && (window.contains("Scenario:") || window.contains("Scenario Outline:"))
+        && (window.contains("Given ") || window.contains("When ") || window.contains("Then "))
+    {
+        return Some(make_source_core(
+            "gherkin",
+            &["feature"],
+            "sig.text.gherkin",
+            Verification::Structure,
+        ));
+    }
+
+    // Neo4j Cypher (.cypher / .cql)
+    if window.contains("MATCH (")
+        && (window.contains("RETURN ") || window.contains("WHERE ") || window.contains("CREATE ("))
+    {
+        return Some(make_source_core(
+            "cypher",
+            &["cypher", "cql"],
+            "sig.text.cypher",
+            Verification::Structure,
+        ));
+    }
+
+    // W3C SPARQL (.rq / .sparql)
+    if (window.contains("SELECT ") || window.contains("PREFIX "))
+        && (window.contains("WHERE {") || window.contains("WHERE{"))
+        && (window.contains("?") || window.contains("FILTER "))
+    {
+        return Some(make_source_core(
+            "sparql",
+            &["rq", "sparql"],
+            "sig.text.sparql",
+            Verification::Structure,
+        ));
+    }
+
+    // Well-Known Text Geometry (.wkt)
+    if ron_trimmed.starts_with("POINT (")
+        || ron_trimmed.starts_with("LINESTRING (")
+        || ron_trimmed.starts_with("POLYGON ((")
+        || ron_trimmed.starts_with("MULTIPOLYGON ((")
+        || ron_trimmed.starts_with("GEOMETRYCOLLECTION (")
+        || (ron_trimmed.starts_with("SRID=") && (ron_trimmed.contains(";POINT") || ron_trimmed.contains(";POLYGON")))
+    {
+        return Some(make_source_core(
+            "wkt",
+            &["wkt"],
+            "sig.text.wkt",
+            Verification::Structure,
+        ));
+    }
+
+    // D programming language (.d)
+    if window.contains("import std.")
+        && (window.contains("void main(") || window.contains("int main(") || window.contains("writeln("))
+    {
+        return Some(make_source_core(
+            "d",
+            &["d", "di"],
+            "sig.text.d",
+            Verification::Structure,
+        ));
+    }
+
+    // Caddyfile
+    if window.contains("reverse_proxy ")
+        && (w_bytes.contains(&b'{') || window.contains("encode ") || window.contains("file_server"))
+    {
+        return Some(make_source_core(
+            "caddy",
+            &["caddyfile"],
+            "sig.text.caddy",
+            Verification::Structure,
+        ));
+    }
+
     // C# (.cs)
     if window.contains("using System")
         && (window.contains("namespace ")

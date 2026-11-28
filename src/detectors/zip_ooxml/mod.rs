@@ -177,6 +177,22 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     let has_rels = cd_check.has_rels;
     let has_ooxml_subdirs = cd_check.has_ooxml_subdirs;
 
+    // Windows MSIX / APPX package (may contain [Content_Types].xml)
+    if cd_check.has_msix_manifest {
+        report.stats.entries_inspected = cd_check.cd_total_entries;
+        report.evidence.push(EvidenceItem::new("zip.central_directory"));
+        report.identification = Identification::Format;
+        report.format_id = Some("msix".to_string());
+        report.category = "package".to_string();
+        report.container_id = Some("zip".to_string());
+        report.verification = Verification::Structure;
+        report.inspection = Inspection::Complete;
+        report.recommended_extension = Some("msix".to_string());
+        report.accepted_extensions = vec!["msix".to_string(), "appx".to_string()];
+        report.evidence.push(EvidenceItem::new("zip.msix.manifest"));
+        return Ok(report);
+    }
+
     // Fast short-circuit: non-OOXML and non-EPUB/ODF archives (APK, IPA, JAR, KMZ, plain ZIP)
     // do not need ZipArchive instantiation, second EOCD search, or stream rewinding.
     if !has_content_types && !has_rels && !has_ooxml_subdirs && !cd_check.has_mimetype {

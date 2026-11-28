@@ -69,6 +69,11 @@ pub fn check_zip_packages<R: Read + Seek>(
         report.evidence.push(EvidenceItem::new("zip.xpi.manifest"));
         return true;
     }
+    if archive.by_name("AppxManifest.xml").is_ok() {
+        apply_pkg(report, "msix", "package", "msix", &["msix", "appx"]);
+        report.evidence.push(EvidenceItem::new("zip.msix.manifest"));
+        return true;
+    }
     for i in 0..archive.len() {
         if let Ok(entry) = archive.by_index_raw(i) {
             if let Ok(name) = entry.name() {
