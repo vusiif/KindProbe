@@ -1,4 +1,4 @@
-use crate::detectors::rules::engine::validate_binary_not_ascii;
+use crate::detectors::rules::engine::{validate_binary_not_ascii, validate_smk};
 use crate::detectors::rules::types::{MagicPattern, SignatureRule, ValidationStatus};
 use crate::model::Verification;
 
@@ -149,7 +149,7 @@ pub static TEXTURES_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.smk.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_smk),
     },
     SignatureRule {
         format_id: "basis",

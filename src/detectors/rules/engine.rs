@@ -215,6 +215,58 @@ pub(crate) fn validate_binary_6_from_2(header: &[u8]) -> ValidationStatus {
     validate_binary_not_ascii(header, 6, 2)
 }
 
+pub(crate) fn validate_binary_6_from_3(header: &[u8]) -> ValidationStatus {
+    validate_binary_not_ascii(header, 6, 3)
+}
+
+pub(crate) fn validate_xbm(header: &[u8]) -> ValidationStatus {
+    if header.len() < 16 && !header.contains(&b'\n') {
+        return ValidationStatus::Truncated;
+    }
+    if header
+        .windows(6)
+        .any(|w| w == b"_width" || w == b"_bits[" || w == b"_bits ")
+        || header.windows(7).any(|w| w == b"_height")
+    {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+pub(crate) fn validate_ihex(header: &[u8]) -> ValidationStatus {
+    if header.len() < 11 {
+        return ValidationStatus::Truncated;
+    }
+    if header[1..11].iter().all(|b| b.is_ascii_hexdigit()) {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+pub(crate) fn validate_smk(header: &[u8]) -> ValidationStatus {
+    if header.len() < 4 {
+        return ValidationStatus::Truncated;
+    }
+    if header[3] == b'2' || header[3] == b'4' {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
+pub(crate) fn validate_sp3(header: &[u8]) -> ValidationStatus {
+    if header.len() < 7 {
+        return ValidationStatus::Truncated;
+    }
+    if header[3..7].iter().all(|b| b.is_ascii_digit()) {
+        ValidationStatus::Valid
+    } else {
+        ValidationStatus::Invalid
+    }
+}
+
 pub(crate) fn validate_eot(header: &[u8]) -> ValidationStatus {
     validate_binary_not_ascii(header, 16, 0)
 }

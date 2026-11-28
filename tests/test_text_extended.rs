@@ -222,6 +222,10 @@ fn test_text_heuristic_and_short_pattern_false_positive_fixes() {
         b"BDD scenario description for authentication\n".as_slice(),
         b":User documentation notes on protocols\n".as_slice(),
         b"12345678LP plain ASCII content line\n".as_slice(),
+        b"850ms latency observed in eu-west\n".as_slice(),
+        b"ORC columnar storage overview notes\n".as_slice(),
+        b":10:30 meeting scheduled with team\n".as_slice(),
+        b"SMK toolkit documentation notes\n".as_slice(),
     ] {
         let rep = detect_bytes(sample, &opts).unwrap();
         assert_eq!(
@@ -231,4 +235,9 @@ fn test_text_heuristic_and_short_pattern_false_positive_fixes() {
             std::str::from_utf8(sample)
         );
     }
+
+    // C header starting with #define must not be shadowed by XBM image rule
+    let c_hdr = b"#define KINDPROBE_LIMIT 128\n#include <stdint.h>\nint add(int a, int b) { return a + b; }\n";
+    let rep_c = detect_bytes(c_hdr, &opts).unwrap();
+    assert_eq!(rep_c.format_id.as_deref(), Some("c"));
 }

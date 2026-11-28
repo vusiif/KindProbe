@@ -1,3 +1,4 @@
+use crate::detectors::rules::engine::validate_sp3;
 use crate::detectors::rules::types::{MagicPattern, SignatureRule};
 use crate::model::Verification;
 
@@ -130,7 +131,7 @@ pub static ASTRONOMY_AND_SPACE_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.sp3.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_sp3),
     },
     SignatureRule {
         format_id: "sinex",
