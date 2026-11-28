@@ -52,6 +52,18 @@ fn test_real_fixtures_file_handle_matrix() {
             "database",
             Verification::Structure,
         ),
+        ("sample.xlsx", "xlsx", "document", Verification::Structure),
+        ("sample.pptx", "pptx", "document", Verification::Structure),
+        ("sample.wasm", "wasm", "executable", Verification::Structure),
+        ("sample.elf", "elf", "executable", Verification::Structure),
+        ("sample.exe", "pe", "executable", Verification::Structure),
+        ("sample.webp", "webp", "image", Verification::Structure),
+        ("sample.wav", "wav", "audio", Verification::Structure),
+        ("sample.mp3", "mp3", "audio", Verification::Structure),
+        ("sample.mp4", "mp4", "video", Verification::Structure),
+        ("sample.flac", "flac", "audio", Verification::Structure),
+        ("sample.ogg", "ogg", "audio", Verification::Structure),
+        ("sample.woff2", "woff2", "font", Verification::Structure),
     ];
 
     for &(file_name, expected_fid, expected_cat, expected_verif) in matrix {

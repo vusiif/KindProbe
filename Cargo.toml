@@ -4,6 +4,13 @@ version = "0.2.0"
 edition = "2021"
 description = "Fast, bounded, content-first file format identification tool and library"
 license = "GPL-3.0-or-later"
+repository = "https://github.com/vusiif/KindProbe"
+homepage = "https://github.com/vusiif/KindProbe"
+documentation = "https://docs.rs/kindprobe"
+readme = "README.md"
+keywords = ["file-format", "magic-bytes", "mime", "ooxml", "content-inspection"]
+categories = ["filesystem", "parsing", "command-line-utilities"]
+exclude = [".agents/", ".github/", "scripts/", "tools/", "research/"]
 
 [dependencies]
 zip = { version = "9.8", default-features = false, features = ["deflate"] }
