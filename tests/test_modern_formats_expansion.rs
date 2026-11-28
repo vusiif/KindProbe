@@ -697,6 +697,74 @@ fn test_round17_liquid_less_htaccess_vagrantfile_ssh_config_hosts_crontab() {
 }
 
 #[test]
+fn test_round18_mathml_gleam_rkt_ninja_nomad_pkl_elm_odin_vala_f90_cobol_ada_pas_scm_gitmodules_robots() {
+    assert_both_paths(
+        b"<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><msup><mi>x</mi><mn>2</mn></msup></math>",
+        "mathml",
+    );
+    assert_both_paths(
+        b"import gleam/io\npub fn main() {\n  io.println(\"hello\")\n}\n",
+        "gleam",
+    );
+    assert_both_paths(
+        b"#lang racket\n(define (square x) (* x x))\n",
+        "rkt",
+    );
+    assert_both_paths(
+        b"rule cc\n  command = gcc -c $in -o $out\nbuild foo.o: cc foo.c\n",
+        "ninja",
+    );
+    assert_both_paths(
+        b"job \"api\" {\n  group \"web\" {\n    task \"server\" {}\n  }\n}\n",
+        "nomad",
+    );
+    assert_both_paths(
+        b"amends \"package://pkg.pkl-lang.org/pkl-k8s/k8s@1.0.0#/Deployment.pkl\"\nname = \"kindprobe\"\n",
+        "pkl",
+    );
+    assert_both_paths(
+        b"module Main exposing (main)\nimport Html exposing (text)\nmain = text \"Hello\"\n",
+        "elm",
+    );
+    assert_both_paths(
+        b"package main\nimport \"core:fmt\"\nmain :: proc() {\n  fmt.println(\"hi\")\n}\n",
+        "odin",
+    );
+    assert_both_paths(
+        b"using GLib;\npublic static int main(string[] args) {\n  stdout.printf(\"Hello\\n\");\n  return 0;\n}\n",
+        "vala",
+    );
+    assert_both_paths(
+        b"program hello\n  implicit none\n  print *, 'Hello'\nend program hello\n",
+        "f90",
+    );
+    assert_both_paths(
+        b"       IDENTIFICATION DIVISION.\n       PROGRAM-ID. HELLO.\n       PROCEDURE DIVISION.\n           STOP RUN.\n",
+        "cobol",
+    );
+    assert_both_paths(
+        b"with Ada.Text_IO;\nprocedure Hello is\nbegin\n  Ada.Text_IO.Put_Line(\"Hi\");\nend Hello;\n",
+        "ada",
+    );
+    assert_both_paths(
+        b"program Hello;\nbegin\n  writeln('Hello');\nend.\n",
+        "pas",
+    );
+    assert_both_paths(
+        b"(define (make-adder x)\n  (lambda (y) (+ x y)))\n",
+        "scm",
+    );
+    assert_both_paths(
+        b"[submodule \"vendor/foo\"]\n\tpath = vendor/foo\n\turl = https://github.com/example/foo.git\n",
+        "gitmodules",
+    );
+    assert_both_paths(
+        b"User-agent: *\nDisallow: /admin/\n",
+        "robots",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

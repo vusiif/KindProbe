@@ -201,6 +201,39 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // Gleam (.gleam) before Rust `pub fn ` scan
+    if window.contains("import gleam/") && window.contains("pub fn ") {
+        return Some(make_source_core(
+            "gleam",
+            &["gleam"],
+            "sig.text.gleam",
+            Verification::Structure,
+        ));
+    }
+
+    // Odin (.odin) before Go `package ` scan
+    if window.contains("package ") && window.contains("import \"core:") && window.contains("proc(") {
+        return Some(make_source_core(
+            "odin",
+            &["odin"],
+            "sig.text.odin",
+            Verification::Structure,
+        ));
+    }
+
+    // Racket (.rkt)
+    if window.trim_start().starts_with("#lang racket")
+        || window.trim_start().starts_with("#lang typed/racket")
+        || window.trim_start().starts_with("#lang scribble")
+    {
+        return Some(make_source_core(
+            "rkt",
+            &["rkt"],
+            "sig.text.racket",
+            Verification::Signature,
+        ));
+    }
+
     let mut has_v_module = false;
     let mut has_v_end = false;
     let mut has_rs_fn = false;
@@ -963,6 +996,7 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             })
         && !window.contains("server {")
         && !window.contains("plugins {")
+        && !window.contains("job \"")
     {
         return Some(make_source_core(
             "kdl",
@@ -1289,6 +1323,144 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "htaccess",
             &["htaccess", "conf"],
             "sig.text.apache",
+            Verification::Structure,
+        ));
+    }
+
+    // Ninja build (.ninja)
+    if window.contains("rule ") && window.contains("command = ") && window.contains("build ") {
+        return Some(make_source_core(
+            "ninja",
+            &["ninja"],
+            "sig.text.ninja",
+            Verification::Structure,
+        ));
+    }
+
+    // HashiCorp Nomad (.nomad)
+    if window.contains("job \"") && window.contains("group \"") && window.contains("task \"") {
+        return Some(make_source_core(
+            "nomad",
+            &["nomad"],
+            "sig.text.nomad",
+            Verification::Structure,
+        ));
+    }
+
+    // Apple Pkl (.pkl)
+    if window.contains("amends \"")
+        || (window.contains("module ") && window.contains("class ") && window.contains("= new "))
+    {
+        return Some(make_source_core(
+            "pkl",
+            &["pkl"],
+            "sig.text.pkl",
+            Verification::Structure,
+        ));
+    }
+
+    // Elm (.elm)
+    if window.contains("module ")
+        && window.contains("exposing (")
+        && (window.contains("import Html") || window.contains("import Browser") || window.contains("main ="))
+    {
+        return Some(make_source_core(
+            "elm",
+            &["elm"],
+            "sig.text.elm",
+            Verification::Structure,
+        ));
+    }
+
+    // Vala (.vala)
+    if (window.contains("using GLib;") || window.contains("public static int main("))
+        && (window.contains("stdout.printf") || window.contains("print ("))
+    {
+        return Some(make_source_core(
+            "vala",
+            &["vala", "vapi"],
+            "sig.text.vala",
+            Verification::Structure,
+        ));
+    }
+
+    // Fortran 90+ (.f90 / .f95)
+    if window.contains("program ")
+        && window.contains("implicit none")
+        && window.contains("end program")
+    {
+        return Some(make_source_core(
+            "f90",
+            &["f90", "f95", "f03"],
+            "sig.text.fortran",
+            Verification::Structure,
+        ));
+    }
+
+    // COBOL (.cob / .cbl)
+    if window.contains("IDENTIFICATION DIVISION.") && window.contains("PROGRAM-ID.") {
+        return Some(make_source_core(
+            "cobol",
+            &["cob", "cbl"],
+            "sig.text.cobol",
+            Verification::Structure,
+        ));
+    }
+
+    // Ada (.adb / .ads)
+    if window.contains("with Ada.") && window.contains("procedure ") && window.contains("begin") {
+        return Some(make_source_core(
+            "ada",
+            &["adb", "ads", "ada"],
+            "sig.text.ada",
+            Verification::Structure,
+        ));
+    }
+
+    // Pascal (.pas / .pp)
+    if window.contains("program ")
+        && window.contains("begin")
+        && (window.contains("writeln(") || window.contains("WriteLn("))
+        && window.contains("end.")
+    {
+        return Some(make_source_core(
+            "pas",
+            &["pas", "pp"],
+            "sig.text.pascal",
+            Verification::Structure,
+        ));
+    }
+
+    // Scheme (.scm / .ss)
+    if window.contains("(define (")
+        && (window.contains("(lambda (") || window.contains("(let (") || window.contains("(cond "))
+    {
+        return Some(make_source_core(
+            "scm",
+            &["scm", "ss"],
+            "sig.text.scheme",
+            Verification::Structure,
+        ));
+    }
+
+    // .gitmodules
+    if window.contains("[submodule \"") && window.contains("path = ") && window.contains("url = ") {
+        return Some(make_source_core(
+            "gitmodules",
+            &["gitmodules"],
+            "sig.text.gitmodules",
+            Verification::Structure,
+        ));
+    }
+
+    // robots.txt
+    if window.contains("User-agent:")
+        && (window.contains("Disallow:") || window.contains("Allow:") || window.contains("Sitemap:"))
+    {
+        return Some(make_source_core(
+            "robots",
+            &["txt"],
+            "sig.text.robots",
             Verification::Structure,
         ));
     }

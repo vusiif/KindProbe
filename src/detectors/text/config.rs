@@ -21,12 +21,13 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
                 }
             }
         }
-        // 2. TOML detection: Section headers like [package] (excluding EditorConfig [*], systemd [Unit], XDG [Desktop Entry])
+        // 2. TOML detection: Section headers like [package] (excluding EditorConfig [*], systemd [Unit], XDG [Desktop Entry], .gitmodules)
         if fl.starts_with('[')
             && fl.ends_with(']')
             && fl != "[*]"
             && fl != "[Unit]"
             && fl != "[Desktop Entry]"
+            && !fl.starts_with("[submodule ")
             && !fl.contains("://")
             && !fl.contains('(')
             && fl.len() >= 3
@@ -104,6 +105,7 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
     if total_lines >= 2
         && valid_yaml_lines == total_lines
         && !(trimmed.contains("web: ") && (trimmed.contains("worker: ") || trimmed.contains("release: ")))
+        && !(trimmed.contains("User-agent:") && (trimmed.contains("Disallow:") || trimmed.contains("Allow:")))
     {
         return Some(make_config_core("yaml", &["yaml", "yml"], "sig.text.yaml"));
     }

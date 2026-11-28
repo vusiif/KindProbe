@@ -137,6 +137,11 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("nuspec", "package", Some("xml"), "nuspec", &["nuspec"], "sig.text.nuspec"));
     }
+    if (head.starts_with(b"<math") || (is_xml_head && contains_sub(b"<math")))
+        && trimmed.contains("w3.org/1998/Math/MathML")
+    {
+        return Some(make_core("mathml", "document", Some("xml"), "mml", &["mml", "mathml", "xml"], "sig.text.mathml"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head
