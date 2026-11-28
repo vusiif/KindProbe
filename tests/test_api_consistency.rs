@@ -223,6 +223,78 @@ fn test_static_rule_index_invariants() {
 }
 
 #[test]
+fn test_rule_candidate_index_matches_bucket_order() {
+    use kindprobe::detectors::rules::static_index::{BUCKETS, BY_FORMAT, OFFSET_GROUPS};
+    use kindprobe::detectors::rules::{
+        evaluate_indexed_rules_core, evaluate_single_rule_core, RuleMatchCore,
+    };
+
+    let check = |header: &[u8]| {
+        let mut expected = RuleMatchCore::None;
+        if let Some(&first) = header.first() {
+            let rules = BUCKETS[first as usize].iter().chain(
+                OFFSET_GROUPS
+                    .iter()
+                    .take_while(|group| group.offset < header.len())
+                    .flat_map(|group| group.rules.iter()),
+            );
+            for &rule in rules {
+                match evaluate_single_rule_core(header, rule) {
+                    result @ RuleMatchCore::Confirmed(_) => {
+                        expected = result;
+                        break;
+                    }
+                    result @ RuleMatchCore::Truncated(_) if expected == RuleMatchCore::None => {
+                        expected = result;
+                    }
+                    _ => (),
+                }
+            }
+        }
+        assert_eq!(
+            evaluate_indexed_rules_core(header),
+            expected,
+            "header length {}, prefix {:02x?}",
+            header.len(),
+            &header[..header.len().min(8)]
+        );
+    };
+
+    check(&[]);
+    for first in 0..=u8::MAX {
+        check(&[first]);
+        for second in 0..=u8::MAX {
+            check(&[first, second]);
+        }
+    }
+
+    for &(_, rule) in BY_FORMAT {
+        let mut signature = vec![0; rule.min_header_len];
+        for pattern in rule.patterns {
+            let end = pattern.offset + pattern.bytes.len();
+            if end > signature.len() {
+                signature.resize(end, 0);
+            }
+            signature[pattern.offset..end].copy_from_slice(pattern.bytes);
+        }
+        check(&signature);
+        for len in 1..=signature.len().min(4) {
+            check(&signature[..len]);
+        }
+        for pattern in rule.patterns {
+            let end = pattern.offset + pattern.bytes.len();
+            check(&signature[..end]);
+            if end > pattern.offset {
+                check(&signature[..end - 1]);
+                signature[end - 1] ^= 1;
+                check(&signature);
+                signature[end - 1] ^= 1;
+            }
+        }
+    }
+}
+
+#[test]
 fn test_slice_vs_reader_budget_boundary_and_window_parity() {
     use kindprobe::Inspection;
 
