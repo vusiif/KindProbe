@@ -25,7 +25,7 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
                 }
             }
         }
-        // 2. TOML detection: Section headers like [package] (excluding EditorConfig [*], systemd [Unit], XDG [Desktop Entry], .gitmodules, .gitconfig)
+        // 2. TOML detection: Section headers like [package] with at least one key=value assignment (excluding EditorConfig, systemd, INI, etc.)
         if fl.starts_with('[')
             && fl.ends_with(']')
             && fl != "[*]"
@@ -42,7 +42,14 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
             && !fl.contains('(')
             && fl.len() >= 3
         {
-            return Some(make_config_core("toml", &["toml"], "sig.text.toml"));
+            let rest_lines: Vec<&str> = lines.map(|l| l.trim()).collect();
+            let has_semicolon_comment = rest_lines.iter().any(|l| l.starts_with(';'));
+            let has_assignment = rest_lines
+                .iter()
+                .any(|l| !l.starts_with('[') && !l.starts_with('#') && l.contains('='));
+            if has_assignment && !has_semicolon_comment {
+                return Some(make_config_core("toml", &["toml"], "sig.text.toml"));
+            }
         }
     }
 
@@ -90,11 +97,13 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
         }
     }
 
-    // 2. YAML detection: Starts with document marker "---" (excluding Astro frontmatter) or structured key: value pairs
+    // 2. YAML detection: Starts with document marker "---" (excluding Astro/Markdown frontmatter) or structured key: value pairs
     if trimmed.starts_with("---")
         && !((trimmed.contains("import ") || trimmed.contains("const "))
             && trimmed[3..].contains("\n---")
             && trimmed.contains('<'))
+        && !(trimmed[3..].contains("\n---")
+            && (trimmed.contains("\n# ") || trimmed.contains("\n## ") || trimmed.contains("\n```")))
     {
         return Some(make_config_core("yaml", &["yaml", "yml"], "sig.text.yaml"));
     }

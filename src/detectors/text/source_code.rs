@@ -187,6 +187,17 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // C / C++ and Markdown fast check (only executed if `#` is present)
     let has_hash = w_bytes.contains(&b'#');
     if has_hash {
+        // Check structured Markdown documents before C `#include` so C code blocks inside docs don't hijack Markdown.
+        if window.starts_with("# ")
+            && (window.contains("](") || window.contains("\n- ") || window.contains("\n```"))
+        {
+            return Some(make_source_core(
+                "md",
+                &["md", "markdown"],
+                "sig.text.markdown",
+                Verification::Structure,
+            ));
+        }
         if window.contains("#include <") || window.contains("#include \"") {
             if window.contains("std::")
                 || window.contains("namespace ")
@@ -209,16 +220,6 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
                     Verification::Structure,
                 ));
             }
-        }
-        if window.starts_with("# ")
-            && (window.contains("](") || window.contains("\n- ") || window.contains("\n```"))
-        {
-            return Some(make_source_core(
-                "md",
-                &["md", "markdown"],
-                "sig.text.markdown",
-                Verification::Structure,
-            ));
         }
     }
 

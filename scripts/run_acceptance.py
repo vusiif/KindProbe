@@ -29,11 +29,15 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "fixtures").mkdir(exist_ok=True)
 
+    uid = os.getuid() if hasattr(os, "getuid") else 1000
+    gid = os.getgid() if hasattr(os, "getgid") else 1000
+    user_spec = f"{uid}:{gid}"
+
     base_docker = [
         "docker", "run", "--rm",
         "--pull", "never", "--network", "none", "--read-only",
         "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
-        "--user", f"{os.getuid()}:{os.getgid()}", "--group-add", "1004",
+        "--user", user_spec, "--group-add", "1004",
         "--cpus", "2", "--memory", "2g", "--pids-limit", "128",
         "--tmpfs", "/tmp:rw,nosuid,size=256m,mode=1777",
         "--tmpfs", "/cargo:rw,nosuid,size=64m,mode=1777",
@@ -53,7 +57,7 @@ def main():
         cmd = ["docker", "run", "--rm", "--name", c_name,
                "--pull", "never", "--network", "none", "--read-only",
                "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
-               "--user", f"{os.getuid()}:{os.getgid()}", "--group-add", "1004",
+               "--user", user_spec, "--group-add", "1004",
                "--cpus", "2", "--memory", "2g", "--pids-limit", "128",
                "--tmpfs", "/tmp:rw,nosuid,size=256m,mode=1777",
                "--tmpfs", "/cargo:rw,nosuid,size=64m,mode=1777",

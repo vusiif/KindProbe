@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
 """
-tools/codegen.py - Offline Code Generator for KindProbe
-Extracts declarative signature rules and sorted extension registries from authoritative
-Apache Tika mime-types XML database.
+tools/codegen.py - [DEPRECATED HISTORICAL P0-R SCAFFOLD] Offline Code Generator for KindProbe
 
-Produces 8 modular slices (strictly 25-70 lines per file):
-  - src/detectors/rules/generated/media.rs
-  - src/detectors/rules/generated/audio_chips.rs
-  - src/detectors/rules/generated/images.rs
-  - src/detectors/rules/generated/netpbm.rs
-  - src/detectors/rules/generated/documents.rs
-  - src/detectors/rules/generated/archives.rs
-  - src/detectors/rules/generated/models.rs
-  - src/detectors/rules/generated/scientific.rs
-  - src/detectors/rules/generated/mod.rs
-  - src/extension/registry.rs (strictly sorted by ASCII for O(log N) binary search)
+WARNING: The production codebase has expanded beyond this 8-category generator to 59 modules
+(774 rules) in src/detectors/rules/generated/ and 1,399 entries in src/extension/registry.rs.
+Running this script with --force will OVERWRITE those files with the historical P0-R subset.
+Keep this file strictly as historical reference unless rebuilt for all 59 modules.
 """
 
 import os
@@ -693,6 +684,14 @@ def generate_extension_registry(root: ET.Element, out_path: str):
     print(f"Generated {out_path} ({len(lines)} lines, {len(sorted_items)} extensions)")
 
 def main():
+    if "--force" not in sys.argv[1:]:
+        print(
+            "ABORTED: tools/codegen.py is a deprecated P0-R 8-module scaffold; "
+            "running it would overwrite the 59 production rule modules and EXTENSION_REGISTRY. "
+            "Pass --force if you truly intend to regenerate the legacy subset.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     print(f"Loading Tika mimetypes from: {XML_PATH}")
     with open(XML_PATH, "r", encoding="utf-8") as f:
         raw_xml = f.read()

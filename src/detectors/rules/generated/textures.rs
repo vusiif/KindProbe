@@ -1,5 +1,21 @@
-use crate::detectors::rules::types::{MagicPattern, SignatureRule};
+use crate::detectors::rules::types::{MagicPattern, SignatureRule, ValidationStatus};
 use crate::model::Verification;
+
+fn validate_crn(header: &[u8]) -> ValidationStatus {
+    // Crunch GPU textures start with "Cr" followed by binary header bytes, not plain ASCII prose.
+    if header.len() < 4 {
+        return ValidationStatus::Truncated;
+    }
+    let slice = &header[2..header.len().min(16)];
+    if slice
+        .iter()
+        .all(|b| b.is_ascii_graphic() || matches!(b, b' ' | b'\t' | b'\r' | b'\n'))
+    {
+        ValidationStatus::Invalid
+    } else {
+        ValidationStatus::Valid
+    }
+}
 
 pub static TEXTURES_RULES: &[SignatureRule] = &[
     SignatureRule {
@@ -169,6 +185,6 @@ pub static TEXTURES_RULES: &[SignatureRule] = &[
         priority: 50,
         evidence_code: "rule.crn.magic",
         verification: Verification::Signature,
-        validator: None,
+        validator: Some(validate_crn),
     },
 ];

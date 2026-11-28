@@ -652,6 +652,7 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
         || head.starts_with(b"<feed")
         || head.starts_with(b"<rss")
         || (head.starts_with(b"<") && contains_sub(b"xmlns="))
+        || (head.starts_with(b"<") && has_generic_xml_tag_structure(trimmed))
     {
         return Some(make_core(
             "xml",
@@ -664,6 +665,33 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     }
 
     None
+}
+
+fn has_generic_xml_tag_structure(trimmed: &str) -> bool {
+    let rest = match trimmed.strip_prefix('<') {
+        Some(r) => r,
+        None => return false,
+    };
+    let tag_len = rest
+        .bytes()
+        .take_while(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-' | b':'))
+        .count();
+    if tag_len == 0 {
+        return false;
+    }
+    let root_tag = &rest[..tag_len];
+    let after_name = &rest[tag_len..];
+    if !after_name.starts_with(|c: char| c == '>' || c == '/' || c.is_ascii_whitespace()) {
+        return false;
+    }
+    let Some(close_angle) = after_name.find('>') else {
+        return false;
+    };
+    let self_closing = after_name[..close_angle].trim_end().ends_with('/');
+    if self_closing {
+        return true;
+    }
+    trimmed.contains(&format!("</{}>", root_tag))
 }
 
 /// Probes whether the text represents an XML or HTML document and specialized dialects.

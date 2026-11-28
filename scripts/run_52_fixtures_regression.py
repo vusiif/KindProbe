@@ -14,6 +14,11 @@ import time
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DOCKER_IMAGE = "local/rust-test:1.99.1-trixie"
 
+def _uid_gid():
+    uid = os.getuid() if hasattr(os, "getuid") else 1000
+    gid = os.getgid() if hasattr(os, "getgid") else 1000
+    return f"{uid}:{gid}"
+
 def docker_exec(container_name, binary_args):
     cmd = [
         "docker", "run", "--rm",
@@ -23,7 +28,7 @@ def docker_exec(container_name, binary_args):
         "--read-only",
         "--cap-drop", "ALL",
         "--security-opt", "no-new-privileges",
-        "--user", f"{os.getuid()}:{os.getgid()}",
+        "--user", _uid_gid(),
         "--group-add", "1004",
         "--cpus", "2",
         "--memory", "2g",

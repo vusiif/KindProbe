@@ -183,3 +183,36 @@ fn test_binary_not_falsely_detected_as_text() {
     assert_eq!(rep.identification, Identification::Unknown);
     assert!(rep.warnings.iter().any(|w| w.code == "format.unknown"));
 }
+
+#[test]
+fn test_text_heuristic_and_short_pattern_false_positive_fixes() {
+    let opts = DetectOptions::default();
+
+    // 1. Markdown containing C code snippet must stay md
+    let md_with_c = b"# Build Guide\n\n```c\n#include <stdio.h>\n```\n";
+    let rep_md = detect_bytes(md_with_c, &opts).unwrap();
+    assert_eq!(rep_md.format_id.as_deref(), Some("md"));
+
+    // 2. [TOC] without key=value must not become toml
+    let toc_txt = b"[TOC]\n\nSection overview without assignments\n";
+    let rep_toc = detect_bytes(toc_txt, &opts).unwrap();
+    assert_eq!(rep_toc.format_id.as_deref(), Some("txt"));
+
+    // 3. Markdown with YAML frontmatter must not stay stuck as yaml
+    let md_frontmatter = b"---\ntitle: Guide\n---\n\n# Heading\n\n```bash\necho ok\n```\n";
+    let rep_fm = detect_bytes(md_frontmatter, &opts).unwrap();
+    assert_ne!(rep_fm.format_id.as_deref(), Some("yaml"));
+
+    // 4. Plain XML root element without prolog/xmlns must detect as xml
+    let custom_xml = b"<customRoot><child id=\"1\"/></customRoot>";
+    let rep_xml = detect_bytes(custom_xml, &opts).unwrap();
+    assert_eq!(rep_xml.format_id.as_deref(), Some("xml"));
+
+    // 5. English text starting with S0/S1/S3 or Cr must not falsely match srec/crn
+    let rep_s1_text = detect_bytes(b"S1: Introduction and overview of data\n", &opts).unwrap();
+    assert_eq!(rep_s1_text.format_id.as_deref(), Some("txt"));
+
+    let rep_cr_text =
+        detect_bytes(b"Create a new configuration file before starting.\n", &opts).unwrap();
+    assert_eq!(rep_cr_text.format_id.as_deref(), Some("txt"));
+}

@@ -204,3 +204,59 @@ fn test_regression_png_signature_only_evidence() {
     assert!(r.evidence.iter().any(|e| e.code == "sig.png.header"));
     assert!(!r.evidence.iter().any(|e| e.code == "sig.png.ihdr"));
 }
+
+#[test]
+fn test_verifier_manifest_29_adversarial_matrix() {
+    use std::path::Path;
+
+    let raw = std::fs::read_to_string("fixtures/verifier_manifest.json")
+        .expect("read verifier_manifest.json");
+    let entries: Vec<serde_json::Value> = serde_json::from_str(&raw).expect("parse manifest");
+    assert_eq!(entries.len(), 29);
+
+    let opts = DetectOptions::default();
+    for entry in entries {
+        let name = entry["name"].as_str().unwrap();
+        let path = entry["path"].as_str().unwrap();
+        let expected_format = entry["expected_format"].as_str();
+        let expected_container = entry["expected_container"].as_str();
+        let expected_exit = entry["expected_exit_code"].as_i64().unwrap();
+
+        let rep = detect_path(Path::new(path), &opts)
+            .unwrap_or_else(|e| panic!("detect_path failed for {}: {:?}", name, e));
+
+        assert_eq!(
+            rep.format_id.as_deref(),
+            expected_format,
+            "format_id mismatch on verifier fixture {}",
+            name
+        );
+
+        let actual_exit = match rep.identification {
+            Identification::Format if rep.inspection == Inspection::Complete => 0,
+            _ => 3,
+        };
+        assert_eq!(
+            actual_exit, expected_exit,
+            "exit code semantics mismatch on verifier fixture {}",
+            name
+        );
+
+        // Truncated 8-byte ZIP and 16-byte CFB fixtures report ContainerOnly + container_id ("zip"/"cfb")
+        // per test_budget_adversarial contract while still remaining unconfirmed (exit 3).
+        if matches!(
+            name,
+            "adv_truncated_zip_8bytes.zip" | "adv_truncated_cfb_16bytes.doc"
+        ) {
+            assert_eq!(rep.identification, Identification::ContainerOnly);
+            assert_eq!(rep.inspection, Inspection::Limited);
+        } else {
+            assert_eq!(
+                rep.container_id.as_deref(),
+                expected_container,
+                "container_id mismatch on verifier fixture {}",
+                name
+            );
+        }
+    }
+}
