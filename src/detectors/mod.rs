@@ -579,6 +579,29 @@ fn read_stream_header_and_rewind<R: Read + Seek>(
     })
 }
 
+fn probe_dmg_header_at_exact_eof<R: Read + Seek>(
+    reader: &mut BudgetReader<R>,
+    header: &[u8],
+    reached_eof: bool,
+) -> Result<Option<DetectionCore>, DetectError> {
+    let Some(dmg_core) = probe_dmg_slice_core(header) else {
+        return Ok(None);
+    };
+    if reached_eof {
+        return Ok(Some(dmg_core));
+    }
+    match reader.seek(SeekFrom::End(0)) {
+        Ok(end) if end == header.len() as u64 => Ok(Some(dmg_core)),
+        Ok(_) => Ok(None),
+        Err(e) => {
+            if reader.is_budget_exceeded() {
+                return Ok(None);
+            }
+            Err(DetectError::Io(e))
+        }
+    }
+}
+
 /// Zero-allocation stream detector returning DetectionCore directly for all non-ZIP/non-CFB formats.
 pub fn detect_stream_core<R: Read + Seek>(
     reader: &mut BudgetReader<R>,
@@ -647,24 +670,23 @@ pub fn detect_stream_core<R: Read + Seek>(
         return Ok(core);
     }
 
-    if reached_eof {
-        if let Some(dmg_core) = probe_dmg_slice_core(header) {
-            return Ok(dmg_core);
-        }
-        return Ok(DetectionCore::unknown());
+    if let Some(dmg_core) = probe_dmg_header_at_exact_eof(reader, header, reached_eof)? {
+        return Ok(dmg_core);
     }
 
-    if header.len() < (disks::iso::ISO_OFFSET as usize) + 6
-        && can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 6)
-    {
-        if let Some(core) = disks::probe_iso_stream_core(reader) {
-            return Ok(core);
+    if !reached_eof {
+        if header.len() < (disks::iso::ISO_OFFSET as usize) + 6
+            && can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 6)
+        {
+            if let Some(core) = disks::probe_iso_stream_core(reader) {
+                return Ok(core);
+            }
         }
-    }
 
-    if can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 8) {
-        if let Some(dmg_core) = probe_dmg_stream_core(reader) {
-            return Ok(dmg_core);
+        if can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 8) {
+            if let Some(dmg_core) = probe_dmg_stream_core(reader) {
+                return Ok(dmg_core);
+            }
         }
     }
 
@@ -793,11 +815,11 @@ pub fn detect_stream<R: Read + Seek>(
         return Ok(rep);
     }
 
-    if reached_eof {
-        if let Some(dmg_core) = probe_dmg_slice_core(header) {
-            return Ok(dmg_core.to_report(Default::default(), ExtensionStatus::Undetermined));
-        }
-    } else {
+    if let Some(dmg_core) = probe_dmg_header_at_exact_eof(reader, header, reached_eof)? {
+        return Ok(dmg_core.to_report(Default::default(), ExtensionStatus::Undetermined));
+    }
+
+    if !reached_eof {
         if header.len() < (disks::iso::ISO_OFFSET as usize) + 6
             && can_probe_beyond_header(reader.total_read_bytes(), options.max_source_bytes_read, 6)
         {

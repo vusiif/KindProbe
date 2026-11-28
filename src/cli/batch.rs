@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::io::{self, BufWriter, Write};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{mpsc, Condvar, Mutex};
 use std::time::Instant;
 
@@ -452,6 +454,7 @@ where
     let mut unknown: usize = 0;
     let mut errors: usize = 0;
     let mut write_failed = false;
+    let mut worker_panicked = false;
 
     let default_jobs = std::thread::available_parallelism()
         .map(|n| n.get())
@@ -550,10 +553,61 @@ where
         let in_flight_ref = &in_flight;
         let options_ref = &options;
         let detector_ref = &detector;
+        let panic_count = AtomicUsize::new(0);
+        let panic_count_ref = &panic_count;
 
-        let worker_panics = std::thread::scope(|s| {
+        struct QueueCloseGuard<'a>(&'a BoundedWorkQueue<BatchTask>);
+        impl Drop for QueueCloseGuard<'_> {
+            fn drop(&mut self) {
+                self.0.close();
+            }
+        }
+
+        struct TaskPanicGuard<'a> {
+            seq: usize,
+            path: PathBuf,
+            completed: bool,
+            tx: &'a mpsc::Sender<ProcessedItem>,
+            work_queue: &'a BoundedWorkQueue<BatchTask>,
+            in_flight: &'a InFlightWindow,
+            panicked: &'a AtomicUsize,
+            jsonl_mode: bool,
+            lang: AppLanguage,
+        }
+        impl Drop for TaskPanicGuard<'_> {
+            fn drop(&mut self) {
+                if !self.completed {
+                    self.panicked.fetch_add(1, Ordering::SeqCst);
+                    self.work_queue.close();
+                    self.in_flight.close();
+                    let mut out_bytes = Vec::new();
+                    let mut err_bytes = Vec::new();
+                    let path_str = self.path.to_string_lossy();
+                    let _ = format_error_record(
+                        &path_str,
+                        "batch.worker_panic",
+                        "worker thread panicked during detection",
+                        self.jsonl_mode,
+                        self.lang,
+                        &mut out_bytes,
+                        &mut err_bytes,
+                    );
+                    let _ = self.tx.send(ProcessedItem {
+                        seq: self.seq,
+                        id_inc: 0,
+                        unk_inc: 0,
+                        err_inc: 1,
+                        out_bytes,
+                        err_bytes,
+                    });
+                }
+            }
+        }
+
+        let join_panics = std::thread::scope(|s| {
             let producer_tx = result_tx.clone();
             let producer_handle = s.spawn(move || {
+                let _close_guard = QueueCloseGuard(work_queue_ref);
                 let mut work_stack: Vec<(PathBuf, bool)> =
                     paths.iter().rev().map(|p| (p.clone(), true)).collect();
                 let mut pending_events = VecDeque::new();
@@ -608,7 +662,6 @@ where
                         }
                     }
                 }
-                work_queue_ref.close();
             });
 
             let mut worker_handles = Vec::with_capacity(num_threads);
@@ -616,26 +669,58 @@ where
                 let worker_tx = result_tx.clone();
                 worker_handles.push(s.spawn(move || {
                     while let Some(task) = work_queue_ref.pop() {
-                        let mut out_bytes = Vec::with_capacity(160);
-                        let mut err_bytes = Vec::new();
-                        let res = detector_ref(&task.path, options_ref);
-                        let (id_inc, unk_inc, err_inc) = match format_detect_result(
-                            &task.path,
-                            res,
+                        let mut guard = TaskPanicGuard {
+                            seq: task.seq,
+                            path: task.path,
+                            completed: false,
+                            tx: &worker_tx,
+                            work_queue: work_queue_ref,
+                            in_flight: in_flight_ref,
+                            panicked: panic_count_ref,
                             jsonl_mode,
                             lang,
-                            &mut out_bytes,
-                            &mut err_bytes,
-                        ) {
-                            Ok(counts) => counts,
-                            Err(e) => {
-                                let _ = writeln!(err_bytes, "Error [io.write_error]: {}", e);
-                                (0, 0, 1)
+                        };
+                        let mut out_bytes = Vec::with_capacity(160);
+                        let mut err_bytes = Vec::new();
+                        let res = catch_unwind(AssertUnwindSafe(|| {
+                            detector_ref(&guard.path, options_ref)
+                        }));
+                        let (id_inc, unk_inc, err_inc, panicked_now) = match res {
+                            Ok(det_res) => match format_detect_result(
+                                &guard.path,
+                                det_res,
+                                jsonl_mode,
+                                lang,
+                                &mut out_bytes,
+                                &mut err_bytes,
+                            ) {
+                                Ok((i, u, e)) => (i, u, e, false),
+                                Err(e) => {
+                                    let _ = writeln!(err_bytes, "Error [io.write_error]: {}", e);
+                                    (0, 0, 1, false)
+                                }
+                            },
+                            Err(_) => {
+                                panic_count_ref.fetch_add(1, Ordering::SeqCst);
+                                work_queue_ref.close();
+                                in_flight_ref.close();
+                                let path_str = guard.path.to_string_lossy();
+                                let _ = format_error_record(
+                                    &path_str,
+                                    "batch.worker_panic",
+                                    "worker thread panicked during detection",
+                                    jsonl_mode,
+                                    lang,
+                                    &mut out_bytes,
+                                    &mut err_bytes,
+                                );
+                                (0, 0, 1, true)
                             }
                         };
+                        guard.completed = true;
                         if worker_tx
                             .send(ProcessedItem {
-                                seq: task.seq,
+                                seq: guard.seq,
                                 id_inc,
                                 unk_inc,
                                 err_inc,
@@ -643,6 +728,7 @@ where
                                 err_bytes,
                             })
                             .is_err()
+                            || panicked_now
                         {
                             break;
                         }
@@ -750,8 +836,10 @@ where
             panics
         });
 
+        let worker_panics = panic_count.load(Ordering::SeqCst) + join_panics;
         if worker_panics > 0 {
-            errors += worker_panics;
+            worker_panicked = true;
+            errors += join_panics;
             let _ = match lang {
                 AppLanguage::Chinese => writeln!(
                     err_out,
@@ -795,7 +883,11 @@ where
         };
     }
 
-    if write_failed || (errors > 0 && identified == 0 && unknown == 0) {
+    if write_failed {
+        4
+    } else if worker_panicked {
+        1
+    } else if errors > 0 && identified == 0 && unknown == 0 {
         4
     } else {
         0
@@ -1025,6 +1117,66 @@ mod tests {
         );
         assert_eq!(code, 4);
         assert!(String::from_utf8_lossy(&err).contains("io.write_error"));
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn test_batch_worker_panic_on_first_of_80_does_not_hang() {
+        let root = make_unit_temp_dir("panic_80");
+        let files: Vec<PathBuf> = (0..80)
+            .map(|i| {
+                let p = root.join(format!("p_{:03}.txt", i));
+                std::fs::write(&p, b"hello").unwrap();
+                p
+            })
+            .collect();
+
+        let (done_tx, done_rx) = mpsc::channel();
+        std::thread::spawn(move || {
+            let mut out = Vec::new();
+            let mut err = Vec::new();
+            let code = run_batch_with_io(
+                &files,
+                false,
+                true,
+                Some(4),
+                AppLanguage::English,
+                &mut out,
+                &mut err,
+                |path, _opts| {
+                    if path.file_name().unwrap().to_string_lossy() == "p_000.txt" {
+                        panic!("simulated worker panic on first task");
+                    }
+                    Ok(DetectionCore {
+                        format_id: Some("txt"),
+                        category: "text",
+                        container_id: None,
+                        identification: Identification::Format,
+                        verification: kindprobe::Verification::Structure,
+                        inspection: kindprobe::Inspection::Complete,
+                        recommended_extension: Some("txt"),
+                        accepted_extensions: &["txt"],
+                        primary_evidence: None,
+                        secondary_evidence: None,
+                        warning: None,
+                        candidate: None,
+                    })
+                },
+            );
+            let _ = done_tx.send((code, out, err));
+        });
+
+        let (code, out, err) = done_rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("batch run must not hang when first of 80 tasks panics");
+        assert_eq!(code, 1);
+        let out_str = String::from_utf8_lossy(&out);
+        let err_str = String::from_utf8_lossy(&err);
+        assert!(
+            out_str.contains("batch.worker_panic") || err_str.contains("batch.worker_panic"),
+            "must report batch.worker_panic in output or stderr; out={out_str}, err={err_str}"
+        );
 
         let _ = std::fs::remove_dir_all(&root);
     }

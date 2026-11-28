@@ -6,24 +6,86 @@ use std::io::{Cursor, Write};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
+fn encode_axml_utf8_pool(strings: &[&str]) -> Vec<u8> {
+    let hdr_size = 28u32;
+    let offsets_size = (strings.len() as u32) * 4;
+    let strings_start = hdr_size + offsets_size;
+    let mut offsets = Vec::with_capacity(offsets_size as usize);
+    let mut str_bytes = Vec::new();
+    for &s in strings {
+        offsets.extend_from_slice(&(str_bytes.len() as u32).to_le_bytes());
+        let char_len = s.encode_utf16().count() as u8;
+        let byte_len = s.len() as u8;
+        str_bytes.push(char_len);
+        str_bytes.push(byte_len);
+        str_bytes.extend_from_slice(s.as_bytes());
+        str_bytes.push(0);
+    }
+    while !str_bytes.len().is_multiple_of(4) {
+        str_bytes.push(0);
+    }
+    let pool_size = strings_start + str_bytes.len() as u32;
+    let mut pool = Vec::with_capacity(pool_size as usize);
+    pool.extend_from_slice(&0x0001u16.to_le_bytes()); // RES_STRING_POOL_TYPE
+    pool.extend_from_slice(&(hdr_size as u16).to_le_bytes());
+    pool.extend_from_slice(&pool_size.to_le_bytes());
+    pool.extend_from_slice(&(strings.len() as u32).to_le_bytes());
+    pool.extend_from_slice(&0u32.to_le_bytes()); // styleCount
+    pool.extend_from_slice(&0x0100u32.to_le_bytes()); // UTF8_FLAG
+    pool.extend_from_slice(&strings_start.to_le_bytes());
+    pool.extend_from_slice(&0u32.to_le_bytes()); // stylesStart
+    pool.extend_from_slice(&offsets);
+    pool.extend_from_slice(&str_bytes);
+    pool
+}
+
 fn build_minimal_axml_manifest() -> Vec<u8> {
-    // Minimal compiled Android Binary XML (AXML): ResXMLTree_header (8) + ResStringPool_header (28) + "manifest"
-    let pool_str = b"\x08\x08manifest\x00";
-    let pool_size = 28u32 + pool_str.len() as u32;
-    let total_size = 8u32 + pool_size;
+    // Valid compiled Android Binary XML (AXML):
+    // String pool ["manifest", "package", "com.example.demo"]
+    // + StartElement(<manifest package="com.example.demo">)
+    // + EndElement(</manifest>)
+    let pool = encode_axml_utf8_pool(&["manifest", "package", "com.example.demo"]);
+    let start_elem_size = 16u32 + 20 + 20; // header(16) + attrExt(20) + 1 attribute(20)
+    let end_elem_size = 16u32 + 8; // header(16) + ext(8)
+    let total_size = 8u32 + pool.len() as u32 + start_elem_size + end_elem_size;
+
     let mut axml = Vec::with_capacity(total_size as usize);
     axml.extend_from_slice(&0x0003u16.to_le_bytes()); // RES_XML_TYPE
-    axml.extend_from_slice(&0x0008u16.to_le_bytes()); // headerSize
+    axml.extend_from_slice(&0x0008u16.to_le_bytes());
     axml.extend_from_slice(&total_size.to_le_bytes());
-    axml.extend_from_slice(&0x0001u16.to_le_bytes()); // RES_STRING_POOL_TYPE
-    axml.extend_from_slice(&0x001Cu16.to_le_bytes()); // headerSize (28)
-    axml.extend_from_slice(&pool_size.to_le_bytes());
-    axml.extend_from_slice(&1u32.to_le_bytes()); // stringCount = 1
-    axml.extend_from_slice(&0u32.to_le_bytes()); // styleCount
-    axml.extend_from_slice(&0x0100u32.to_le_bytes()); // UTF8_FLAG
-    axml.extend_from_slice(&28u32.to_le_bytes()); // stringsStart
-    axml.extend_from_slice(&0u32.to_le_bytes()); // stylesStart
-    axml.extend_from_slice(pool_str);
+    axml.extend_from_slice(&pool);
+
+    // RES_XML_START_ELEMENT_TYPE (0x0102)
+    axml.extend_from_slice(&0x0102u16.to_le_bytes());
+    axml.extend_from_slice(&16u16.to_le_bytes());
+    axml.extend_from_slice(&start_elem_size.to_le_bytes());
+    axml.extend_from_slice(&1u32.to_le_bytes()); // lineNumber
+    axml.extend_from_slice(&0xFFFF_FFFFu32.to_le_bytes()); // comment
+    axml.extend_from_slice(&0xFFFF_FFFFu32.to_le_bytes()); // ns = none
+    axml.extend_from_slice(&0u32.to_le_bytes()); // name = string 0 ("manifest")
+    axml.extend_from_slice(&20u16.to_le_bytes()); // attributeStart
+    axml.extend_from_slice(&20u16.to_le_bytes()); // attributeSize
+    axml.extend_from_slice(&1u16.to_le_bytes()); // attributeCount = 1
+    axml.extend_from_slice(&0u16.to_le_bytes()); // idIndex
+    axml.extend_from_slice(&0u16.to_le_bytes()); // classIndex
+    axml.extend_from_slice(&0u16.to_le_bytes()); // styleIndex
+                                                 // Attribute 0: package="com.example.demo"
+    axml.extend_from_slice(&0xFFFF_FFFFu32.to_le_bytes()); // ns
+    axml.extend_from_slice(&1u32.to_le_bytes()); // name = string 1 ("package")
+    axml.extend_from_slice(&2u32.to_le_bytes()); // rawValue = string 2 ("com.example.demo")
+    axml.extend_from_slice(&8u16.to_le_bytes()); // Res_value size
+    axml.extend_from_slice(&[0u8, 3u8]); // res0=0, TYPE_STRING=3
+    axml.extend_from_slice(&2u32.to_le_bytes()); // data = string 2
+
+    // RES_XML_END_ELEMENT_TYPE (0x0103)
+    axml.extend_from_slice(&0x0103u16.to_le_bytes());
+    axml.extend_from_slice(&16u16.to_le_bytes());
+    axml.extend_from_slice(&end_elem_size.to_le_bytes());
+    axml.extend_from_slice(&1u32.to_le_bytes()); // lineNumber
+    axml.extend_from_slice(&0xFFFF_FFFFu32.to_le_bytes()); // comment
+    axml.extend_from_slice(&0xFFFF_FFFFu32.to_le_bytes()); // ns
+    axml.extend_from_slice(&0u32.to_le_bytes()); // name = string 0 ("manifest")
+
     axml
 }
 
@@ -130,6 +192,61 @@ fn test_detect_apk_and_jar_in_zip() {
     }
     let rep_spoof = detect_bytes(&spoof_zip.into_inner(), &opts).expect("spoofed apk zip");
     assert_eq!(rep_spoof.format_id.as_deref(), Some("zip"));
+
+    // 1e-bis. Binary AXML string-pool containing "manifest" WITHOUT a root <manifest> node chunk must remain plain ZIP
+    let pool_only_payload = encode_axml_utf8_pool(&["manifest"]);
+    let pool_only_total = 8u32 + pool_only_payload.len() as u32;
+    let mut pool_only_axml = Vec::with_capacity(pool_only_total as usize);
+    pool_only_axml.extend_from_slice(&0x0003u16.to_le_bytes());
+    pool_only_axml.extend_from_slice(&0x0008u16.to_le_bytes());
+    pool_only_axml.extend_from_slice(&pool_only_total.to_le_bytes());
+    pool_only_axml.extend_from_slice(&pool_only_payload);
+
+    let mut pool_only_zip = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut pool_only_zip);
+        let zip_opts = SimpleFileOptions::default();
+        zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
+        zip.write_all(&pool_only_axml).unwrap();
+        zip.finish().unwrap();
+    }
+    let rep_pool_only = detect_bytes(&pool_only_zip.into_inner(), &opts).expect("pool-only axml");
+    assert_eq!(rep_pool_only.format_id.as_deref(), Some("zip"));
+
+    // 1e-ter. Public check_zip_packages backwards-compatible 2-arg API still works
+    let mut compat_cur = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut compat_cur);
+        let zip_opts = SimpleFileOptions::default();
+        zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
+        zip.write_all(&axml).unwrap();
+        zip.finish().unwrap();
+    }
+    compat_cur.set_position(0);
+    let mut compat_archive = zip::ZipArchive::new(&mut compat_cur).unwrap();
+    let mut compat_rep = kindprobe::model::DetectionReport {
+        schema_version: 1,
+        format_id: None,
+        category: "container".to_string(),
+        container_id: Some("zip".to_string()),
+        identification: Identification::ContainerOnly,
+        verification: Verification::Structure,
+        inspection: kindprobe::Inspection::Complete,
+        recommended_extension: None,
+        accepted_extensions: Vec::new(),
+        extension_status: ExtensionStatus::Undetermined,
+        evidence: Vec::new(),
+        warnings: Vec::new(),
+        stats: Default::default(),
+        candidates: None,
+    };
+    assert!(
+        kindprobe::detectors::zip_ooxml::packages::check_zip_packages(
+            &mut compat_archive,
+            &mut compat_rep
+        )
+    );
+    assert_eq!(compat_rep.format_id.as_deref(), Some("apk"));
 
     // 1f. Oversized AndroidManifest.xml exceeding budget must stop cleanly with Inspection::Limited
     let mut huge_manifest_apk = Cursor::new(Vec::new());

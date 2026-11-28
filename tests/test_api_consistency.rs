@@ -318,4 +318,24 @@ fn test_slice_vs_reader_budget_boundary_and_window_parity() {
     assert_eq!(iso_reader.format_id.as_deref(), Some("iso"));
     assert_eq!(iso_slice.stats.source_bytes_read, iso_data.len());
     assert_eq!(iso_reader.stats.source_bytes_read, iso_data.len());
+
+    // 6. 4,096-byte DMG at exact initial_window_size == max_source_bytes_read == 4096
+    //    must detect `dmg` / `Complete` on both slice and reader.
+    let mut dmg_4096 = vec![0u8; 4096];
+    let koly_off = 4096 - 512;
+    dmg_4096[koly_off..koly_off + 4].copy_from_slice(b"koly");
+    dmg_4096[koly_off + 4..koly_off + 8].copy_from_slice(&4u32.to_be_bytes());
+    let dmg_slice = detect_bytes(&dmg_4096, &tight_opts).expect("dmg 4096 slice");
+    let dmg_slice_core = detect_bytes_core(&dmg_4096, &tight_opts).expect("dmg 4096 slice core");
+    let mut dmg_cur = Cursor::new(&dmg_4096);
+    let dmg_reader = detect_reader(&mut dmg_cur, &tight_opts).expect("dmg 4096 reader");
+    let mut dmg_cur_core = Cursor::new(&dmg_4096);
+    let dmg_reader_core =
+        detect_reader_core(&mut dmg_cur_core, &tight_opts).expect("dmg 4096 reader core");
+    assert_eq!(dmg_slice.format_id.as_deref(), Some("dmg"));
+    assert_eq!(dmg_slice.inspection, Inspection::Complete);
+    assert_eq!(dmg_reader.format_id.as_deref(), Some("dmg"));
+    assert_eq!(dmg_reader.inspection, Inspection::Complete);
+    assert_eq!(dmg_slice_core.format_id, Some("dmg"));
+    assert_eq!(dmg_reader_core.format_id, Some("dmg"));
 }

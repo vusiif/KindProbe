@@ -22,7 +22,7 @@ use direct_reader::{
 };
 use epub::check_epub_or_odf;
 use opc::{parse_content_types, parse_package_relationships, resolve_target_path};
-use packages::{apply_apk, check_zip_packages, ApkManifestStatus};
+use packages::{apply_apk, check_zip_packages_with_options, ApkManifestStatus};
 use schemas::classify_ooxml_content_type;
 use xml::{verify_main_part_xml, MainPartXmlOutcome};
 
@@ -465,7 +465,7 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         if check_epub_or_odf(&mut archive, &mut report) {
             return Ok(report);
         }
-        if check_zip_packages(&mut archive, options, &mut report) {
+        if check_zip_packages_with_options(&mut archive, options, &mut report) {
             return Ok(report);
         }
 
