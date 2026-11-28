@@ -22,9 +22,12 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
         head.windows(pattern.len()).any(|w| w == pattern)
     };
 
-    // 1. PHP, Templates (HBS, Jinja, EJS) & HTML detection
+    // 1. PHP, Hack, Templates (HBS, Liquid, Jinja, EJS) & HTML detection
     if head.starts_with(b"<?php") {
         return Some(make_core("php", "text", None, "php", &["php", "phtml"], "sig.text.php"));
+    }
+    if head.starts_with(b"<?hh") {
+        return Some(make_core("hack", "text", None, "hack", &["hack", "hh"], "sig.text.hack"));
     }
     if (trimmed.contains("{{#if ") || trimmed.contains("{{#each ")) && trimmed.contains("{{/") {
         return Some(make_core("hbs", "text", None, "hbs", &["hbs", "handlebars"], "sig.text.handlebars"));

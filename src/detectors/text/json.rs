@@ -175,6 +175,28 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         && geo_window.contains("\"modules\"")
     {
         ("flatpak_manifest", "configuration", Some("json"), "json", &["json"], "sig.text.flatpak_manifest")
+    } else if geo_window.contains("\"compilerOptions\"")
+        && (geo_window.contains("\"target\"") || geo_window.contains("\"module\"") || geo_window.contains("\"strict\""))
+    {
+        ("tsconfig", "configuration", Some("json"), "json", &["json"], "sig.text.tsconfig")
+    } else if geo_window.contains("\"name\"")
+        && geo_window.contains("\"version\"")
+        && (geo_window.contains("\"dependencies\"") || geo_window.contains("\"devDependencies\"") || geo_window.contains("\"scripts\""))
+    {
+        ("package_json", "configuration", Some("json"), "json", &["json"], "sig.text.package_json")
+    } else if geo_window.contains("\"name\"")
+        && geo_window.contains("\"require\"")
+        && (geo_window.contains("\"autoload\"") || geo_window.contains("\"type\""))
+    {
+        ("composer_json", "configuration", Some("json"), "json", &["json"], "sig.text.composer_json")
+    } else if geo_window.contains("\"extends\"")
+        && (geo_window.contains("\"packageRules\"") || geo_window.contains("\"schedule\"") || geo_window.contains("\"automerge\""))
+    {
+        ("renovate", "configuration", Some("json"), "json", &["json"], "sig.text.renovate")
+    } else if geo_window.contains("biomejs.dev")
+        || (geo_window.contains("\"formatter\"") && geo_window.contains("\"linter\"") && geo_window.contains("\"organizeImports\""))
+    {
+        ("biome", "configuration", Some("json"), "json", &["json", "jsonc"], "sig.text.biome")
     } else if geo_window.contains("\n//") || geo_window.contains("\n  //") || geo_window.contains("/*") {
         ("json5", "configuration", Some("json"), "json5", &["json5", "jsonc"], "sig.text.json5")
     } else {
