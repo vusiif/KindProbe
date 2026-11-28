@@ -248,6 +248,23 @@ fn test_detect_apk_and_jar_in_zip() {
     );
     assert_eq!(compat_rep.format_id.as_deref(), Some("apk"));
 
+    // 1e-quater. Plain XML manifest with unclosed <manifest> root or multiple root elements must remain plain ZIP
+    for invalid_xml in [
+        br#"<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.demo"><application/>"#.as_slice(),
+        br#"<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.demo"></manifest><extra/>"#.as_slice(),
+    ] {
+        let mut bad_xml_zip = Cursor::new(Vec::new());
+        {
+            let mut zip = ZipWriter::new(&mut bad_xml_zip);
+            let zip_opts = SimpleFileOptions::default();
+            zip.start_file("AndroidManifest.xml", zip_opts).unwrap();
+            zip.write_all(invalid_xml).unwrap();
+            zip.finish().unwrap();
+        }
+        let rep_bad = detect_bytes(&bad_xml_zip.into_inner(), &opts).expect("invalid xml manifest");
+        assert_eq!(rep_bad.format_id.as_deref(), Some("zip"));
+    }
+
     // 1f. Oversized AndroidManifest.xml exceeding budget must stop cleanly with Inspection::Limited
     let mut huge_manifest_apk = Cursor::new(Vec::new());
     {

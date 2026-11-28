@@ -318,14 +318,26 @@ fn validate_plain_xml_manifest(
 ) -> ApkManifestStatus {
     let mut reader = Reader::from_reader(Cursor::new(data));
     reader.config_mut().trim_text(true);
+    reader.config_mut().check_end_names = true;
     let mut buf = Vec::new();
     let mut depth = 0usize;
-    let mut root_checked = false;
+    let mut root_count = 0usize;
     let mut root_valid = false;
+    let mut root_closed = false;
 
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
+                if depth == 0 {
+                    root_count += 1;
+                    if root_count > 1 {
+                        return ApkManifestStatus::Invalid;
+                    }
+                    root_valid = has_valid_manifest_root(&e);
+                    if !root_valid {
+                        return ApkManifestStatus::Invalid;
+                    }
+                }
                 depth += 1;
                 if depth > max_xml_depth {
                     report.inspection = Inspection::Limited;
@@ -337,13 +349,6 @@ fn validate_plain_xml_manifest(
                         ),
                     ));
                     return ApkManifestStatus::BudgetExceeded;
-                }
-                if !root_checked {
-                    root_checked = true;
-                    root_valid = has_valid_manifest_root(&e);
-                    if !root_valid {
-                        return ApkManifestStatus::Invalid;
-                    }
                 }
             }
             Ok(Event::Empty(e)) => {
@@ -359,16 +364,26 @@ fn validate_plain_xml_manifest(
                     ));
                     return ApkManifestStatus::BudgetExceeded;
                 }
-                if !root_checked {
-                    root_checked = true;
+                if depth == 0 {
+                    root_count += 1;
+                    if root_count > 1 {
+                        return ApkManifestStatus::Invalid;
+                    }
                     root_valid = has_valid_manifest_root(&e);
                     if !root_valid {
                         return ApkManifestStatus::Invalid;
                     }
+                    root_closed = true;
                 }
             }
             Ok(Event::End(_)) => {
-                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    return ApkManifestStatus::Invalid;
+                }
+                depth -= 1;
+                if depth == 0 {
+                    root_closed = true;
+                }
             }
             Ok(Event::Eof) => break,
             Err(_) => return ApkManifestStatus::Invalid,
@@ -377,7 +392,7 @@ fn validate_plain_xml_manifest(
         buf.clear();
     }
 
-    if root_valid {
+    if root_count == 1 && root_valid && root_closed && depth == 0 {
         ApkManifestStatus::Valid
     } else {
         ApkManifestStatus::Invalid
