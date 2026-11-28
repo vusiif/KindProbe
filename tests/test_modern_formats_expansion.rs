@@ -1,7 +1,7 @@
-use std::io::{Cursor, Write};
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::find_registered_format;
 use kindprobe::{detect_bytes, detect_bytes_core, Identification};
+use std::io::{Cursor, Write};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
@@ -9,7 +9,12 @@ fn assert_both_paths(data: &[u8], expected_fmt: &str) {
     let opts = DetectOptions::default();
     let rep = detect_bytes(data, &opts).expect("detect_bytes");
     let core = detect_bytes_core(data, &opts).expect("detect_bytes_core");
-    assert_eq!(rep.identification, Identification::Format, "fmt={}", expected_fmt);
+    assert_eq!(
+        rep.identification,
+        Identification::Format,
+        "fmt={}",
+        expected_fmt
+    );
     assert_eq!(rep.format_id.as_deref(), Some(expected_fmt));
     assert_eq!(core.format_id, Some(expected_fmt));
     assert_eq!(core.identification, Identification::Format);
@@ -164,7 +169,8 @@ fn test_round4_dmg_utf16_reg_and_powershell() {
     dmg[t_off + 4..t_off + 8].copy_from_slice(&4u32.to_be_bytes());
     assert_both_paths(&dmg, "dmg");
     let mut cur = Cursor::new(dmg);
-    let rep_reader = kindprobe::detect_reader(&mut cur, &DetectOptions::default()).expect("dmg reader");
+    let rep_reader =
+        kindprobe::detect_reader(&mut cur, &DetectOptions::default()).expect("dmg reader");
     assert_eq!(rep_reader.format_id.as_deref(), Some("dmg"));
 
     // UTF-16 LE BOM plain text
@@ -176,13 +182,19 @@ fn test_round4_dmg_utf16_reg_and_powershell() {
 
     // UTF-16 LE BOM Windows .reg
     let mut utf16_reg = vec![0xFF, 0xFE];
-    for unit in "Windows Registry Editor Version 5.00\r\n\r\n[HKEY_CURRENT_USER\\Software\\KindProbe]\r\n".encode_utf16() {
+    for unit in
+        "Windows Registry Editor Version 5.00\r\n\r\n[HKEY_CURRENT_USER\\Software\\KindProbe]\r\n"
+            .encode_utf16()
+    {
         utf16_reg.extend_from_slice(&unit.to_le_bytes());
     }
     assert_both_paths(&utf16_reg, "reg");
 
     // ASCII REGEDIT4 & PowerShell
-    assert_both_paths(b"REGEDIT4\r\n\r\n[HKEY_LOCAL_MACHINE\\SOFTWARE\\Test]\r\n", "reg");
+    assert_both_paths(
+        b"REGEDIT4\r\n\r\n[HKEY_LOCAL_MACHINE\\SOFTWARE\\Test]\r\n",
+        "reg",
+    );
     assert_both_paths(
         b"[CmdletBinding()]\nparam([string]$Path = $PSScriptRoot)\nWrite-Host \"Scanning $Path\"\n",
         "ps1",
@@ -224,10 +236,7 @@ fn test_round5_raw_onnx_cs_swift_r_env_gitignore() {
         b"DATABASE_URL=postgres://localhost/app\nPORT=8080\nRUST_LOG=info\n",
         "env",
     );
-    assert_both_paths(
-        b"target/\nnode_modules/\n.DS_Store\n*.log\n",
-        "gitignore",
-    );
+    assert_both_paths(b"target/\nnode_modules/\n.DS_Store\n*.log\n", "gitignore");
 }
 
 #[test]
@@ -311,7 +320,10 @@ fn test_round7_ipynb_gltf_har_lottie_prisma_sol_hs_ex_astro() {
 #[test]
 fn test_round8_pf_jsonl_rss_atom_opml_xslt_xsd_clj_erl_nim() {
     assert_both_paths(b"MAM\x04\x00\x10\x00\x00\x00\x00\x00\x00", "pf");
-    assert_both_paths(b"{\"id\":1,\"ok\":true}\n{\"id\":2,\"ok\":false}\n", "jsonl");
+    assert_both_paths(
+        b"{\"id\":1,\"ok\":true}\n{\"id\":2,\"ok\":false}\n",
+        "jsonl",
+    );
     assert_both_paths(
         b"<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>Feed</title></channel></rss>",
         "rss",
@@ -376,10 +388,7 @@ fn test_round9_crx_whl_vsix_nupkg_xpi_tfstate_ris_bib_fs() {
         &make_zip(&[("KindProbe.nuspec", b"<package><metadata/></package>")]),
         "nupkg",
     );
-    assert_both_paths(
-        &make_zip(&[("install.rdf", b"<RDF/>")]),
-        "xpi",
-    );
+    assert_both_paths(&make_zip(&[("install.rdf", b"<RDF/>")]), "xpi");
 
     assert_both_paths(
         br#"{"version":4,"terraform_version":"1.8.0","resources":[{"mode":"managed","type":"aws_s3_bucket"}]}"#,
@@ -516,10 +525,7 @@ fn test_round13_typ_mdx_mojo_bzl_just_lean_kdl_ron() {
         b"import Chart from './Chart'\n\n# Quarterly Report\n\n<Chart data={[1, 2, 3]} />\n",
         "mdx",
     );
-    assert_both_paths(
-        b"fn main():\n    var x: Int = 42\n    print(x)\n",
-        "mojo",
-    );
+    assert_both_paths(b"fn main():\n    var x: Int = 42\n    print(x)\n", "mojo");
     assert_both_paths(
         b"load(\"@rules_rust//rust:defs.bzl\", \"rust_binary\")\n\nrust_binary(\n    name = \"kindprobe\",\n    srcs = [\"src/main.rs\"],\n)\n",
         "bzl",
@@ -570,10 +576,7 @@ fn test_round14_msix_json5_gherkin_cypher_sparql_wkt_d_caddy() {
         b"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT ?name WHERE {\n  ?person foaf:name ?name .\n}\n",
         "sparql",
     );
-    assert_both_paths(
-        b"POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))\n",
-        "wkt",
-    );
+    assert_both_paths(b"POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))\n", "wkt");
     assert_both_paths(
         b"import std.stdio;\nvoid main() {\n    writeln(\"Hello D\");\n}\n",
         "d",
@@ -686,18 +689,13 @@ fn test_round17_liquid_less_htaccess_vagrantfile_ssh_config_hosts_crontab() {
         b"Host prod\n    HostName 10.0.0.5\n    User deploy\n    IdentityFile ~/.ssh/id_ed25519\n",
         "ssh_config",
     );
-    assert_both_paths(
-        b"127.0.0.1 localhost\n::1 localhost\n",
-        "hosts",
-    );
-    assert_both_paths(
-        b"0 2 * * * /usr/local/bin/backup.sh\n",
-        "crontab",
-    );
+    assert_both_paths(b"127.0.0.1 localhost\n::1 localhost\n", "hosts");
+    assert_both_paths(b"0 2 * * * /usr/local/bin/backup.sh\n", "crontab");
 }
 
 #[test]
-fn test_round18_mathml_gleam_rkt_ninja_nomad_pkl_elm_odin_vala_f90_cobol_ada_pas_scm_gitmodules_robots() {
+fn test_round18_mathml_gleam_rkt_ninja_nomad_pkl_elm_odin_vala_f90_cobol_ada_pas_scm_gitmodules_robots(
+) {
     assert_both_paths(
         b"<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><msup><mi>x</mi><mn>2</mn></msup></math>",
         "mathml",
@@ -706,10 +704,7 @@ fn test_round18_mathml_gleam_rkt_ninja_nomad_pkl_elm_odin_vala_f90_cobol_ada_pas
         b"import gleam/io\npub fn main() {\n  io.println(\"hello\")\n}\n",
         "gleam",
     );
-    assert_both_paths(
-        b"#lang racket\n(define (square x) (* x x))\n",
-        "rkt",
-    );
+    assert_both_paths(b"#lang racket\n(define (square x) (* x x))\n", "rkt");
     assert_both_paths(
         b"rule cc\n  command = gcc -c $in -o $out\nbuild foo.o: cc foo.c\n",
         "ninja",
@@ -746,26 +741,18 @@ fn test_round18_mathml_gleam_rkt_ninja_nomad_pkl_elm_odin_vala_f90_cobol_ada_pas
         b"with Ada.Text_IO;\nprocedure Hello is\nbegin\n  Ada.Text_IO.Put_Line(\"Hi\");\nend Hello;\n",
         "ada",
     );
-    assert_both_paths(
-        b"program Hello;\nbegin\n  writeln('Hello');\nend.\n",
-        "pas",
-    );
-    assert_both_paths(
-        b"(define (make-adder x)\n  (lambda (y) (+ x y)))\n",
-        "scm",
-    );
+    assert_both_paths(b"program Hello;\nbegin\n  writeln('Hello');\nend.\n", "pas");
+    assert_both_paths(b"(define (make-adder x)\n  (lambda (y) (+ x y)))\n", "scm");
     assert_both_paths(
         b"[submodule \"vendor/foo\"]\n\tpath = vendor/foo\n\turl = https://github.com/example/foo.git\n",
         "gitmodules",
     );
-    assert_both_paths(
-        b"User-agent: *\nDisallow: /admin/\n",
-        "robots",
-    );
+    assert_both_paths(b"User-agent: *\nDisallow: /admin/\n", "robots");
 }
 
 #[test]
-fn test_round19_sitemap_resx_wadl_purs_gitattributes_codeowners_npmrc_yarnlock_gemfile_podfile_brewfile_hx_prql_jq_udev_nft_iptables_zone() {
+fn test_round19_sitemap_resx_wadl_purs_gitattributes_codeowners_npmrc_yarnlock_gemfile_podfile_brewfile_hx_prql_jq_udev_nft_iptables_zone(
+) {
     assert_both_paths(
         b"<?xml version=\"1.0\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>https://example.com/</loc></url></urlset>",
         "sitemap",
@@ -786,10 +773,7 @@ fn test_round19_sitemap_resx_wadl_purs_gitattributes_codeowners_npmrc_yarnlock_g
         b"* text=auto\n*.png binary\n*.rs text eol=lf\n",
         "gitattributes",
     );
-    assert_both_paths(
-        b"* @org/core\n/src/ @org/rust-team\n",
-        "codeowners",
-    );
+    assert_both_paths(b"* @org/core\n/src/ @org/rust-team\n", "codeowners");
     assert_both_paths(
         b"registry=https://registry.npmjs.org/\nsave-exact=true\n",
         "npmrc",
@@ -818,10 +802,7 @@ fn test_round19_sitemap_resx_wadl_purs_gitattributes_codeowners_npmrc_yarnlock_g
         b"from invoices\nfilter total > 100\nderive { tax = total * 0.1 }\nselect { id, tax }\n",
         "prql",
     );
-    assert_both_paths(
-        b"def active_names: .[] | select(.active) | .name;\n",
-        "jq",
-    );
+    assert_both_paths(b"def active_names: .[] | select(.active) | .name;\n", "jq");
     assert_both_paths(
         b"ACTION==\"add\", SUBSYSTEM==\"usb\", ATTR{idVendor}==\"1234\", MODE=\"0666\"\n",
         "udev",
@@ -841,7 +822,8 @@ fn test_round19_sitemap_resx_wadl_purs_gitattributes_codeowners_npmrc_yarnlock_g
 }
 
 #[test]
-fn test_round20_xbel_docbook_ivy_nu_sv_org_mediawiki_fennel_hy_lfe_raku_cr_fish_tmux_vimrc_gitconfig_sysctl_resolv() {
+fn test_round20_xbel_docbook_ivy_nu_sv_org_mediawiki_fennel_hy_lfe_raku_cr_fish_tmux_vimrc_gitconfig_sysctl_resolv(
+) {
     assert_both_paths(
         b"<?xml version=\"1.0\"?><xbel version=\"1.0\"><bookmark href=\"https://example.com\"><title>Ex</title></bookmark></xbel>",
         "xbel",
@@ -874,18 +856,12 @@ fn test_round20_xbel_docbook_ivy_nu_sv_org_mediawiki_fennel_hy_lfe_raku_cr_fish_
         b"(local greet (fn [name] (print (.. \"Hi \" name))))\n",
         "fennel",
     );
-    assert_both_paths(
-        b"(import os)\n(defn main [] (print \"Hello Hy\"))\n",
-        "hy",
-    );
+    assert_both_paths(b"(import os)\n(defn main [] (print \"Hello Hy\"))\n", "hy");
     assert_both_paths(
         b"(defmodule hello (export (world 0)))\n(defun world () 'ok)\n",
         "lfe",
     );
-    assert_both_paths(
-        b"use v6;\nmy Int $x = 42;\nsay $x;\n",
-        "raku",
-    );
+    assert_both_paths(b"use v6;\nmy Int $x = 42;\nsay $x;\n", "raku");
     assert_both_paths(
         b"class User\n  property name : String\n  def initialize(@name)\n  end\nend\n",
         "cr",
@@ -898,26 +874,18 @@ fn test_round20_xbel_docbook_ivy_nu_sv_org_mediawiki_fennel_hy_lfe_raku_cr_fish_
         b"set -g mouse on\nbind r source-file ~/.tmux.conf\n",
         "tmux",
     );
-    assert_both_paths(
-        b"set number\nnnoremap <leader>w :w<CR>\n",
-        "vimrc",
-    );
+    assert_both_paths(b"set number\nnnoremap <leader>w :w<CR>\n", "vimrc");
     assert_both_paths(
         b"[user]\n\tname = Jane Doe\n\temail = jane@example.com\n",
         "gitconfig",
     );
-    assert_both_paths(
-        b"net.ipv4.ip_forward = 1\nvm.swappiness = 10\n",
-        "sysctl",
-    );
-    assert_both_paths(
-        b"search example.com\nnameserver 1.1.1.1\n",
-        "resolv",
-    );
+    assert_both_paths(b"net.ipv4.ip_forward = 1\nvm.swappiness = 10\n", "sysctl");
+    assert_both_paths(b"search example.com\nnameserver 1.1.1.1\n", "resolv");
 }
 
 #[test]
-fn test_round21_sarif_cyclonedx_spdx_sourcemap_webmanifest_junit_cobertura_checkstyle_vy_move_cairo_circom_flux_kql_fstab_textile_coffee() {
+fn test_round21_sarif_cyclonedx_spdx_sourcemap_webmanifest_junit_cobertura_checkstyle_vy_move_cairo_circom_flux_kql_fstab_textile_coffee(
+) {
     assert_both_paths(
         br#"{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"clippy"}},"results":[]}]}"#,
         "sarif",
@@ -974,22 +942,14 @@ fn test_round21_sarif_cyclonedx_spdx_sourcemap_webmanifest_junit_cobertura_check
         b"Logs\n| where Level == \"Error\"\n| summarize Count = count() by Service\n| project Service, Count\n",
         "kql",
     );
-    assert_both_paths(
-        b"UUID=1234-5678 / ext4 defaults 0 1\n",
-        "fstab",
-    );
-    assert_both_paths(
-        b"h1. Title\n\nh2. Section\n\n* Item one\n",
-        "textile",
-    );
-    assert_both_paths(
-        b"square = (x) -> x * x\nconsole.log square 5\n",
-        "coffee",
-    );
+    assert_both_paths(b"UUID=1234-5678 / ext4 defaults 0 1\n", "fstab");
+    assert_both_paths(b"h1. Title\n\nh2. Section\n\n* Item one\n", "textile");
+    assert_both_paths(b"square = (x) -> x * x\nconsole.log square 5\n", "coffee");
 }
 
 #[test]
-fn test_round22_jsonschema_jsonld_vega_postman_asyncapi_glade_qtui_xliff_tmx_musicxml_expect_automake_autoconf_supervisor_logrotate_alloy_ftl() {
+fn test_round22_jsonschema_jsonld_vega_postman_asyncapi_glade_qtui_xliff_tmx_musicxml_expect_automake_autoconf_supervisor_logrotate_alloy_ftl(
+) {
     assert_both_paths(
         br#"{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"id":{"type":"string"}}}"#,
         "jsonschema",
@@ -1054,14 +1014,12 @@ fn test_round22_jsonschema_jsonld_vega_postman_asyncapi_glade_qtui_xliff_tmx_mus
         b"prometheus.scrape \"default\" {\n  targets = []\n  forward_to = [prometheus.remote_write.default.receiver]\n}\n",
         "alloy",
     );
-    assert_both_paths(
-        b"welcome = Hello, {$user}!\n",
-        "ftl",
-    );
+    assert_both_paths(b"welcome = Hello, {$user}!\n", "ftl");
 }
 
 #[test]
-fn test_round23_figma_sops_insomnia_hal_drawio_bpmn_nuget_maven_flatpakref_minisign_po_spice_gcode_buck_modelica_sudoers_sed() {
+fn test_round23_figma_sops_insomnia_hal_drawio_bpmn_nuget_maven_flatpakref_minisign_po_spice_gcode_buck_modelica_sudoers_sed(
+) {
     assert_both_paths(b"fig-kiwi\x00\x00\x00\x01\x00\x00\x00\x00", "figma");
     assert_both_paths(
         br#"{"app":"ENC[AES256_GCM,data:abc]","sops":{"mac":"1234","version":"3.8"}}"#,
@@ -1099,18 +1057,9 @@ fn test_round23_figma_sops_insomnia_hal_drawio_bpmn_nuget_maven_flatpakref_minis
         b"untrusted comment: minisign public key ABCD\nRWTKindProbeTestKey\n",
         "minisig",
     );
-    assert_both_paths(
-        b"msgid \"Hello\"\nmsgstr \"Bonjour\"\n",
-        "po",
-    );
-    assert_both_paths(
-        b"* RC Circuit\n.tran 1n 100n\n.end\n",
-        "spice",
-    );
-    assert_both_paths(
-        b"G90\nM104 S200\nG28\nG1 X10 Y10 F1500\n",
-        "gcode",
-    );
+    assert_both_paths(b"msgid \"Hello\"\nmsgstr \"Bonjour\"\n", "po");
+    assert_both_paths(b"* RC Circuit\n.tran 1n 100n\n.end\n", "spice");
+    assert_both_paths(b"G90\nM104 S200\nG28\nG1 X10 Y10 F1500\n", "gcode");
     assert_both_paths(
         b"rust_library(\n    name = \"core\",\n    deps = [\"//third-party/rust:serde\"],\n)\n",
         "buck",
@@ -1119,14 +1068,8 @@ fn test_round23_figma_sops_insomnia_hal_drawio_bpmn_nuget_maven_flatpakref_minis
         b"model Pendulum\n  Real x;\nequation\n  der(x) = -x;\nend Pendulum;\n",
         "modelica",
     );
-    assert_both_paths(
-        b"%wheel ALL=(ALL:ALL) NOPASSWD: ALL\n",
-        "sudoers",
-    );
-    assert_both_paths(
-        b"#!/usr/bin/sed -f\ns/foo/bar/g\n",
-        "sed",
-    );
+    assert_both_paths(b"%wheel ALL=(ALL:ALL) NOPASSWD: ALL\n", "sudoers");
+    assert_both_paths(b"#!/usr/bin/sed -f\ns/foo/bar/g\n", "sed");
 }
 
 #[test]
@@ -1151,10 +1094,7 @@ fn test_round24_owl_pov_scad_lds_dts_puppet_matlab_slint_qml_cuelang_smalltalk_p
         b"/dts-v1/;\n/ {\n  compatible = \"acme,board\";\n  soc { reg = <0x0 0x1000>; };\n};\n",
         "dts_src",
     );
-    assert_both_paths(
-        b"package { 'nginx':\n  ensure => installed,\n}\n",
-        "puppet",
-    );
+    assert_both_paths(b"package { 'nginx':\n  ensure => installed,\n}\n", "puppet");
     assert_both_paths(
         b"function [s, m] = stats(x)\n  s = sum(x);\n  m = mean(x);\nend\n",
         "matlab",
@@ -1183,14 +1123,12 @@ fn test_round24_owl_pov_scad_lds_dts_puppet_matlab_slint_qml_cuelang_smalltalk_p
         b"interface ProbeReport {\n  readonly attribute DOMString formatId;\n};\n",
         "idl",
     );
-    assert_both_paths(
-        b"data work.out;\n  set work.in;\nrun;\n",
-        "sas_script",
-    );
+    assert_both_paths(b"data work.out;\n  set work.in;\nrun;\n", "sas_script");
 }
 
 #[test]
-fn test_round25_devcontainer_flatpak_mets_mods_jats_srx_tbx_metal_sway_leo_vdf_nb_eiffel_netrc_mycnf_phpini() {
+fn test_round25_devcontainer_flatpak_mets_mods_jats_srx_tbx_metal_sway_leo_vdf_nb_eiffel_netrc_mycnf_phpini(
+) {
     assert_both_paths(
         br#"{"image":"mcr.microsoft.com/devcontainers/rust:1","customizations":{"vscode":{}}}"#,
         "devcontainer",
@@ -1235,10 +1173,7 @@ fn test_round25_devcontainer_flatpak_mets_mods_jats_srx_tbx_metal_sway_leo_vdf_n
         b"\"AppState\"\n{\n\t\"appid\"\t\t\"730\"\n\t\"name\"\t\t\"CS2\"\n}\n",
         "vdf",
     );
-    assert_both_paths(
-        b"Notebook[{\nCell[\"1 + 1\", \"Input\"]\n}]\n",
-        "nb",
-    );
+    assert_both_paths(b"Notebook[{\nCell[\"1 + 1\", \"Input\"]\n}]\n", "nb");
     assert_both_paths(
         b"class HELLO\nfeature\n  make do print(\"Hi\") end\nend\n",
         "eiffel",
@@ -1247,18 +1182,13 @@ fn test_round25_devcontainer_flatpak_mets_mods_jats_srx_tbx_metal_sway_leo_vdf_n
         b"machine api.example.com login bot password secret\n",
         "netrc",
     );
-    assert_both_paths(
-        b"[mysqld]\ndatadir=/var/lib/mysql\nport=3306\n",
-        "my_cnf",
-    );
-    assert_both_paths(
-        b"[PHP]\nengine = On\nmemory_limit = 256M\n",
-        "php_ini",
-    );
+    assert_both_paths(b"[mysqld]\ndatadir=/var/lib/mysql\nport=3306\n", "my_cnf");
+    assert_both_paths(b"[PHP]\nengine = On\nmemory_limit = 256M\n", "php_ini");
 }
 
 #[test]
-fn test_round26_tsconfig_package_composer_renovate_biome_locks_elisp_lisp_rescript_hack_apex_abap_c3() {
+fn test_round26_tsconfig_package_composer_renovate_biome_locks_elisp_lisp_rescript_hack_apex_abap_c3(
+) {
     assert_both_paths(
         br#"{"compilerOptions":{"target":"ES2022","module":"ESNext","strict":true}}"#,
         "tsconfig",

@@ -1,18 +1,29 @@
-use std::borrow::Cow;
+use super::archives::{
+    probe_archive_signatures, probe_archive_signatures_core, ArchiveMatch, ArchiveMatchCore,
+};
+use super::databases::{
+    probe_database_signatures, probe_database_signatures_core, DatabaseMatch, DatabaseMatchCore,
+};
+use super::disks::{probe_disk_signatures, probe_disk_signatures_core, DiskMatch, DiskMatchCore};
+use super::ebooks::{
+    probe_ebook_signatures, probe_ebook_signatures_core, EbookMatch, EbookMatchCore,
+};
+use super::executables::{
+    probe_executable_signatures, probe_executable_signatures_core, ExecutableMatch,
+    ExecutableMatchCore,
+};
+use super::fonts::{probe_font_signatures, probe_font_signatures_core, FontMatch, FontMatchCore};
+use super::images::{
+    probe_image_signatures, probe_image_signatures_core, ImageMatch, ImageMatchCore,
+};
+use super::media::{
+    probe_media_signatures, probe_media_signatures_core, MediaMatch, MediaMatchCore,
+};
+use super::rules::{evaluate_indexed_rules, evaluate_indexed_rules_core, RuleMatch, RuleMatchCore};
 use crate::model::{
     DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
-use super::archives::{probe_archive_signatures, probe_archive_signatures_core, ArchiveMatch, ArchiveMatchCore};
-use super::databases::{probe_database_signatures, probe_database_signatures_core, DatabaseMatch, DatabaseMatchCore};
-use super::disks::{probe_disk_signatures, probe_disk_signatures_core, DiskMatch, DiskMatchCore};
-use super::ebooks::{probe_ebook_signatures, probe_ebook_signatures_core, EbookMatch, EbookMatchCore};
-use super::executables::{probe_executable_signatures, probe_executable_signatures_core, ExecutableMatch, ExecutableMatchCore};
-use super::fonts::{probe_font_signatures, probe_font_signatures_core, FontMatch, FontMatchCore};
-use super::images::{probe_image_signatures, probe_image_signatures_core, ImageMatch, ImageMatchCore};
-use super::media::{probe_media_signatures, probe_media_signatures_core, MediaMatch, MediaMatchCore};
-use super::rules::{
-    evaluate_indexed_rules, evaluate_indexed_rules_core, RuleMatch, RuleMatchCore,
-};
+use std::borrow::Cow;
 
 pub const PDF_SIGNATURE: &[u8] = b"%PDF-";
 
@@ -103,7 +114,9 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
 
     if header.len() >= 24
         && (header.starts_with(b"\x30\x82") || header.starts_with(b"\x30\x80"))
-        && header[..header.len().min(64)].windows(3).any(|w| w == b"\x02\x01\x03")
+        && header[..header.len().min(64)]
+            .windows(3)
+            .any(|w| w == b"\x02\x01\x03")
         && header[..header.len().min(64)]
             .windows(11)
             .any(|w| w == b"\x06\x09\x2A\x86\x48\x86\xF7\x0D\x01\x07\x01")
@@ -261,9 +274,7 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
         });
     }
 
-    if header.len() >= 12
-        && (header.starts_with(b"II*\x00") || header.starts_with(b"MM\x00*"))
-    {
+    if header.len() >= 12 && (header.starts_with(b"II*\x00") || header.starts_with(b"MM\x00*")) {
         if &header[8..10] == b"CR" {
             return Some(DetectionCore {
                 format_id: Some("cr2"),
@@ -397,10 +408,7 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
     }
 
     if header.len() >= 262 && &header[257..262] == b"ustar" {
-        let name_end = header[..100]
-            .iter()
-            .position(|&b| b == 0)
-            .unwrap_or(100);
+        let name_end = header[..100].iter().position(|&b| b == 0).unwrap_or(100);
         if header[..name_end].ends_with(b".ovf") {
             return Some(DetectionCore {
                 format_id: Some("ova"),
@@ -435,7 +443,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // PNG
             match probe_image_signatures_core(header) {
                 ImageMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                ImageMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                ImageMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 ImageMatchCore::None => (),
             }
         }
@@ -443,12 +453,16 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // JPEG or MP3 frame sync
             match probe_image_signatures_core(header) {
                 ImageMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                ImageMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                ImageMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 ImageMatchCore::None => (),
             }
             match probe_media_signatures_core(header) {
                 MediaMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                MediaMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                MediaMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 MediaMatchCore::None => (),
             }
         }
@@ -459,7 +473,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             }
             match probe_image_signatures_core(header) {
                 ImageMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                ImageMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                ImageMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 ImageMatchCore::None => (),
             }
         }
@@ -473,7 +489,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // 7z
             match probe_archive_signatures_core(header) {
                 ArchiveMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                ArchiveMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                ArchiveMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 ArchiveMatchCore::None => (),
             }
         }
@@ -481,12 +499,16 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // RAR or RIFF (WAV, WebP, AVI)
             match probe_archive_signatures_core(header) {
                 ArchiveMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                ArchiveMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                ArchiveMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 ArchiveMatchCore::None => (),
             }
             match probe_media_signatures_core(header) {
                 MediaMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                MediaMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                MediaMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 MediaMatchCore::None => (),
             }
         }
@@ -494,7 +516,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // Gzip (0x1F), Bzip2 ('B'), XZ (0xFD), Zstd (0x28)
             match probe_archive_signatures_core(header) {
                 ArchiveMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                ArchiveMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                ArchiveMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 ArchiveMatchCore::None => (),
             }
         }
@@ -502,7 +526,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // WebM / MKV (0x1A) or MP3 ID3 ('I')
             match probe_media_signatures_core(header) {
                 MediaMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                MediaMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                MediaMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 MediaMatchCore::None => (),
             }
         }
@@ -516,14 +542,18 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // ELF (0x7F), PE ('M'), Mach-O / Class (0xFE, 0xCE, 0xCF, 0xCA, 0xBE, 0xED)
             match probe_executable_signatures_core(header) {
                 ExecutableMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                ExecutableMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                ExecutableMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 ExecutableMatchCore::None => (),
             }
             if b0 == b'M' {
                 // 0x4D is also the first byte of modified PCAP (0x4D, 0x3C, 0xB2, 0xA1)
                 match probe_database_signatures_core(header) {
                     DatabaseMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                    DatabaseMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                    DatabaseMatchCore::Truncated(fmt) => {
+                        return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                    }
                     DatabaseMatchCore::None => (),
                 }
             }
@@ -533,18 +563,24 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             if header.starts_with(&[0, 0, 0]) {
                 match probe_media_signatures_core(header) {
                     MediaMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                    MediaMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                    MediaMatchCore::Truncated(fmt) => {
+                        return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                    }
                     MediaMatchCore::None => (),
                 }
             }
             match probe_executable_signatures_core(header) {
                 ExecutableMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                ExecutableMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                ExecutableMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 ExecutableMatchCore::None => (),
             }
             match probe_font_signatures_core(header) {
                 FontMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                FontMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                FontMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 FontMatchCore::None => (),
             }
         }
@@ -552,7 +588,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             if header.starts_with(b"ftyp") {
                 match probe_media_signatures_core(header) {
                     MediaMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                    MediaMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                    MediaMatchCore::Truncated(fmt) => {
+                        return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                    }
                     MediaMatchCore::None => (),
                 }
             }
@@ -561,12 +599,16 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // OTF ('O') or Avro ('O')
             match probe_font_signatures_core(header) {
                 FontMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                FontMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                FontMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 FontMatchCore::None => (),
             }
             match probe_database_signatures_core(header) {
                 DatabaseMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                DatabaseMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                DatabaseMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 DatabaseMatchCore::None => (),
             }
         }
@@ -574,7 +616,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // WOFF / WOFF2 ('w')
             match probe_font_signatures_core(header) {
                 FontMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                FontMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                FontMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 FontMatchCore::None => (),
             }
         }
@@ -582,7 +626,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // SQLite3 ('S'), PCAP (0xD4, 0xA1), PCAPNG (0x0A), Parquet ('P')
             match probe_database_signatures_core(header) {
                 DatabaseMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                DatabaseMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                DatabaseMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 DatabaseMatchCore::None => (),
             }
         }
@@ -590,7 +636,9 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
             // QCOW ('Q'), VMDK ('K', '#'), VHD ('c'), VHDX ('v')
             match probe_disk_signatures_core(header) {
                 DiskMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-                DiskMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+                DiskMatchCore::Truncated(fmt) => {
+                    return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+                }
                 DiskMatchCore::None => (),
             }
         }
@@ -604,28 +652,38 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
     if header.len() >= 8 && &header[4..8] == b"ftyp" {
         match probe_media_signatures_core(header) {
             MediaMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-            MediaMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+            MediaMatchCore::Truncated(fmt) => {
+                return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+            }
             MediaMatchCore::None => (),
         }
     }
     if header.len() >= 262 && &header[257..262] == b"ustar" {
         match probe_archive_signatures_core(header) {
             ArchiveMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-            ArchiveMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+            ArchiveMatchCore::Truncated(fmt) => {
+                return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+            }
             ArchiveMatchCore::None => (),
         }
     }
     if header.len() >= 64 && (&header[60..64] == b"BOOK" || &header[60..64] == b"TEXt") {
         match probe_ebook_signatures_core(header) {
             EbookMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-            EbookMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+            EbookMatchCore::Truncated(fmt) => {
+                return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+            }
             EbookMatchCore::None => (),
         }
     }
-    if header.len() >= 32774 && (&header[32768..32774] == b"\x01CD001" || &header[32768..32774] == b"\x02CD001") {
+    if header.len() >= 32774
+        && (&header[32768..32774] == b"\x01CD001" || &header[32768..32774] == b"\x02CD001")
+    {
         match probe_disk_signatures_core(header) {
             DiskMatchCore::Confirmed(c) => return SignatureMatchCore::Confirmed(c),
-            DiskMatchCore::Truncated(fmt) => return SignatureMatchCore::Truncated(Cow::Borrowed(fmt)),
+            DiskMatchCore::Truncated(fmt) => {
+                return SignatureMatchCore::Truncated(Cow::Borrowed(fmt))
+            }
             DiskMatchCore::None => (),
         }
     }
@@ -648,7 +706,8 @@ pub fn probe_signatures_core(header: &[u8]) -> SignatureMatchCore {
         while idx + 5 <= scan_limit {
             if let Some(pos) = slice[idx..].iter().position(|&b| b == b'%') {
                 let match_pos = idx + pos;
-                if match_pos + 5 <= scan_limit && &slice[match_pos..match_pos + 5] == PDF_SIGNATURE {
+                if match_pos + 5 <= scan_limit && &slice[match_pos..match_pos + 5] == PDF_SIGNATURE
+                {
                     return SignatureMatchCore::Confirmed(make_pdf_core());
                 }
                 idx = match_pos + 1;
@@ -864,7 +923,9 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
             EbookMatch::None => (),
         }
     }
-    if header.len() >= 32774 && (&header[32768..32774] == b"\x01CD001" || &header[32768..32774] == b"\x02CD001") {
+    if header.len() >= 32774
+        && (&header[32768..32774] == b"\x01CD001" || &header[32768..32774] == b"\x02CD001")
+    {
         match probe_disk_signatures(header) {
             DiskMatch::Confirmed(rep) => return SignatureMatch::Confirmed(rep),
             DiskMatch::Truncated(fmt) => return SignatureMatch::Truncated(fmt),
@@ -890,7 +951,8 @@ pub fn probe_signatures(header: &[u8]) -> SignatureMatch {
         while idx + 5 <= scan_limit {
             if let Some(pos) = slice[idx..].iter().position(|&b| b == b'%') {
                 let match_pos = idx + pos;
-                if match_pos + 5 <= scan_limit && &slice[match_pos..match_pos + 5] == PDF_SIGNATURE {
+                if match_pos + 5 <= scan_limit && &slice[match_pos..match_pos + 5] == PDF_SIGNATURE
+                {
                     return SignatureMatch::Confirmed(Box::new(make_pdf_report()));
                 }
                 idx = match_pos + 1;

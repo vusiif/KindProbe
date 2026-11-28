@@ -38,10 +38,7 @@ fn resolve_path_extension(path: &Path) -> Option<&OsStr> {
 ///
 /// Follows symlinks safely, verifies that the target is a regular file,
 /// identifies the format via content evidence, and performs independent extension diagnosis.
-pub fn detect_path(
-    path: &Path,
-    options: &DetectOptions,
-) -> Result<DetectionReport, DetectError> {
+pub fn detect_path(path: &Path, options: &DetectOptions) -> Result<DetectionReport, DetectError> {
     let start = Instant::now();
 
     let mut file = match File::open(path) {
@@ -51,7 +48,9 @@ pub fn detect_path(
             // Check if the path actually exists and is a directory / non-regular file.
             if let Ok(meta) = path.metadata() {
                 if !meta.is_file() {
-                    return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
+                    return Err(DetectError::NotRegularFile(
+                        path.to_string_lossy().to_string(),
+                    ));
                 }
             }
             return Err(DetectError::Io(e));
@@ -64,7 +63,9 @@ pub fn detect_path(
     };
 
     if !meta.is_file() {
-        return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
+        return Err(DetectError::NotRegularFile(
+            path.to_string_lossy().to_string(),
+        ));
     }
 
     let path_ext = resolve_path_extension(path);
@@ -87,10 +88,15 @@ pub fn detect_bytes_core(
     bytes: &[u8],
     options: &DetectOptions,
 ) -> Result<DetectionCore, DetectError> {
-    if options.max_source_bytes_read < options.initial_window_size && options.max_source_bytes_read < bytes.len() {
+    if options.max_source_bytes_read < options.initial_window_size
+        && options.max_source_bytes_read < bytes.len()
+    {
         let core = DetectionCore::budget_exceeded();
         if let Err(inv) = core.validate_invariants() {
-            return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+            return Err(DetectError::InvalidParameter(format!(
+                "Invariant violation: {}",
+                inv
+            )));
         }
         return Ok(core);
     }
@@ -98,7 +104,10 @@ pub fn detect_bytes_core(
     match detectors::detect_bytes_non_container_core(bytes, options)? {
         Some(core) => {
             if let Err(inv) = core.validate_invariants() {
-                return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+                return Err(DetectError::InvalidParameter(format!(
+                    "Invariant violation: {}",
+                    inv
+                )));
             }
             Ok(core)
         }
@@ -110,15 +119,14 @@ pub fn detect_bytes_core(
 }
 
 /// Detects the format of an in-memory byte slice.
-pub fn detect_bytes(
-    bytes: &[u8],
-    options: &DetectOptions,
-) -> Result<DetectionReport, DetectError> {
+pub fn detect_bytes(bytes: &[u8], options: &DetectOptions) -> Result<DetectionReport, DetectError> {
     let start = Instant::now();
 
     // Check read budget consistency with detect_reader:
     // If the read budget is exhausted before the initial window can be read from non-empty input
-    if options.max_source_bytes_read < options.initial_window_size && options.max_source_bytes_read < bytes.len() {
+    if options.max_source_bytes_read < options.initial_window_size
+        && options.max_source_bytes_read < bytes.len()
+    {
         let core = DetectionCore::budget_exceeded();
         let mut report = core.to_report(
             DetectionStats {
@@ -132,7 +140,10 @@ pub fn detect_bytes(
         );
         report.extension_status = compare_extension(&report, None);
         if let Err(inv) = report.validate_invariants() {
-            return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+            return Err(DetectError::InvalidParameter(format!(
+                "Invariant violation: {}",
+                inv
+            )));
         }
         return Ok(report);
     }
@@ -147,7 +158,11 @@ pub fn detect_bytes(
             budget_reader.populate_stats(&mut rep.stats);
             if budget_reader.is_budget_exceeded() {
                 rep.inspection = Inspection::Limited;
-                if !rep.warnings.iter().any(|w| w.code == "budget.source_read_exceeded") {
+                if !rep
+                    .warnings
+                    .iter()
+                    .any(|w| w.code == "budget.source_read_exceeded")
+                {
                     rep.warnings.push(WarningItem::new(
                         "budget.source_read_exceeded",
                         "Total source read budget exceeded during detection",
@@ -165,7 +180,10 @@ pub fn detect_bytes(
 
     // Verify invariants
     if let Err(inv) = report.validate_invariants() {
-        return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+        return Err(DetectError::InvalidParameter(format!(
+            "Invariant violation: {}",
+            inv
+        )));
     }
 
     Ok(report)
@@ -191,7 +209,10 @@ pub fn detect_reader_core<R: Read + Seek>(
     }
 
     if let Err(inv) = core.validate_invariants() {
-        return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+        return Err(DetectError::InvalidParameter(format!(
+            "Invariant violation: {}",
+            inv
+        )));
     }
     Ok(core)
 }
@@ -206,7 +227,9 @@ pub fn detect_path_core(
         Err(e) => {
             if let Ok(meta) = path.metadata() {
                 if !meta.is_file() {
-                    return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
+                    return Err(DetectError::NotRegularFile(
+                        path.to_string_lossy().to_string(),
+                    ));
                 }
             }
             return Err(DetectError::Io(e));
@@ -215,7 +238,9 @@ pub fn detect_path_core(
 
     let meta = file.metadata().map_err(DetectError::Io)?;
     if !meta.is_file() {
-        return Err(DetectError::NotRegularFile(path.to_string_lossy().to_string()));
+        return Err(DetectError::NotRegularFile(
+            path.to_string_lossy().to_string(),
+        ));
     }
 
     if options.extension_hint.is_none() {
@@ -246,7 +271,11 @@ pub fn detect_reader<R: Read + Seek>(
     // If budget limit was exhausted by the reader
     if budget_reader.is_budget_exceeded() {
         report.inspection = Inspection::Limited;
-        if !report.warnings.iter().any(|w| w.code == "budget.source_read_exceeded") {
+        if !report
+            .warnings
+            .iter()
+            .any(|w| w.code == "budget.source_read_exceeded")
+        {
             report.warnings.push(WarningItem::new(
                 "budget.source_read_exceeded",
                 "Total source read budget exceeded during detection",
@@ -261,7 +290,10 @@ pub fn detect_reader<R: Read + Seek>(
 
     // Verify invariants
     if let Err(inv) = report.validate_invariants() {
-        return Err(DetectError::InvalidParameter(format!("Invariant violation: {}", inv)));
+        return Err(DetectError::InvalidParameter(format!(
+            "Invariant violation: {}",
+            inv
+        )));
     }
 
     Ok(report)

@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus, Identification, Inspection, Verification};
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_tar() {
@@ -41,8 +41,14 @@ fn test_detect_tar() {
     assert!(rep.evidence.iter().any(|e| e.code == "sig.tar.ustar"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.tar.checksum"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("tar"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("gz"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("tar"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("gz"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -66,10 +72,22 @@ fn test_detect_gzip() {
     assert!(rep.evidence.iter().any(|e| e.code == "sig.gzip.magic"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.gzip.header"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("gz"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("gzip"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("tgz"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("bz2"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("gz"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("gzip"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("tgz"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("bz2"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -92,9 +110,18 @@ fn test_detect_bzip2() {
     assert!(rep.evidence.iter().any(|e| e.code == "sig.bzip2.magic"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.bzip2.header"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("bz2"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("tbz2"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("xz"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("bz2"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("tbz2"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("xz"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -133,9 +160,18 @@ fn test_detect_xz_and_zstd() {
     assert!(rep_xz.evidence.iter().any(|e| e.code == "sig.xz.magic"));
     assert!(rep_xz.evidence.iter().any(|e| e.code == "sig.xz.crc"));
 
-    assert_eq!(compare_extension(&rep_xz, Some(OsStr::new("xz"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_xz, Some(OsStr::new("txz"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_xz, Some(OsStr::new("zst"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_xz, Some(OsStr::new("xz"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_xz, Some(OsStr::new("txz"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_xz, Some(OsStr::new("zst"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. Zstandard format: [0x28, 0xB5, 0x2F, 0xFD]
     let zstd = [0x28, 0xB5, 0x2F, 0xFD, 0x00, 0x00];
@@ -148,9 +184,18 @@ fn test_detect_xz_and_zstd() {
     assert_eq!(rep_zstd.accepted_extensions, vec!["zst", "zstd", "tzst"]);
     assert!(rep_zstd.evidence.iter().any(|e| e.code == "sig.zstd.magic"));
 
-    assert_eq!(compare_extension(&rep_zstd, Some(OsStr::new("zst"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_zstd, Some(OsStr::new("zstd"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_zstd, Some(OsStr::new("gz"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_zstd, Some(OsStr::new("zst"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_zstd, Some(OsStr::new("zstd"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_zstd, Some(OsStr::new("gz"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -159,9 +204,15 @@ fn test_detect_truncated_compressions() {
 
     let trunc_gz = detect_bytes(&[0x1F], &opts).expect("detect truncated gzip");
     assert_eq!(trunc_gz.identification, Identification::Unknown);
-    assert!(trunc_gz.warnings.iter().any(|w| w.code == "input.truncated"));
+    assert!(trunc_gz
+        .warnings
+        .iter()
+        .any(|w| w.code == "input.truncated"));
 
     let trunc_bz = detect_bytes(b"BZ", &opts).expect("detect truncated bzip2");
     assert_eq!(trunc_bz.identification, Identification::Unknown);
-    assert!(trunc_bz.warnings.iter().any(|w| w.code == "input.truncated"));
+    assert!(trunc_bz
+        .warnings
+        .iter()
+        .any(|w| w.code == "input.truncated"));
 }

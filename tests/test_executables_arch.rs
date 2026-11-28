@@ -1,7 +1,7 @@
-use std::process::Command;
 use kindprobe::budget::DetectOptions;
 use kindprobe::detect_bytes;
 use kindprobe::model::{DetectionReport, Identification};
+use std::process::Command;
 
 const BIN_PATH: &str = env!("CARGO_BIN_EXE_kindprobe");
 
@@ -37,13 +37,19 @@ fn test_detect_pe_cpu_architectures() {
     assert_eq!(rep.recommended_extension.as_deref(), Some("exe"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.pe.arch.arm64"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.pe.opt.pe32plus"));
-    assert!(rep.evidence.iter().any(|e| e.code == "sig.pe.subsystem.gui"));
+    assert!(rep
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.pe.subsystem.gui"));
 
     // 2. x64 / AMD64 PE Executable (Console)
     let pe_x64 = make_dummy_pe(0x8664, 0x020B, 3, false);
     let rep = detect_bytes(&pe_x64, &opts).expect("detect pe x64");
     assert!(rep.evidence.iter().any(|e| e.code == "sig.pe.arch.x64"));
-    assert!(rep.evidence.iter().any(|e| e.code == "sig.pe.subsystem.console"));
+    assert!(rep
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.pe.subsystem.console"));
 
     // 3. x86 PE DLL (32-bit)
     let pe_x86 = make_dummy_pe(0x014C, 0x010B, 2, true);
@@ -60,7 +66,10 @@ fn test_detect_pe_cpu_architectures() {
     // 5. ARM Thumb-2 (Windows RT)
     let pe_thumb2 = make_dummy_pe(0x01C4, 0x010B, 2, false);
     let rep = detect_bytes(&pe_thumb2, &opts).expect("detect pe thumb2");
-    assert!(rep.evidence.iter().any(|e| e.code == "sig.pe.arch.arm_thumb2"));
+    assert!(rep
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.pe.arch.arm_thumb2"));
 }
 
 #[test]
@@ -79,7 +88,10 @@ fn test_detect_elf_cpu_architectures() {
     let rep = detect_bytes(&elf_arm64, &opts).expect("detect elf arm64");
     assert!(rep.evidence.iter().any(|e| e.code == "sig.elf.arch.arm64"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.elf.class.64bit"));
-    assert!(rep.evidence.iter().any(|e| e.code == "sig.elf.type.executable"));
+    assert!(rep
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.elf.type.executable"));
 
     // 2. ELF RISC-V 64-bit shared object
     let mut elf_riscv = vec![0u8; 64];
@@ -106,7 +118,10 @@ fn test_detect_macho_cpu_architectures() {
 
     let rep = detect_bytes(&macho_arm64, &opts).expect("detect macho arm64");
     assert_eq!(rep.format_id.as_deref(), Some("macho"));
-    assert!(rep.evidence.iter().any(|e| e.code == "sig.macho.arch.arm64"));
+    assert!(rep
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.macho.arch.arm64"));
 
     // 2. Mach-O x86-64 (64-bit LE)
     let mut macho_x64 = vec![0u8; 64];
@@ -114,7 +129,10 @@ fn test_detect_macho_cpu_architectures() {
     macho_x64[4..8].copy_from_slice(&0x01000007u32.to_le_bytes()); // CPU_TYPE_X86_64
 
     let rep = detect_bytes(&macho_x64, &opts).expect("detect macho x64");
-    assert!(rep.evidence.iter().any(|e| e.code == "sig.macho.arch.x86_64"));
+    assert!(rep
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.macho.arch.x86_64"));
 }
 
 #[test]
@@ -163,10 +181,18 @@ fn test_cli_architecture_display_e2e() {
         .expect("run cli json");
     assert_eq!(out_json.status.code(), Some(0));
     let stdout_json = String::from_utf8_lossy(&out_json.stdout);
-    let report: DetectionReport = serde_json::from_str(stdout_json.trim()).expect("deserialize json");
+    let report: DetectionReport =
+        serde_json::from_str(stdout_json.trim()).expect("deserialize json");
     assert_eq!(report.format_id.as_deref(), Some("pe"));
-    let arch_ev = report.evidence.iter().find(|e| e.code == "sig.pe.arch.arm64").expect("arm64 evidence");
-    assert_eq!(arch_ev.description.as_deref(), Some("Target Architecture: ARM64 (AArch64 / 64-bit)"));
+    let arch_ev = report
+        .evidence
+        .iter()
+        .find(|e| e.code == "sig.pe.arch.arm64")
+        .expect("arm64 evidence");
+    assert_eq!(
+        arch_ev.description.as_deref(),
+        Some("Target Architecture: ARM64 (AArch64 / 64-bit)")
+    );
 
     // Clean up
     let _ = std::fs::remove_file(&pe_arm64_path);

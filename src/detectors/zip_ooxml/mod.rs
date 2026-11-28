@@ -16,8 +16,8 @@ use crate::model::{
 
 use cd_check::precheck_zip_central_directory;
 use epub::check_epub_or_odf;
-use packages::check_zip_packages;
 use opc::{parse_content_types, parse_package_relationships, resolve_target_path};
+use packages::check_zip_packages;
 use schemas::classify_ooxml_content_type;
 use xml::{verify_main_part_xml, MainPartXmlOutcome};
 
@@ -41,7 +41,9 @@ where
     let entry = match archive.by_name(spec.entry_name) {
         Ok(e) => e,
         Err(_) => {
-            report.warnings.push(WarningItem::new(spec.missing_code, spec.missing_msg));
+            report
+                .warnings
+                .push(WarningItem::new(spec.missing_code, spec.missing_msg));
             return None;
         }
     };
@@ -74,7 +76,10 @@ where
                 "Cumulative decompressed byte budget exceeded",
             ));
         } else {
-            report.warnings.push(WarningItem::new("budget.xml_output_exceeded", spec.xml_limit_msg));
+            report.warnings.push(WarningItem::new(
+                "budget.xml_output_exceeded",
+                spec.xml_limit_msg,
+            ));
         }
         return None;
     }
@@ -101,7 +106,9 @@ fn finalize_zip_package(
     evidence_code: &str,
 ) {
     report.stats.entries_inspected = entries_inspected;
-    report.evidence.push(EvidenceItem::new("zip.central_directory"));
+    report
+        .evidence
+        .push(EvidenceItem::new("zip.central_directory"));
     report.identification = Identification::Format;
     report.format_id = Some(format_id.to_string());
     report.category = category.to_string();
@@ -128,7 +135,9 @@ fn finalize_ooxml_outcome(
             report.inspection = Inspection::Complete;
             report.recommended_extension = Some(kind.recommended_extension().to_string());
             report.accepted_extensions = vec![kind.recommended_extension().to_string()];
-            report.evidence.push(EvidenceItem::new(kind.evidence_code()));
+            report
+                .evidence
+                .push(EvidenceItem::new(kind.evidence_code()));
         }
         MainPartXmlOutcome::DepthExceededValidRoot(kind) => {
             report.identification = Identification::Format;
@@ -139,7 +148,9 @@ fn finalize_ooxml_outcome(
             report.inspection = Inspection::Limited;
             report.recommended_extension = Some(kind.recommended_extension().to_string());
             report.accepted_extensions = vec![kind.recommended_extension().to_string()];
-            report.evidence.push(EvidenceItem::new(kind.evidence_code()));
+            report
+                .evidence
+                .push(EvidenceItem::new(kind.evidence_code()));
             report.warnings.push(WarningItem::new(
                 "budget.xml_depth_exceeded",
                 format!(
@@ -165,7 +176,9 @@ fn finalize_ooxml_outcome(
             ));
         }
         MainPartXmlOutcome::InvalidRoot(msg) => {
-            report.warnings.push(WarningItem::new("ooxml.invalid_root_element", msg));
+            report
+                .warnings
+                .push(WarningItem::new("ooxml.invalid_root_element", msg));
         }
     }
 }
@@ -244,7 +257,9 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     // do not need ZipArchive instantiation, second EOCD search, or stream rewinding.
     if !has_content_types && !has_rels && !has_ooxml_subdirs && !cd_check.has_mimetype {
         report.stats.entries_inspected = cd_check.cd_total_entries;
-        report.evidence.push(EvidenceItem::new("zip.central_directory"));
+        report
+            .evidence
+            .push(EvidenceItem::new("zip.central_directory"));
 
         // 1. Android Package (APK): AndroidManifest.xml and/or classes.dex
         if cd_check.has_apk_manifest || cd_check.has_apk_dex {
@@ -302,7 +317,8 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
             report.verification = Verification::Structure;
             report.inspection = Inspection::Complete;
             report.recommended_extension = Some("jar".to_string());
-            report.accepted_extensions = vec!["jar".to_string(), "war".to_string(), "ear".to_string()];
+            report.accepted_extensions =
+                vec!["jar".to_string(), "war".to_string(), "ear".to_string()];
             report.evidence.push(EvidenceItem::new("zip.jar.manifest"));
             return Ok(report);
         }
@@ -398,7 +414,9 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     // Incomplete OOXML short-circuit: OOXML indicators exist but [Content_Types].xml is absent
     if !has_content_types && (has_rels || has_ooxml_subdirs) && !cd_check.has_mimetype {
         report.stats.entries_inspected = cd_check.cd_total_entries;
-        report.evidence.push(EvidenceItem::new("zip.central_directory"));
+        report
+            .evidence
+            .push(EvidenceItem::new("zip.central_directory"));
         report.warnings.push(WarningItem::new(
             "ooxml.content_types_missing",
             "OOXML package structure incomplete: [Content_Types].xml missing",
@@ -473,7 +491,9 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
     };
 
     report.stats.entries_inspected = archive.len();
-    report.evidence.push(EvidenceItem::new("zip.central_directory"));
+    report
+        .evidence
+        .push(EvidenceItem::new("zip.central_directory"));
 
     // Check for OOXML indicators (already collected during central directory pre-check)
     let has_content_types = cd_check.has_content_types;
@@ -515,16 +535,13 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
             missing_msg: "Cannot open _rels/.rels entry in package",
             xml_limit_msg: "Decompressed size of _rels/.rels exceeded single XML limit",
         };
-        let parsed = match stream_zip_xml_bounded(
-            &mut archive,
-            &rels_spec,
-            options,
-            &mut report,
-            |r| parse_package_relationships(r),
-        ) {
-            Some(p) => p,
-            None => return Ok(report),
-        };
+        let parsed =
+            match stream_zip_xml_bounded(&mut archive, &rels_spec, options, &mut report, |r| {
+                parse_package_relationships(r)
+            }) {
+                Some(p) => p,
+                None => return Ok(report),
+            };
         match parsed {
             Some(target) => target,
             None => {
@@ -537,14 +554,19 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         }
     };
 
-    report.evidence.push(EvidenceItem::new("ooxml.package_relationships"));
+    report
+        .evidence
+        .push(EvidenceItem::new("ooxml.package_relationships"));
 
     let normalized_target = match resolve_target_path("", &main_rel_target) {
         Some(t) => t,
         None => {
             report.warnings.push(WarningItem::new(
                 "ooxml.invalid_target_path",
-                format!("Relationship target path '{}' resolves outside package root", main_rel_target),
+                format!(
+                    "Relationship target path '{}' resolves outside package root",
+                    main_rel_target
+                ),
             ));
             return Ok(report);
         }
@@ -558,29 +580,31 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
             missing_msg: "Cannot open [Content_Types].xml entry",
             xml_limit_msg: "Decompressed size of [Content_Types].xml exceeded single XML limit",
         };
-        let parsed = match stream_zip_xml_bounded(
-            &mut archive,
-            &ct_spec,
-            options,
-            &mut report,
-            |r| parse_content_types(r, &normalized_target),
-        ) {
-            Some(p) => p,
-            None => return Ok(report),
-        };
+        let parsed =
+            match stream_zip_xml_bounded(&mut archive, &ct_spec, options, &mut report, |r| {
+                parse_content_types(r, &normalized_target)
+            }) {
+                Some(p) => p,
+                None => return Ok(report),
+            };
         match parsed {
             Some(ct) => ct,
             None => {
                 report.warnings.push(WarningItem::new(
                     "ooxml.content_type_not_found",
-                    format!("No ContentType entry found for part '/{}'", normalized_target),
+                    format!(
+                        "No ContentType entry found for part '/{}'",
+                        normalized_target
+                    ),
                 ));
                 return Ok(report);
             }
         }
     };
 
-    report.evidence.push(EvidenceItem::new("ooxml.content_types"));
+    report
+        .evidence
+        .push(EvidenceItem::new("ooxml.content_types"));
 
     // Classify supported OOXML family
     let format_kind = match classify_ooxml_content_type(&content_type) {
@@ -588,7 +612,10 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         None => {
             report.warnings.push(WarningItem::new(
                 "ooxml.unsupported_content_type",
-                format!("Package target has unsupported OOXML content type: {}", content_type),
+                format!(
+                    "Package target has unsupported OOXML content type: {}",
+                    content_type
+                ),
             ));
             return Ok(report);
         }
@@ -601,16 +628,13 @@ pub fn detect_zip_ooxml<R: Read + Seek>(
         missing_msg: "Failed to open main document part in package",
         xml_limit_msg: "Decompressed size of main part exceeded single XML limit",
     };
-    let outcome = match stream_zip_xml_bounded(
-        &mut archive,
-        &main_spec,
-        options,
-        &mut report,
-        |r| verify_main_part_xml(r, format_kind, options.max_xml_depth),
-    ) {
-        Some(o) => o,
-        None => return Ok(report),
-    };
+    let outcome =
+        match stream_zip_xml_bounded(&mut archive, &main_spec, options, &mut report, |r| {
+            verify_main_part_xml(r, format_kind, options.max_xml_depth)
+        }) {
+            Some(o) => o,
+            None => return Ok(report),
+        };
 
     finalize_ooxml_outcome(outcome, options, &mut report);
 

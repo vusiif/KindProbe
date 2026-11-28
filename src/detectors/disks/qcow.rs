@@ -91,11 +91,7 @@ pub fn probe_qcow(header: &[u8]) -> QcowMatch {
         verification,
         inspection: Inspection::Complete,
         recommended_extension: Some("qcow2".to_string()),
-        accepted_extensions: vec![
-            "qcow2".to_string(),
-            "qcow".to_string(),
-            "img".to_string(),
-        ],
+        accepted_extensions: vec!["qcow2".to_string(), "qcow".to_string(), "img".to_string()],
         extension_status: ExtensionStatus::Undetermined,
         evidence,
         warnings: Vec::new(),

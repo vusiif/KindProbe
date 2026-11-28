@@ -1,8 +1,8 @@
-use std::io::BufRead;
+use super::schemas::OoxmlFormatKind;
+use crate::model::WarningItem;
 use quick_xml::events::Event;
 use quick_xml::reader::NsReader;
-use crate::model::WarningItem;
-use super::schemas::OoxmlFormatKind;
+use std::io::BufRead;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum MainPartXmlOutcome {
@@ -45,7 +45,10 @@ pub fn verify_main_part_xml<R: BufRead>(
                 if !root_seen {
                     root_seen = true;
                     if e.local_name().into_inner().as_bytes() == expected_local {
-                        if let quick_xml::name::ResolveResult::Bound(quick_xml::name::Namespace(ns)) = resolve {
+                        if let quick_xml::name::ResolveResult::Bound(quick_xml::name::Namespace(
+                            ns,
+                        )) = resolve
+                        {
                             if expected_kind.matches_namespace(ns.as_bytes()) {
                                 root_is_valid = true;
                             }
@@ -64,7 +67,10 @@ pub fn verify_main_part_xml<R: BufRead>(
                 if !root_seen {
                     root_seen = true;
                     if e.local_name().into_inner().as_bytes() == expected_local {
-                        if let quick_xml::name::ResolveResult::Bound(quick_xml::name::Namespace(ns)) = resolve {
+                        if let quick_xml::name::ResolveResult::Bound(quick_xml::name::Namespace(
+                            ns,
+                        )) = resolve
+                        {
                             if expected_kind.matches_namespace(ns.as_bytes()) {
                                 root_is_valid = true;
                             }

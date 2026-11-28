@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus};
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_game_roms() {
@@ -18,7 +18,10 @@ fn test_detect_game_roms() {
     let rep_z64 = detect_bytes(z64_bytes, &opts).expect("detect z64");
     assert_eq!(rep_z64.format_id.as_deref(), Some("z64"));
     assert_eq!(rep_z64.category, "rom");
-    assert_eq!(compare_extension(&rep_z64, Some(OsStr::new("z64"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_z64, Some(OsStr::new("z64"))),
+        ExtensionStatus::Match
+    );
 
     // 3. Nintendo 64 Little-Endian (n64)
     let n64_bytes = b"\x40\x12\x37\x80\x0f\x00\x00\x00";
@@ -36,8 +39,14 @@ fn test_detect_game_roms() {
     gb_bytes[260..268].copy_from_slice(b"\xce\xed\x66\x66\xcc\x0d\x00\x0b");
     let rep_gb = detect_bytes(&gb_bytes, &opts).expect("detect gb");
     assert_eq!(rep_gb.format_id.as_deref(), Some("gb"));
-    assert_eq!(compare_extension(&rep_gb, Some(OsStr::new("gb"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_gb, Some(OsStr::new("gbc"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_gb, Some(OsStr::new("gb"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_gb, Some(OsStr::new("gbc"))),
+        ExtensionStatus::Match
+    );
 }
 
 #[test]

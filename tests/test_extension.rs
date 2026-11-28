@@ -1,7 +1,7 @@
+use kindprobe::budget::DetectOptions;
+use kindprobe::{compare_extension, detect_bytes, detect_path, ExtensionStatus, Identification};
 use std::fs;
 use std::path::Path;
-use kindprobe::budget::DetectOptions;
-use kindprobe::{detect_bytes, detect_path, compare_extension, ExtensionStatus, Identification};
 
 #[test]
 fn test_extension_independence() {
@@ -37,40 +37,67 @@ fn test_compare_extension_pure_function() {
 
     use std::ffi::OsStr;
     // Matching
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("png"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("PNG"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("png"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("PNG"))),
+        ExtensionStatus::Match
+    );
 
     // Mismatched known
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("pdf"))), ExtensionStatus::Mismatch);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("docx"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("pdf"))),
+        ExtensionStatus::Mismatch
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("docx"))),
+        ExtensionStatus::Mismatch
+    );
 
     // Missing
     assert_eq!(compare_extension(&rep, None), ExtensionStatus::Missing);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new(""))), ExtensionStatus::Missing);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new(""))),
+        ExtensionStatus::Missing
+    );
 
     // Unrecognized
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("unknownextxyz"))), ExtensionStatus::Unrecognized);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("unknownextxyz"))),
+        ExtensionStatus::Unrecognized
+    );
 
     // Non-UTF-8 extension on confirmed format (Priority 5)
     #[cfg(unix)]
     {
         use std::os::unix::ffi::OsStrExt;
         let non_utf8_ext = OsStr::from_bytes(b"\xff\xfe");
-        assert_eq!(compare_extension(&rep, Some(non_utf8_ext)), ExtensionStatus::Unrecognized);
+        assert_eq!(
+            compare_extension(&rep, Some(non_utf8_ext)),
+            ExtensionStatus::Unrecognized
+        );
 
         // Non-UTF-8 extension on container-only report (Priority 2 before non-UTF-8 check -> Undetermined)
         let mut container_rep = rep.clone();
         container_rep.identification = Identification::ContainerOnly;
         container_rep.format_id = None;
         container_rep.accepted_extensions.clear();
-        assert_eq!(compare_extension(&container_rep, Some(non_utf8_ext)), ExtensionStatus::Undetermined);
+        assert_eq!(
+            compare_extension(&container_rep, Some(non_utf8_ext)),
+            ExtensionStatus::Undetermined
+        );
 
         // Non-UTF-8 extension on unknown report (Priority 2 -> Undetermined)
         let mut unknown_rep = rep.clone();
         unknown_rep.identification = Identification::Unknown;
         unknown_rep.format_id = None;
         unknown_rep.accepted_extensions.clear();
-        assert_eq!(compare_extension(&unknown_rep, Some(non_utf8_ext)), ExtensionStatus::Undetermined);
+        assert_eq!(
+            compare_extension(&unknown_rep, Some(non_utf8_ext)),
+            ExtensionStatus::Undetermined
+        );
     }
 }
 

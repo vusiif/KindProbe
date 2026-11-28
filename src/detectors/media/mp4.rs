@@ -171,7 +171,10 @@ pub fn probe_mp4_core(header: &[u8]) -> Mp4MatchCore {
             });
         }
 
-        if matches!(major_brand, b"3gp4" | b"3gp5" | b"3gp6" | b"3gp7" | b"3gp8" | b"3gp9") {
+        if matches!(
+            major_brand,
+            b"3gp4" | b"3gp5" | b"3gp6" | b"3gp7" | b"3gp8" | b"3gp9"
+        ) {
             return Mp4MatchCore::Confirmed(DetectionCore {
                 format_id: Some("3gp"),
                 category: "video",
@@ -336,7 +339,10 @@ pub fn probe_mp4(header: &[u8]) -> Mp4Match {
             ));
         }
 
-        if matches!(major_brand, b"3gp4" | b"3gp5" | b"3gp6" | b"3gp7" | b"3gp8" | b"3gp9") {
+        if matches!(
+            major_brand,
+            b"3gp4" | b"3gp5" | b"3gp6" | b"3gp7" | b"3gp8" | b"3gp9"
+        ) {
             return Mp4Match::Confirmed(Box::new(
                 DetectionCore {
                     format_id: Some("3gp"),
@@ -387,7 +393,11 @@ pub fn probe_mp4(header: &[u8]) -> Mp4Match {
         let (format_id, accepted_exts, rec_ext) = if major_brand == b"M4A " {
             ("m4a", vec!["m4a".to_string(), "mp4".to_string()], "m4a")
         } else {
-            ("mp4", vec!["mp4".to_string(), "m4v".to_string(), "m4a".to_string()], "mp4")
+            (
+                "mp4",
+                vec!["mp4".to_string(), "m4v".to_string(), "m4a".to_string()],
+                "mp4",
+            )
         };
 
         return Mp4Match::Confirmed(Box::new(DetectionReport {

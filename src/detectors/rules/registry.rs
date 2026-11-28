@@ -297,10 +297,7 @@ pub static DECLARATIVE_RULES: &[SignatureRule] = &[
         container_id: None,
         recommended_ext: "aif",
         accepted_exts: &["aif", "aiff", "aifc"],
-        patterns: &[
-            MagicPattern::new(0, b"FORM"),
-            MagicPattern::new(8, b"AIFF"),
-        ],
+        patterns: &[MagicPattern::new(0, b"FORM"), MagicPattern::new(8, b"AIFF")],
         min_header_len: 12,
         priority: 85,
         evidence_code: "sig.aiff.magic",
@@ -313,10 +310,7 @@ pub static DECLARATIVE_RULES: &[SignatureRule] = &[
         container_id: None,
         recommended_ext: "aif",
         accepted_exts: &["aif", "aiff", "aifc"],
-        patterns: &[
-            MagicPattern::new(0, b"FORM"),
-            MagicPattern::new(8, b"AIFC"),
-        ],
+        patterns: &[MagicPattern::new(0, b"FORM"), MagicPattern::new(8, b"AIFC")],
         min_header_len: 12,
         priority: 85,
         evidence_code: "sig.aiff.magic",

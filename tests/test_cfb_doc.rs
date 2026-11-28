@@ -1,6 +1,6 @@
-use std::path::Path;
 use kindprobe::budget::DetectOptions;
 use kindprobe::{detect_path, Identification, Inspection, Verification};
+use std::path::Path;
 
 #[test]
 fn test_cfb_and_word_doc() {
@@ -20,7 +20,10 @@ fn test_cfb_and_word_doc() {
     assert_eq!(rep.format_id, None);
     assert_eq!(rep.container_id.as_deref(), Some("cfb"));
     assert_eq!(rep.recommended_extension, None);
-    assert!(rep.warnings.iter().any(|w| w.code == "cfb.invalid_word_fib"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "cfb.invalid_word_fib"));
 
     // True Word 97+ DOC
     let rep = detect_path(Path::new("fixtures/true_doc.doc"), &options).unwrap();
@@ -40,8 +43,8 @@ fn test_cfb_and_word_doc() {
 
 #[test]
 fn test_cfb_case_insensitive_table_stream_open() {
-    use std::io::Write;
     use kindprobe::detect_bytes;
+    use std::io::Write;
 
     let cursor = std::io::Cursor::new(Vec::new());
     let mut comp = cfb::CompoundFile::create(cursor).unwrap();
@@ -52,9 +55,15 @@ fn test_cfb_case_insensitive_table_stream_open() {
     fib[10..12].copy_from_slice(&0x1000u16.to_le_bytes()); // flags: bit 9 (0x0200) is 0 => 0Table
     fib[12..14].copy_from_slice(&0x00BFu16.to_le_bytes());
 
-    comp.create_stream("/WordDocument").unwrap().write_all(&fib).unwrap();
+    comp.create_stream("/WordDocument")
+        .unwrap()
+        .write_all(&fib)
+        .unwrap();
     // Create table stream with ALL UPPERCASE name: /0TABLE
-    comp.create_stream("/0TABLE").unwrap().write_all(&[0u8; 64]).unwrap();
+    comp.create_stream("/0TABLE")
+        .unwrap()
+        .write_all(&[0u8; 64])
+        .unwrap();
 
     let inner = comp.into_inner();
     let data = inner.into_inner();

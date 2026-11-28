@@ -3,8 +3,8 @@
 //! Each module implements declarative signature definitions strictly bounded
 //! within the 50 to 80 line engineering limit.
 
-pub mod archives;
 pub mod advanced_codecs_and_containers;
+pub mod archives;
 pub mod astronomy_and_space;
 pub mod audio_chips;
 pub mod audio_production_and_dsp;
@@ -15,8 +15,8 @@ pub mod cad_and_gnss;
 pub mod compiler_ir_and_assemblies;
 pub mod computational_biology_and_genetics;
 pub mod crypto;
-pub mod cryptographic_tokens_and_security;
 pub mod cryptocurrency_and_blockchains;
+pub mod cryptographic_tokens_and_security;
 pub mod database;
 pub mod database_storage_engines;
 pub mod disk_images;

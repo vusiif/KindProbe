@@ -48,7 +48,10 @@ pub fn probe_ttf_otf_core(header: &[u8]) -> Option<DetectionCore> {
     }
 
     // Disambiguate against Microsoft Access Jet/ACE Database (\x00\x01\x00\x00Standard...)
-    if header.len() >= 19 && is_ttf && (&header[4..19] == b"Standard Jet DB" || &header[4..19] == b"Standard ACE DB") {
+    if header.len() >= 19
+        && is_ttf
+        && (&header[4..19] == b"Standard Jet DB" || &header[4..19] == b"Standard ACE DB")
+    {
         return None;
     }
 

@@ -144,7 +144,8 @@ pub fn probe_mp3(header: &[u8]) -> Mp3Match {
         }
 
         let major_ver = header[3];
-        let synchsafe_valid = header[6] < 0x80 && header[7] < 0x80 && header[8] < 0x80 && header[9] < 0x80;
+        let synchsafe_valid =
+            header[6] < 0x80 && header[7] < 0x80 && header[8] < 0x80 && header[9] < 0x80;
 
         if major_ver < 0xFF && synchsafe_valid {
             let mut evidence = vec![EvidenceItem::new("sig.id3.tag")];

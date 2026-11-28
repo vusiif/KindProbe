@@ -45,7 +45,10 @@ fn test_detect_jpeg_truncated() {
     assert_eq!(report.identification, Identification::Unknown);
     assert_eq!(report.format_id, None);
     assert!(report.warnings.iter().any(|w| w.code == "input.truncated"));
-    assert_eq!(report.candidates.as_deref(), Some(&["jpeg".to_string()][..]));
+    assert_eq!(
+        report.candidates.as_deref(),
+        Some(&["jpeg".to_string()][..])
+    );
 }
 
 #[test]
@@ -55,8 +58,8 @@ fn test_detect_gif_with_screen_descriptor() {
     gif_bytes.extend_from_slice(b"GIF89a");
     gif_bytes.extend_from_slice(&100u16.to_le_bytes()); // width
     gif_bytes.extend_from_slice(&200u16.to_le_bytes()); // height
-    gif_bytes.extend_from_slice(&[0x80, 0x00, 0x00]);   // packed, bg, aspect
-    gif_bytes.push(0x3B);                               // GIF trailer
+    gif_bytes.extend_from_slice(&[0x80, 0x00, 0x00]); // packed, bg, aspect
+    gif_bytes.push(0x3B); // GIF trailer
 
     let options = DetectOptions::default();
     let report = detect_bytes(&gif_bytes, &options).expect("detect gif");
@@ -69,7 +72,10 @@ fn test_detect_gif_with_screen_descriptor() {
     assert_eq!(report.verification, Verification::Structure);
     assert_eq!(report.inspection, Inspection::Complete);
     assert!(report.evidence.iter().any(|e| e.code == "sig.gif.header"));
-    assert!(report.evidence.iter().any(|e| e.code == "sig.gif.logical_screen"));
+    assert!(report
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.gif.logical_screen"));
 }
 
 #[test]
@@ -87,7 +93,10 @@ fn test_detect_gif_zero_dimensions_downgrades_to_signature() {
     assert_eq!(report.format_id.as_deref(), Some("gif"));
     assert_eq!(report.verification, Verification::Signature);
     assert!(report.evidence.iter().any(|e| e.code == "sig.gif.header"));
-    assert!(!report.evidence.iter().any(|e| e.code == "sig.gif.logical_screen"));
+    assert!(!report
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.gif.logical_screen"));
 }
 
 #[test]

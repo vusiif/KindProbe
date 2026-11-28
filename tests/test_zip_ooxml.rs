@@ -1,6 +1,6 @@
-use std::path::Path;
 use kindprobe::budget::DetectOptions;
 use kindprobe::{detect_path, Identification, Inspection};
+use std::path::Path;
 
 #[test]
 fn test_plain_zip_vs_docx() {
@@ -45,25 +45,42 @@ fn test_fake_docx_and_partial_ooxml() {
     assert_eq!(rep.format_id, None);
     assert_eq!(rep.container_id.as_deref(), Some("zip"));
     assert_eq!(rep.recommended_extension, None);
-    assert!(rep.warnings.iter().any(|w| w.code == "ooxml.content_types_missing"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "ooxml.content_types_missing"));
 
     // Partial OOXML: missing rels
-    let rep = detect_path(Path::new("fixtures/partial_ooxml_missing_rels.zip"), &options).unwrap();
+    let rep = detect_path(
+        Path::new("fixtures/partial_ooxml_missing_rels.zip"),
+        &options,
+    )
+    .unwrap();
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.format_id, None);
-    assert!(rep.warnings.iter().any(|w| w.code == "ooxml.required_relationship_missing"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "ooxml.required_relationship_missing"));
 
     // Partial OOXML: missing main part
-    let rep = detect_path(Path::new("fixtures/partial_ooxml_missing_main_part.zip"), &options).unwrap();
+    let rep = detect_path(
+        Path::new("fixtures/partial_ooxml_missing_main_part.zip"),
+        &options,
+    )
+    .unwrap();
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.format_id, None);
-    assert!(rep.warnings.iter().any(|w| w.code == "ooxml.main_part_missing"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "ooxml.main_part_missing"));
 }
 
 #[test]
 fn test_ooxml_case_insensitive_content_types() {
-    use std::io::Write;
     use kindprobe::detect_bytes;
+    use std::io::Write;
 
     let mut buf = Vec::new();
     {
@@ -165,7 +182,10 @@ fn test_opc_path_traversal_and_conflicting_rels_rejected() {
 
     let rep_single_escape =
         detect_bytes(&build_docx_with_target("../word/document.xml"), &options).unwrap();
-    assert_eq!(rep_single_escape.identification, Identification::ContainerOnly);
+    assert_eq!(
+        rep_single_escape.identification,
+        Identification::ContainerOnly
+    );
     assert_eq!(rep_single_escape.format_id, None);
 
     let rep_internal_ok = detect_bytes(
@@ -189,8 +209,10 @@ fn test_real_opc_vsix_and_nupkg_not_swallowed_by_ooxml() {
             let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
             let zo = zip::write::SimpleFileOptions::default();
             zip.start_file("[Content_Types].xml", zo).unwrap();
-            zip.write_all(br#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>"#)
-                .unwrap();
+            zip.write_all(
+                br#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>"#,
+            )
+            .unwrap();
             zip.start_file("_rels/.rels", zo).unwrap();
             zip.write_all(br#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>"#)
                 .unwrap();

@@ -1,7 +1,7 @@
+use cfb::CompoundFile;
 use std::io::Read;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use cfb::CompoundFile;
 
 use crate::model::{
     DetectError, DetectionReport, EvidenceItem, Identification, Inspection, Verification,
@@ -19,7 +19,10 @@ pub fn verify_cfb_xls<R: Read + std::io::Seek>(
     if stream_len < 8 {
         report.warnings.push(WarningItem::new(
             "cfb.invalid_workbook_stream",
-            format!("Workbook stream size ({}) is smaller than BOF record (8 bytes)", stream_len),
+            format!(
+                "Workbook stream size ({}) is smaller than BOF record (8 bytes)",
+                stream_len
+            ),
         ));
         return Ok(false);
     }
@@ -37,7 +40,9 @@ pub fn verify_cfb_xls<R: Read + std::io::Seek>(
                     ));
                     return Ok(false);
                 }
-                report.warnings.push(WarningItem::new("cfb.stream_read_error", e.to_string()));
+                report
+                    .warnings
+                    .push(WarningItem::new("cfb.stream_read_error", e.to_string()));
                 return Ok(false);
             }
         },
@@ -50,7 +55,9 @@ pub fn verify_cfb_xls<R: Read + std::io::Seek>(
                 ));
                 return Ok(false);
             }
-            report.warnings.push(WarningItem::new("cfb.stream_open_error", e.to_string()));
+            report
+                .warnings
+                .push(WarningItem::new("cfb.stream_open_error", e.to_string()));
             return Ok(false);
         }
     };
@@ -63,7 +70,10 @@ pub fn verify_cfb_xls<R: Read + std::io::Seek>(
     if record_type != 0x0809 {
         report.warnings.push(WarningItem::new(
             "cfb.invalid_biff_bof",
-            format!("Invalid BIFF BOF record type: expected 0x0809, found 0x{:04X}", record_type),
+            format!(
+                "Invalid BIFF BOF record type: expected 0x0809, found 0x{:04X}",
+                record_type
+            ),
         ));
         return Ok(false);
     }
@@ -74,7 +84,10 @@ pub fn verify_cfb_xls<R: Read + std::io::Seek>(
     if !is_valid_biff_version {
         report.warnings.push(WarningItem::new(
             "cfb.unsupported_biff_version",
-            format!("Unsupported BIFF version in Excel stream: 0x{:04X}", version),
+            format!(
+                "Unsupported BIFF version in Excel stream: 0x{:04X}",
+                version
+            ),
         ));
         return Ok(false);
     }
@@ -88,7 +101,9 @@ pub fn verify_cfb_xls<R: Read + std::io::Seek>(
     report.inspection = Inspection::Complete;
     report.recommended_extension = Some("xls".to_string());
     report.accepted_extensions = vec!["xls".to_string(), "xlt".to_string()];
-    report.evidence.push(EvidenceItem::new("cfb.workbook_stream"));
+    report
+        .evidence
+        .push(EvidenceItem::new("cfb.workbook_stream"));
     report.evidence.push(EvidenceItem::new("cfb.biff_record"));
 
     Ok(true)

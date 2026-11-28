@@ -1,7 +1,7 @@
-use std::fs::{self, File};
-use std::path::Path;
 use kindprobe::budget::DetectOptions;
 use kindprobe::{detect_bytes, detect_path, detect_reader};
+use std::fs::{self, File};
+use std::path::Path;
 
 #[test]
 fn test_api_consistency() {
@@ -30,16 +30,56 @@ fn test_api_consistency() {
         let rep_reader = detect_reader(&mut file, &options).unwrap();
 
         // Ensure identification, format, container, inspection, verification match
-        assert_eq!(rep_path.identification, rep_bytes.identification, "Mismatch for {}", fixture_name);
-        assert_eq!(rep_path.format_id, rep_bytes.format_id, "Mismatch for {}", fixture_name);
-        assert_eq!(rep_path.container_id, rep_bytes.container_id, "Mismatch for {}", fixture_name);
-        assert_eq!(rep_path.verification, rep_bytes.verification, "Mismatch for {}", fixture_name);
-        assert_eq!(rep_path.inspection, rep_bytes.inspection, "Mismatch for {}", fixture_name);
+        assert_eq!(
+            rep_path.identification, rep_bytes.identification,
+            "Mismatch for {}",
+            fixture_name
+        );
+        assert_eq!(
+            rep_path.format_id, rep_bytes.format_id,
+            "Mismatch for {}",
+            fixture_name
+        );
+        assert_eq!(
+            rep_path.container_id, rep_bytes.container_id,
+            "Mismatch for {}",
+            fixture_name
+        );
+        assert_eq!(
+            rep_path.verification, rep_bytes.verification,
+            "Mismatch for {}",
+            fixture_name
+        );
+        assert_eq!(
+            rep_path.inspection, rep_bytes.inspection,
+            "Mismatch for {}",
+            fixture_name
+        );
 
-        assert_eq!(rep_bytes.identification, rep_reader.identification, "Mismatch for {}", fixture_name);
-        assert_eq!(rep_bytes.format_id, rep_reader.format_id, "Mismatch for {}", fixture_name);
-        assert_eq!(rep_bytes.container_id, rep_reader.container_id, "Mismatch for {}", fixture_name);
-        assert_eq!(rep_bytes.verification, rep_reader.verification, "Mismatch for {}", fixture_name);
-        assert_eq!(rep_bytes.inspection, rep_reader.inspection, "Mismatch for {}", fixture_name);
+        assert_eq!(
+            rep_bytes.identification, rep_reader.identification,
+            "Mismatch for {}",
+            fixture_name
+        );
+        assert_eq!(
+            rep_bytes.format_id, rep_reader.format_id,
+            "Mismatch for {}",
+            fixture_name
+        );
+        assert_eq!(
+            rep_bytes.container_id, rep_reader.container_id,
+            "Mismatch for {}",
+            fixture_name
+        );
+        assert_eq!(
+            rep_bytes.verification, rep_reader.verification,
+            "Mismatch for {}",
+            fixture_name
+        );
+        assert_eq!(
+            rep_bytes.inspection, rep_reader.inspection,
+            "Mismatch for {}",
+            fixture_name
+        );
     }
 }

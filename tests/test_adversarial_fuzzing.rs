@@ -1,8 +1,8 @@
-use std::ffi::OsStr;
-use std::io::Cursor;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, detect_reader, ExtensionStatus, Identification};
+use std::ffi::OsStr;
+use std::io::Cursor;
 
 struct FastRng(u64);
 
@@ -35,7 +35,9 @@ fn test_chaos_fuzzing_no_panic_and_invariants() {
     let mut rng = FastRng::new(0xDEADBEEF_CAFE1234);
     let opts = DetectOptions::default();
 
-    let lengths = [0, 1, 2, 3, 4, 7, 8, 15, 16, 64, 127, 128, 512, 1024, 4096, 8192];
+    let lengths = [
+        0, 1, 2, 3, 4, 7, 8, 15, 16, 64, 127, 128, 512, 1024, 4096, 8192,
+    ];
 
     for &len in &lengths {
         for _ in 0..100 {
@@ -43,7 +45,8 @@ fn test_chaos_fuzzing_no_panic_and_invariants() {
             rng.fill_bytes(&mut payload);
 
             // Invariant 1: detect_bytes must never panic
-            let rep1 = detect_bytes(&payload, &opts).expect("detect_bytes never errors on mem slice");
+            let rep1 =
+                detect_bytes(&payload, &opts).expect("detect_bytes never errors on mem slice");
 
             // Invariant 2: detect_reader must match detect_bytes idempotently
             let mut cursor = Cursor::new(&payload);
@@ -57,7 +60,8 @@ fn test_chaos_fuzzing_no_panic_and_invariants() {
             let ext_none = compare_extension(&rep1, None);
             assert_eq!(ext_none, ExtensionStatus::Missing);
 
-            let ext_unrec = compare_extension(&rep1, Some(OsStr::new("nonexistent_unknown_ext_12345")));
+            let ext_unrec =
+                compare_extension(&rep1, Some(OsStr::new("nonexistent_unknown_ext_12345")));
             let expected_unrec = if rep1.identification == Identification::Format {
                 ExtensionStatus::Unrecognized
             } else {
@@ -96,12 +100,24 @@ fn test_prefix_truncation_fuzzing() {
             let rep = detect_bytes(prefix, &opts).expect("detect prefix");
 
             // Must NOT falsely confirm the full format
-            assert_eq!(rep.identification, Identification::Unknown, "Falsely confirmed prefix: {:?}", prefix);
+            assert_eq!(
+                rep.identification,
+                Identification::Unknown,
+                "Falsely confirmed prefix: {:?}",
+                prefix
+            );
 
             // If it identifies as truncated, must output warning and non-empty candidates
             if rep.warnings.iter().any(|w| w.code == "input.truncated") {
-                let candidates = rep.candidates.as_deref().expect("truncated must provide candidates");
-                assert!(!candidates.is_empty(), "Candidates list must not be empty for prefix {:?}", prefix);
+                let candidates = rep
+                    .candidates
+                    .as_deref()
+                    .expect("truncated must provide candidates");
+                assert!(
+                    !candidates.is_empty(),
+                    "Candidates list must not be empty for prefix {:?}",
+                    prefix
+                );
 
                 // For unambiguous multi-byte prefixes (len >= 2), candidate must match
                 if prefix.len() >= 2 && !matches!(prefix, b"PK" | b"%P") {

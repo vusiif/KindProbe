@@ -1,10 +1,10 @@
-use std::ffi::OsStr;
-use std::io::Cursor;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{
     detect_bytes, detect_reader, ExtensionStatus, Identification, Inspection, Verification,
 };
+use std::ffi::OsStr;
+use std::io::Cursor;
 
 #[test]
 fn test_detect_qcow2() {
@@ -26,10 +26,22 @@ fn test_detect_qcow2() {
     assert!(rep.evidence.iter().any(|e| e.code == "sig.qcow.magic"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.qcow.header"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("qcow2"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("qcow"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("img"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("vmdk"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("qcow2"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("qcow"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("img"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("vmdk"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -46,10 +58,22 @@ fn test_detect_vmdk() {
     assert_eq!(rep_sparse.format_id.as_deref(), Some("vmdk"));
     assert_eq!(rep_sparse.category, "disk");
     assert_eq!(rep_sparse.verification, Verification::Structure);
-    assert!(rep_sparse.evidence.iter().any(|e| e.code == "sig.vmdk.sparse_magic"));
-    assert!(rep_sparse.evidence.iter().any(|e| e.code == "sig.vmdk.version"));
-    assert_eq!(compare_extension(&rep_sparse, Some(OsStr::new("vmdk"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_sparse, Some(OsStr::new("vhdx"))), ExtensionStatus::Mismatch);
+    assert!(rep_sparse
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.vmdk.sparse_magic"));
+    assert!(rep_sparse
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.vmdk.version"));
+    assert_eq!(
+        compare_extension(&rep_sparse, Some(OsStr::new("vmdk"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_sparse, Some(OsStr::new("vhdx"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. Monolithic Flat descriptor VMDK
     let desc_vmdk = b"# Disk DescriptorFile\nversion=1\nCID=fffffffe\nparentCID=ffffffff\n";
@@ -58,8 +82,14 @@ fn test_detect_vmdk() {
     assert_eq!(rep_desc.format_id.as_deref(), Some("vmdk"));
     assert_eq!(rep_desc.category, "disk");
     assert_eq!(rep_desc.verification, Verification::Structure);
-    assert!(rep_desc.evidence.iter().any(|e| e.code == "sig.vmdk.desc_magic"));
-    assert_eq!(compare_extension(&rep_desc, Some(OsStr::new("vmdk"))), ExtensionStatus::Match);
+    assert!(rep_desc
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.vmdk.desc_magic"));
+    assert_eq!(
+        compare_extension(&rep_desc, Some(OsStr::new("vmdk"))),
+        ExtensionStatus::Match
+    );
 }
 
 #[test]
@@ -74,8 +104,14 @@ fn test_detect_vhdx_and_vhd() {
     assert_eq!(rep_vhdx.category, "disk");
     assert_eq!(rep_vhdx.verification, Verification::Structure);
     assert!(rep_vhdx.evidence.iter().any(|e| e.code == "sig.vhdx.magic"));
-    assert_eq!(compare_extension(&rep_vhdx, Some(OsStr::new("vhdx"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_vhdx, Some(OsStr::new("vhd"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_vhdx, Some(OsStr::new("vhdx"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_vhdx, Some(OsStr::new("vhd"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. VHD format ("conectix")
     let vhd = b"conectix\x00\x00\x00\x02";
@@ -85,8 +121,14 @@ fn test_detect_vhdx_and_vhd() {
     assert_eq!(rep_vhd.category, "disk");
     assert_eq!(rep_vhd.verification, Verification::Structure);
     assert!(rep_vhd.evidence.iter().any(|e| e.code == "sig.vhd.magic"));
-    assert_eq!(compare_extension(&rep_vhd, Some(OsStr::new("vhd"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_vhd, Some(OsStr::new("vhdx"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_vhd, Some(OsStr::new("vhd"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_vhd, Some(OsStr::new("vhdx"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -105,11 +147,23 @@ fn test_detect_iso_stream() {
     assert_eq!(rep_iso.verification, Verification::Structure);
     assert_eq!(rep_iso.recommended_extension.as_deref(), Some("iso"));
     assert_eq!(rep_iso.accepted_extensions, vec!["iso", "img"]);
-    assert!(rep_iso.evidence.iter().any(|e| e.code == "sig.iso.volume_descriptor"));
+    assert!(rep_iso
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.iso.volume_descriptor"));
 
-    assert_eq!(compare_extension(&rep_iso, Some(OsStr::new("iso"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_iso, Some(OsStr::new("img"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_iso, Some(OsStr::new("qcow2"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_iso, Some(OsStr::new("iso"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_iso, Some(OsStr::new("img"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_iso, Some(OsStr::new("qcow2"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -118,9 +172,15 @@ fn test_detect_truncated_disks() {
 
     let trunc_qcow = detect_bytes(b"QF", &opts).expect("detect truncated qcow");
     assert_eq!(trunc_qcow.identification, Identification::Unknown);
-    assert!(trunc_qcow.warnings.iter().any(|w| w.code == "input.truncated"));
+    assert!(trunc_qcow
+        .warnings
+        .iter()
+        .any(|w| w.code == "input.truncated"));
 
     let trunc_vmdk = detect_bytes(b"KD", &opts).expect("detect truncated vmdk");
     assert_eq!(trunc_vmdk.identification, Identification::Unknown);
-    assert!(trunc_vmdk.warnings.iter().any(|w| w.code == "input.truncated"));
+    assert!(trunc_vmdk
+        .warnings
+        .iter()
+        .any(|w| w.code == "input.truncated"));
 }

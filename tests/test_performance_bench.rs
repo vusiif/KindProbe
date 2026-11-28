@@ -1,9 +1,9 @@
-use std::fs::File;
-use std::path::PathBuf;
-use std::time::Instant;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::find_registered_format;
 use kindprobe::{detect_bytes, detect_bytes_core, detect_path, detect_reader};
+use std::fs::File;
+use std::path::PathBuf;
+use std::time::Instant;
 
 #[test]
 fn test_micro_benchmark_performance() {
@@ -19,7 +19,7 @@ fn test_micro_benchmark_performance() {
     // 1. Extension Registry Binary Search (1006 entries)
     // -------------------------------------------------------------------------
     let ext_test_cases = [
-        "png", "jpg", "docx", "blend", "h5", "pdf", "flv", "zip", "exe", "xyz123"
+        "png", "jpg", "docx", "blend", "h5", "pdf", "flv", "zip", "exe", "xyz123",
     ];
     let ext_iterations = 500_000;
     let start_ext = Instant::now();
@@ -33,7 +33,10 @@ fn test_micro_benchmark_performance() {
     println!("[1] Extension Binary Search (1006 entries):");
     println!("    Total Lookups: {}", ext_iterations);
     println!("    Latency:       {:.2} ns / op", ns_per_lookup);
-    println!("    Throughput:    {:.2} million ops / sec", qps_ext / 1_000_000.0);
+    println!(
+        "    Throughput:    {:.2} million ops / sec",
+        qps_ext / 1_000_000.0
+    );
 
     // -------------------------------------------------------------------------
     // 2. Memory Slice Content Detection (detect_bytes - Full Scan without Hint)
@@ -74,8 +77,17 @@ fn test_micro_benchmark_performance() {
         let qps_core = bytes_iterations as f64 / dur_core.as_secs_f64();
 
         println!("[2] {} :", name);
-        println!("    Full Report:     {:.2} ns / op ({:.2} kops/s)", ns_per_op, qps / 1000.0);
-        println!("    Core (Zero-Alloc): {:.2} ns / op ({:.2} kops/s) -> {:.1}x speedup", ns_core, qps_core / 1000.0, ns_per_op / ns_core);
+        println!(
+            "    Full Report:     {:.2} ns / op ({:.2} kops/s)",
+            ns_per_op,
+            qps / 1000.0
+        );
+        println!(
+            "    Core (Zero-Alloc): {:.2} ns / op ({:.2} kops/s) -> {:.1}x speedup",
+            ns_core,
+            qps_core / 1000.0,
+            ns_per_op / ns_core
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -101,7 +113,11 @@ fn test_micro_benchmark_performance() {
         let ns_per_op = dur.as_nanos() as f64 / bytes_iterations as f64;
         let qps = bytes_iterations as f64 / dur.as_secs_f64();
         println!("[3] Fast Path - {}:", name);
-        println!("    Latency:    {:.2} ns ({:.3} μs) / detection", ns_per_op, ns_per_op / 1000.0);
+        println!(
+            "    Latency:    {:.2} ns ({:.3} μs) / detection",
+            ns_per_op,
+            ns_per_op / 1000.0
+        );
         println!("    Throughput: {:.2} thousand files / sec", qps / 1000.0);
     }
 
@@ -109,13 +125,19 @@ fn test_micro_benchmark_performance() {
     // 4. Real Disk File Detection (detect_path - includes OS open + fstat)
     // -------------------------------------------------------------------------
     let disk_files = [
-        "sample.flv", "sample.blend", "sample.fits", "sample.h5", "sample.pbm"
+        "sample.flv",
+        "sample.blend",
+        "sample.fits",
+        "sample.h5",
+        "sample.pbm",
     ];
     let path_iterations = 2_000;
     println!("[4] detect_path (Full OS open + fstat + budget read):");
     for &file_name in &disk_files {
         let path = real_dir.join(file_name);
-        if !path.exists() { continue; }
+        if !path.exists() {
+            continue;
+        }
         let start = Instant::now();
         for _ in 0..path_iterations {
             let _ = detect_path(&path, &opts);
@@ -123,7 +145,10 @@ fn test_micro_benchmark_performance() {
         let dur = start.elapsed();
         let us_per_op = dur.as_micros() as f64 / path_iterations as f64;
         let qps = path_iterations as f64 / dur.as_secs_f64();
-        println!("    File {}: {:.2} μs / detection ({:.0} files/sec)", file_name, us_per_op, qps);
+        println!(
+            "    File {}: {:.2} μs / detection ({:.0} files/sec)",
+            file_name, us_per_op, qps
+        );
     }
 
     // -------------------------------------------------------------------------

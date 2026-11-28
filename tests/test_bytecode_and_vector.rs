@@ -1,8 +1,8 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::detect_bytes;
 use kindprobe::extension::compare_extension;
 use kindprobe::model::ExtensionStatus;
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_bytecode_and_static_libs() {
@@ -14,7 +14,10 @@ fn test_detect_bytecode_and_static_libs() {
     let rep = detect_bytes(&dex, &opts).expect("detect dex");
     assert_eq!(rep.format_id.as_deref(), Some("dex"));
     assert_eq!(rep.category, "executable");
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("dex"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("dex"))),
+        ExtensionStatus::Match
+    );
 
     // 2. Lua Bytecode (LUAC)
     let mut luac = vec![0u8; 32];
@@ -22,7 +25,10 @@ fn test_detect_bytecode_and_static_libs() {
     let rep = detect_bytes(&luac, &opts).expect("detect luac");
     assert_eq!(rep.format_id.as_deref(), Some("luac"));
     assert_eq!(rep.category, "executable");
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("luac"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("luac"))),
+        ExtensionStatus::Match
+    );
 
     // 3. Unix Archive / Static Library (AR / .a / .lib)
     let mut ar = vec![0u8; 32];
@@ -30,8 +36,14 @@ fn test_detect_bytecode_and_static_libs() {
     let rep = detect_bytes(&ar, &opts).expect("detect ar");
     assert_eq!(rep.format_id.as_deref(), Some("ar"));
     assert_eq!(rep.category, "archive");
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("a"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("lib"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("a"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("lib"))),
+        ExtensionStatus::Match
+    );
 }
 
 #[test]
@@ -87,7 +99,10 @@ fn test_detect_bvh_and_snoop() {
     let rep = detect_bytes(&bvh, &opts).expect("detect bvh");
     assert_eq!(rep.format_id.as_deref(), Some("bvh"));
     assert_eq!(rep.category, "model");
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("bvh"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("bvh"))),
+        ExtensionStatus::Match
+    );
 
     // 2. RFC 1761 Snoop Network Packet Capture (Snoop)
     let mut snoop = vec![0u8; 32];
@@ -95,5 +110,8 @@ fn test_detect_bvh_and_snoop() {
     let rep = detect_bytes(&snoop, &opts).expect("detect snoop");
     assert_eq!(rep.format_id.as_deref(), Some("snoop"));
     assert_eq!(rep.category, "network");
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("snoop"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("snoop"))),
+        ExtensionStatus::Match
+    );
 }

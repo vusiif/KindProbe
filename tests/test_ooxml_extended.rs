@@ -1,5 +1,5 @@
-use std::io::{Cursor, Write};
 use kindprobe::{detect_bytes, DetectOptions, Identification, Inspection, Verification};
+use std::io::{Cursor, Write};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
@@ -13,8 +13,8 @@ fn create_ooxml_package(
     let mut buf = Vec::new();
     {
         let mut zip = ZipWriter::new(Cursor::new(&mut buf));
-        let options = SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Stored);
+        let options =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
         // 1. _rels/.rels
         zip.start_file("_rels/.rels", options).unwrap();
@@ -72,7 +72,10 @@ fn test_detect_xlsx_success() {
     assert_eq!(report.container_id.as_deref(), Some("zip"));
     assert_eq!(report.verification, Verification::Structure);
     assert_eq!(report.inspection, Inspection::Complete);
-    assert!(report.evidence.iter().any(|e| e.code == "ooxml.spreadsheet_main_part"));
+    assert!(report
+        .evidence
+        .iter()
+        .any(|e| e.code == "ooxml.spreadsheet_main_part"));
 }
 
 #[test]
@@ -94,7 +97,10 @@ fn test_detect_pptx_success() {
     assert_eq!(report.container_id.as_deref(), Some("zip"));
     assert_eq!(report.verification, Verification::Structure);
     assert_eq!(report.inspection, Inspection::Complete);
-    assert!(report.evidence.iter().any(|e| e.code == "ooxml.presentation_main_part"));
+    assert!(report
+        .evidence
+        .iter()
+        .any(|e| e.code == "ooxml.presentation_main_part"));
 }
 
 #[test]
@@ -156,7 +162,10 @@ fn test_detect_ooxml_adversarial_mismatched_root_and_namespace() {
     let rep = detect_bytes(&bad_root, &options).expect("detect bad root");
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.format_id, None);
-    assert!(rep.warnings.iter().any(|w| w.code == "ooxml.invalid_root_element"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "ooxml.invalid_root_element"));
 
     // Mismatched namespace: PPTX content type but with unknown fake namespace
     let bad_ns = create_ooxml_package(
@@ -169,5 +178,8 @@ fn test_detect_ooxml_adversarial_mismatched_root_and_namespace() {
     let rep_ns = detect_bytes(&bad_ns, &options).expect("detect bad ns");
     assert_eq!(rep_ns.identification, Identification::ContainerOnly);
     assert_eq!(rep_ns.format_id, None);
-    assert!(rep_ns.warnings.iter().any(|w| w.code == "ooxml.invalid_root_element"));
+    assert!(rep_ns
+        .warnings
+        .iter()
+        .any(|w| w.code == "ooxml.invalid_root_element"));
 }

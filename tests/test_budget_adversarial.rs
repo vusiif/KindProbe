@@ -1,6 +1,6 @@
-use std::path::Path;
 use kindprobe::budget::DetectOptions;
 use kindprobe::{detect_path, Identification, Inspection};
+use std::path::Path;
 
 #[test]
 fn test_budget_xml_depth() {
@@ -11,7 +11,10 @@ fn test_budget_xml_depth() {
     assert_eq!(rep.identification, Identification::Format);
     assert_eq!(rep.format_id.as_deref(), Some("docx"));
     assert_eq!(rep.inspection, Inspection::Limited);
-    assert!(rep.warnings.iter().any(|w| w.code == "budget.xml_depth_exceeded"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.xml_depth_exceeded"));
 }
 
 #[test]
@@ -53,9 +56,9 @@ fn test_empty_and_truncated() {
 
 #[test]
 fn test_real_io_errors_return_err() {
-    use std::io::{self, Read, Seek, SeekFrom};
     use kindprobe::detect_reader;
     use kindprobe::model::DetectError;
+    use std::io::{self, Read, Seek, SeekFrom};
 
     struct FailingReader {
         fail_read: bool,
@@ -65,7 +68,10 @@ fn test_real_io_errors_return_err() {
     impl Read for FailingReader {
         fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
             if self.fail_read {
-                Err(io::Error::new(io::ErrorKind::BrokenPipe, "simulated broken pipe"))
+                Err(io::Error::new(
+                    io::ErrorKind::BrokenPipe,
+                    "simulated broken pipe",
+                ))
             } else {
                 Ok(0)
             }
@@ -85,14 +91,20 @@ fn test_real_io_errors_return_err() {
     let options = DetectOptions::default();
 
     // 1. Read failure
-    let mut r1 = FailingReader { fail_read: true, fail_seek: false };
+    let mut r1 = FailingReader {
+        fail_read: true,
+        fail_seek: false,
+    };
     match detect_reader(&mut r1, &options) {
         Err(DetectError::Io(e)) => assert_eq!(e.kind(), io::ErrorKind::BrokenPipe),
         other => panic!("Expected DetectError::Io, got {:?}", other),
     }
 
     // 2. Seek failure
-    let mut r2 = FailingReader { fail_read: false, fail_seek: true };
+    let mut r2 = FailingReader {
+        fail_read: false,
+        fail_seek: true,
+    };
     match detect_reader(&mut r2, &options) {
         Err(DetectError::Io(e)) => assert_eq!(e.kind(), io::ErrorKind::Other),
         other => panic!("Expected DetectError::Io, got {:?}", other),
@@ -109,7 +121,10 @@ fn test_budget_zip_directory_window() {
     let rep = detect_path(Path::new("fixtures/plain_zip.zip"), &options).unwrap();
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.inspection, Inspection::Limited);
-    assert!(rep.warnings.iter().any(|w| w.code == "budget.zip_directory_window_exceeded"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.zip_directory_window_exceeded"));
 }
 
 #[test]
@@ -122,7 +137,10 @@ fn test_budget_total_decompressed_bytes() {
     let rep = detect_path(Path::new("fixtures/true_docx.docx"), &options).unwrap();
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.inspection, Inspection::Limited);
-    assert!(rep.warnings.iter().any(|w| w.code == "budget.total_decompressed_exceeded"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.total_decompressed_exceeded"));
 }
 
 #[test]
@@ -131,7 +149,10 @@ fn test_cfb_entries_budget_and_stats() {
 
     // 1. Verify entries_inspected is populated (> 0)
     let rep = detect_path(Path::new("fixtures/plain_cfb.cfb"), &options).unwrap();
-    assert!(rep.stats.entries_inspected > 0, "entries_inspected must be > 0 for CFB files");
+    assert!(
+        rep.stats.entries_inspected > 0,
+        "entries_inspected must be > 0 for CFB files"
+    );
 
     // 2. Verify max_entries triggers budget.entries_exceeded
     let restricted_options = DetectOptions {
@@ -139,9 +160,13 @@ fn test_cfb_entries_budget_and_stats() {
         ..Default::default()
     };
 
-    let rep_limited = detect_path(Path::new("fixtures/plain_cfb.cfb"), &restricted_options).unwrap();
+    let rep_limited =
+        detect_path(Path::new("fixtures/plain_cfb.cfb"), &restricted_options).unwrap();
     assert_eq!(rep_limited.inspection, Inspection::Limited);
-    assert!(rep_limited.warnings.iter().any(|w| w.code == "budget.entries_exceeded"));
+    assert!(rep_limited
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.entries_exceeded"));
 }
 
 #[test]
@@ -213,13 +238,16 @@ fn test_zip_conflicting_duplicate_entries() {
     let rep = detect_bytes(&zip, &options).unwrap();
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.inspection, Inspection::Ambiguous);
-    assert!(rep.warnings.iter().any(|w| w.code == "zip.conflicting_entries"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "zip.conflicting_entries"));
 }
 
 #[test]
 fn test_decompress_limit_reader_exact_and_overflow_boundaries() {
-    use std::io::{Cursor, Read};
     use kindprobe::budget::DecompressLimitReader;
+    use std::io::{Cursor, Read};
 
     let limit = 256 * 1024; // 256 KiB
 
@@ -230,13 +258,22 @@ fn test_decompress_limit_reader_exact_and_overflow_boundaries() {
     let res = reader.read_to_end(&mut out);
     assert!(res.is_ok(), "reading exactly 256 KiB to EOF must succeed");
     assert_eq!(out.len(), limit);
-    assert!(!reader.is_exceeded(), "must NOT report exceeded when input exactly equals limit and ends");
+    assert!(
+        !reader.is_exceeded(),
+        "must NOT report exceeded when input exactly equals limit and ends"
+    );
 
     // Case 2: 256 KiB + 1 byte stream (truly exceeded)
     let overflow_data = vec![b'A'; limit + 1];
     let mut reader = DecompressLimitReader::new(Cursor::new(&overflow_data), limit);
     let mut out = Vec::new();
     let res = reader.read_to_end(&mut out);
-    assert!(res.is_err(), "reading 256 KiB + 1 must error when exceeding limit");
-    assert!(reader.is_exceeded(), "must report exceeded when input has extra byte beyond limit");
+    assert!(
+        res.is_err(),
+        "reading 256 KiB + 1 must error when exceeding limit"
+    );
+    assert!(
+        reader.is_exceeded(),
+        "must report exceeded when input has extra byte beyond limit"
+    );
 }

@@ -56,7 +56,8 @@ fn build_ooxml_sample(
         for i in 0..extra_entries {
             let name = format!("word/media/part_{:03}.bin", i);
             zw.start_file(name, opts).expect("extra");
-            zw.write_all(b"dummy-payload-0123456789abcdef").expect("extra write");
+            zw.write_all(b"dummy-payload-0123456789abcdef")
+                .expect("extra write");
         }
         zw.finish().expect("finish");
     }
@@ -132,12 +133,24 @@ fn test_phase18_ooxml_and_text_anti_overfitting_bench() {
     ];
 
     let plain_zip = build_zip_bytes(&[
-        ("readme.txt", b"just a plain zip archive", CompressionMethod::Deflated),
+        (
+            "readme.txt",
+            b"just a plain zip archive",
+            CompressionMethod::Deflated,
+        ),
         ("data/bin.dat", &[1, 2, 3, 4, 5], CompressionMethod::Stored),
     ]);
     let jar_zip = build_zip_bytes(&[
-        ("META-INF/MANIFEST.MF", b"Manifest-Version: 1.0\r\n", CompressionMethod::Deflated),
-        ("Main.class", b"\xCA\xFE\xBA\xBE\x00\x00\x00\x34", CompressionMethod::Stored),
+        (
+            "META-INF/MANIFEST.MF",
+            b"Manifest-Version: 1.0\r\n",
+            CompressionMethod::Deflated,
+        ),
+        (
+            "Main.class",
+            b"\xCA\xFE\xBA\xBE\x00\x00\x00\x34",
+            CompressionMethod::Stored,
+        ),
     ]);
     let non_ooxml_zip_samples = vec![
         ("plain_zip", plain_zip, Some("zip")),
@@ -158,14 +171,19 @@ fn test_phase18_ooxml_and_text_anti_overfitting_bench() {
             .collect::<Vec<_>>()
             .join(",")
     );
-    let rust_source_8k = "pub fn compute(v: &[u64]) -> u64 { v.iter().copied().sum() }\n".repeat(140);
+    let rust_source_8k =
+        "pub fn compute(v: &[u64]) -> u64 { v.iter().copied().sum() }\n".repeat(140);
     let mut near_miss_binary_8k = vec![b'A'; 8192];
     near_miss_binary_8k[3900] = 0x00; // NUL near end of 4KB text probe window
 
     let text_samples = vec![
         ("ascii_prose_16k", ascii_prose_16k.into_bytes(), Some("txt")),
         ("utf8_mixed_16k", utf8_mixed_16k.into_bytes(), Some("txt")),
-        ("json_payload_16k", json_payload_16k.into_bytes(), Some("json")),
+        (
+            "json_payload_16k",
+            json_payload_16k.into_bytes(),
+            Some("json"),
+        ),
         ("rust_source_8k", rust_source_8k.into_bytes(), Some("rs")),
         ("near_miss_binary_8k", near_miss_binary_8k, None),
     ];

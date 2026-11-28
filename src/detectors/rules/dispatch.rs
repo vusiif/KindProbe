@@ -17,7 +17,8 @@ pub fn evaluate_indexed_rules_core(header: &[u8]) -> RuleMatchCore {
             if p0.offset == 0 && p0.mask.is_none() {
                 if header.len() >= 4 && p0.bytes.len() >= 4 {
                     let h4 = u32::from_ne_bytes([header[0], header[1], header[2], header[3]]);
-                    let p4 = u32::from_ne_bytes([p0.bytes[0], p0.bytes[1], p0.bytes[2], p0.bytes[3]]);
+                    let p4 =
+                        u32::from_ne_bytes([p0.bytes[0], p0.bytes[1], p0.bytes[2], p0.bytes[3]]);
                     if h4 != p4 {
                         continue;
                     }
@@ -68,7 +69,8 @@ pub fn evaluate_indexed_rules_core(header: &[u8]) -> RuleMatchCore {
                         if h4 != p4 {
                             continue;
                         }
-                    } else if remaining >= 2 && first_pat.bytes.len() >= 2
+                    } else if remaining >= 2
+                        && first_pat.bytes.len() >= 2
                         && header[group.offset + 1] != first_pat.bytes[1]
                     {
                         continue;
@@ -98,9 +100,9 @@ pub fn evaluate_indexed_rules_core(header: &[u8]) -> RuleMatchCore {
 /// Evaluates signature rules using a compile-time static 256-bucket index.
 pub fn evaluate_indexed_rules(header: &[u8]) -> RuleMatch {
     match evaluate_indexed_rules_core(header) {
-        RuleMatchCore::Confirmed(core) => {
-            RuleMatch::Confirmed(Box::new(core.to_report(Default::default(), ExtensionStatus::Undetermined)))
-        }
+        RuleMatchCore::Confirmed(core) => RuleMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
         RuleMatchCore::Truncated(cand) => RuleMatch::Truncated(cand.to_string()),
         RuleMatchCore::None => RuleMatch::None,
     }

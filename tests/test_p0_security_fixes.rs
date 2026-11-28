@@ -1,7 +1,9 @@
+use kindprobe::budget::DetectOptions;
+use kindprobe::{
+    detect_bytes, detect_path, detect_reader, ExtensionStatus, Identification, Inspection,
+};
 use std::io::{self, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
-use kindprobe::budget::DetectOptions;
-use kindprobe::{detect_bytes, detect_path, detect_reader, ExtensionStatus, Identification, Inspection};
 
 /// P0.1 Test: Verify that a multi-byte UTF-8 character crossing byte 4096 never causes a panic.
 #[test]
@@ -9,7 +11,8 @@ fn test_p0_1_utf8_char_boundary_slicing_no_panic() {
     let options = DetectOptions::default();
 
     // 1. Rust syntax at the top of the file
-    let mut text = String::from("use std::collections::HashMap;\npub fn verify_boundary() -> bool { true }\n");
+    let mut text =
+        String::from("use std::collections::HashMap;\npub fn verify_boundary() -> bool { true }\n");
 
     // 2. Pad comments up to exactly byte 4095
     while text.len() < 4095 {
@@ -22,7 +25,8 @@ fn test_p0_1_utf8_char_boundary_slicing_no_panic() {
     text.push_str("测试中文字符边界安全\n");
 
     // Must not panic, and must safely detect as "rs"
-    let rep = detect_bytes(text.as_bytes(), &options).expect("Detection must succeed without panic");
+    let rep =
+        detect_bytes(text.as_bytes(), &options).expect("Detection must succeed without panic");
     assert_eq!(rep.identification, Identification::Format);
     assert_eq!(rep.format_id.as_deref(), Some("rs"));
 }
@@ -81,13 +85,20 @@ fn test_p0_3_slice_budget_consistency() {
     let rep_bytes_zero = detect_bytes(&raw, &zero_budget_opts).expect("Must return report");
     assert_eq!(rep_bytes_zero.identification, Identification::Unknown);
     assert_eq!(rep_bytes_zero.inspection, Inspection::Limited);
-    assert!(rep_bytes_zero.warnings.iter().any(|w| w.code == "budget.source_read_exceeded"));
+    assert!(rep_bytes_zero
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.source_read_exceeded"));
 
     let mut cursor = Cursor::new(&raw);
-    let rep_reader_zero = detect_reader(&mut cursor, &zero_budget_opts).expect("Must return report");
+    let rep_reader_zero =
+        detect_reader(&mut cursor, &zero_budget_opts).expect("Must return report");
     assert_eq!(rep_reader_zero.identification, Identification::Unknown);
     assert_eq!(rep_reader_zero.inspection, Inspection::Limited);
-    assert!(rep_reader_zero.warnings.iter().any(|w| w.code == "budget.source_read_exceeded"));
+    assert!(rep_reader_zero
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.source_read_exceeded"));
 
     // Case B: max_source_bytes_read = 4 on a file whose window size is 4096
     let small_budget_opts = DetectOptions {
@@ -97,12 +108,19 @@ fn test_p0_3_slice_budget_consistency() {
 
     let rep_bytes_small = detect_bytes(&raw, &small_budget_opts).expect("Must return report");
     assert_eq!(rep_bytes_small.inspection, Inspection::Limited);
-    assert!(rep_bytes_small.warnings.iter().any(|w| w.code == "budget.source_read_exceeded"));
+    assert!(rep_bytes_small
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.source_read_exceeded"));
 
     let mut cursor2 = Cursor::new(&raw);
-    let rep_reader_small = detect_reader(&mut cursor2, &small_budget_opts).expect("Must return report");
+    let rep_reader_small =
+        detect_reader(&mut cursor2, &small_budget_opts).expect("Must return report");
     assert_eq!(rep_reader_small.inspection, Inspection::Limited);
-    assert!(rep_reader_small.warnings.iter().any(|w| w.code == "budget.source_read_exceeded"));
+    assert!(rep_reader_small
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.source_read_exceeded"));
 }
 
 /// P0.4 Test: Verify that an incorrect extension hint on a container format (e.g. .xlsx hint on .docx file)
@@ -116,11 +134,18 @@ fn test_p0_4_mismatched_container_hint_no_double_parse() {
 
     // Fixture is actually DOCX
     let docx_path = Path::new("fixtures/true_docx.docx");
-    let rep_with_mismatched_hint = detect_path(docx_path, &mismatched_options).expect("Detection must succeed");
+    let rep_with_mismatched_hint =
+        detect_path(docx_path, &mismatched_options).expect("Detection must succeed");
 
-    assert_eq!(rep_with_mismatched_hint.identification, Identification::Format);
+    assert_eq!(
+        rep_with_mismatched_hint.identification,
+        Identification::Format
+    );
     assert_eq!(rep_with_mismatched_hint.format_id.as_deref(), Some("docx"));
-    assert_eq!(rep_with_mismatched_hint.extension_status, ExtensionStatus::Match);
+    assert_eq!(
+        rep_with_mismatched_hint.extension_status,
+        ExtensionStatus::Match
+    );
 
     // Test with detect_reader where path is not available
     let file_bytes = std::fs::read(docx_path).expect("Read fixture");

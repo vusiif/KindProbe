@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus, Identification, Inspection, Verification};
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_elf64_and_elf32() {
@@ -26,10 +26,22 @@ fn test_detect_elf64_and_elf32() {
     assert!(rep64.evidence.iter().any(|e| e.code == "sig.elf.header"));
 
     // Extension matching
-    assert_eq!(compare_extension(&rep64, Some(OsStr::new("elf"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep64, Some(OsStr::new("so"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep64, Some(OsStr::new("bin"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep64, Some(OsStr::new("exe"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep64, Some(OsStr::new("elf"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep64, Some(OsStr::new("so"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep64, Some(OsStr::new("bin"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep64, Some(OsStr::new("exe"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. ELF 32-bit Little-Endian shared library
     let mut elf32 = vec![0u8; 52];
@@ -64,13 +76,31 @@ fn test_detect_pe_exe_and_dll() {
     assert_eq!(rep_exe.category, "executable");
     assert_eq!(rep_exe.verification, Verification::Structure);
     assert_eq!(rep_exe.recommended_extension.as_deref(), Some("exe"));
-    assert_eq!(rep_exe.accepted_extensions, vec!["exe", "dll", "sys", "efi"]);
-    assert!(rep_exe.evidence.iter().any(|e| e.code == "sig.pe.mz_header"));
-    assert!(rep_exe.evidence.iter().any(|e| e.code == "sig.pe.signature"));
+    assert_eq!(
+        rep_exe.accepted_extensions,
+        vec!["exe", "dll", "sys", "efi"]
+    );
+    assert!(rep_exe
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.pe.mz_header"));
+    assert!(rep_exe
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.pe.signature"));
 
-    assert_eq!(compare_extension(&rep_exe, Some(OsStr::new("exe"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_exe, Some(OsStr::new("dll"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_exe, Some(OsStr::new("elf"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_exe, Some(OsStr::new("exe"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_exe, Some(OsStr::new("dll"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_exe, Some(OsStr::new("elf"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. Windows PE .dll (Characteristics = 0x2102: IMAGE_FILE_DLL)
     let mut pe_dll = pe_exe.clone();
@@ -107,8 +137,14 @@ fn test_detect_wasm_binary() {
     assert!(rep.evidence.iter().any(|e| e.code == "sig.wasm.magic"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.wasm.version"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("wasm"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("exe"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("wasm"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("exe"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -123,7 +159,10 @@ fn test_detect_macho_and_java_class() {
     assert_eq!(rep_macho.category, "executable");
     assert_eq!(rep_macho.verification, Verification::Structure);
     assert_eq!(rep_macho.recommended_extension.as_deref(), Some("dylib"));
-    assert!(rep_macho.evidence.iter().any(|e| e.code == "sig.macho.magic"));
+    assert!(rep_macho
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.macho.magic"));
 
     // 2. Java .class bytecode: 0xCAFEBABE, minor = 0, major = 52 (Java 8)
     let java_class = vec![0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x34];
@@ -132,14 +171,20 @@ fn test_detect_macho_and_java_class() {
     assert_eq!(rep_class.format_id.as_deref(), Some("class"));
     assert_eq!(rep_class.category, "executable");
     assert_eq!(rep_class.recommended_extension.as_deref(), Some("class"));
-    assert!(rep_class.evidence.iter().any(|e| e.code == "sig.java.class"));
+    assert!(rep_class
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.java.class"));
 
     // 3. Mach-O Universal FAT Binary: 0xCAFEBABE, nfat_arch = 2
     let macho_fat = vec![0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x02];
     let rep_fat = detect_bytes(&macho_fat, &opts).expect("detect macho fat");
     assert_eq!(rep_fat.identification, Identification::Format);
     assert_eq!(rep_fat.format_id.as_deref(), Some("macho"));
-    assert!(rep_fat.evidence.iter().any(|e| e.code == "sig.macho.fat_magic"));
+    assert!(rep_fat
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.macho.fat_magic"));
 }
 
 #[test]
@@ -149,7 +194,10 @@ fn test_detect_executables_truncated() {
     // 1. Truncated ELF
     let rep_elf = detect_bytes(b"\x7FEL", &opts).expect("truncated elf");
     assert_eq!(rep_elf.identification, Identification::Unknown);
-    assert_eq!(rep_elf.candidates.as_deref(), Some(&["elf".to_string()][..]));
+    assert_eq!(
+        rep_elf.candidates.as_deref(),
+        Some(&["elf".to_string()][..])
+    );
 
     // 2. Truncated PE
     let rep_pe = detect_bytes(b"M", &opts).expect("truncated pe");
@@ -159,10 +207,16 @@ fn test_detect_executables_truncated() {
     // 3. Truncated WASM
     let rep_wasm = detect_bytes(b"\x00as", &opts).expect("truncated wasm");
     assert_eq!(rep_wasm.identification, Identification::Unknown);
-    assert_eq!(rep_wasm.candidates.as_deref(), Some(&["wasm".to_string()][..]));
+    assert_eq!(
+        rep_wasm.candidates.as_deref(),
+        Some(&["wasm".to_string()][..])
+    );
 
     // 4. Truncated Mach-O
     let rep_macho = detect_bytes(&[0xFE, 0xED], &opts).expect("truncated macho");
     assert_eq!(rep_macho.identification, Identification::Unknown);
-    assert_eq!(rep_macho.candidates.as_deref(), Some(&["macho".to_string()][..]));
+    assert_eq!(
+        rep_macho.candidates.as_deref(),
+        Some(&["macho".to_string()][..])
+    );
 }

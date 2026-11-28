@@ -1,7 +1,7 @@
-use std::io::BufRead;
+use crate::model::WarningItem;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader as XmlReader;
-use crate::model::WarningItem;
+use std::io::BufRead;
 
 pub const TRANSITIONAL_REL_OFFICE_DOC: &str =
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";

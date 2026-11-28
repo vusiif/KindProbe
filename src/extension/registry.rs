@@ -1449,7 +1449,12 @@ mod tests {
         for window in EXTENSION_REGISTRY.windows(2) {
             let prev = window[0].0;
             let curr = window[1].0;
-            assert!(prev < curr, "Registry ordering violation: '{}' should be strictly less than '{}'", prev, curr);
+            assert!(
+                prev < curr,
+                "Registry ordering violation: '{}' should be strictly less than '{}'",
+                prev,
+                curr
+            );
         }
     }
 

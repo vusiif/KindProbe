@@ -105,7 +105,9 @@ pub fn probe_macho_core(header: &[u8]) -> Option<DetectionCore> {
 /// Probes Mach-O binary format (macOS / iOS / Darwin) and Java class disambiguation.
 pub fn probe_macho(header: &[u8]) -> MachoMatch {
     if header.len() < 4 {
-        return if header.len() >= 2 && (header.starts_with(&[0xFE, 0xED]) || header.starts_with(&[0xCF, 0xFA])) {
+        return if header.len() >= 2
+            && (header.starts_with(&[0xFE, 0xED]) || header.starts_with(&[0xCF, 0xFA]))
+        {
             MachoMatch::Truncated("macho".to_string())
         } else {
             MachoMatch::None
@@ -124,7 +126,11 @@ pub fn probe_macho(header: &[u8]) -> MachoMatch {
     if is_macho_le || is_macho_be {
         let mut evidence = vec![EvidenceItem::new("sig.macho.magic")];
         if header.len() >= 8 {
-            let cpu = if is_macho_le { u32::from_le_bytes([header[4], header[5], header[6], header[7]]) } else { u32::from_be_bytes([header[4], header[5], header[6], header[7]]) };
+            let cpu = if is_macho_le {
+                u32::from_le_bytes([header[4], header[5], header[6], header[7]])
+            } else {
+                u32::from_be_bytes([header[4], header[5], header[6], header[7]])
+            };
             if let Some(arch_ev) = match_macho_cputype(cpu) {
                 evidence.push(arch_ev);
             }
@@ -134,13 +140,40 @@ pub fn probe_macho(header: &[u8]) -> MachoMatch {
 
     if magic == [0xCA, 0xFE, 0xBA, 0xBE] {
         if is_java_class_version(header) {
-            return build_macho_report("class", "class", Verification::Structure, vec![EvidenceItem::new("sig.java.class")]);
+            return build_macho_report(
+                "class",
+                "class",
+                Verification::Structure,
+                vec![EvidenceItem::new("sig.java.class")],
+            );
         }
-        return build_macho_report("macho", "dylib", ver, vec![EvidenceItem::new("sig.macho.fat_magic"), EvidenceItem::with_desc("sig.macho.universal", "Universal Binary (Multi-architecture FAT)")]);
+        return build_macho_report(
+            "macho",
+            "dylib",
+            ver,
+            vec![
+                EvidenceItem::new("sig.macho.fat_magic"),
+                EvidenceItem::with_desc(
+                    "sig.macho.universal",
+                    "Universal Binary (Multi-architecture FAT)",
+                ),
+            ],
+        );
     }
 
     if magic == [0xBE, 0xBA, 0xFE, 0xCA] {
-        return build_macho_report("macho", "dylib", ver, vec![EvidenceItem::new("sig.macho.fat_magic"), EvidenceItem::with_desc("sig.macho.universal", "Universal Binary (Multi-architecture FAT)")]);
+        return build_macho_report(
+            "macho",
+            "dylib",
+            ver,
+            vec![
+                EvidenceItem::new("sig.macho.fat_magic"),
+                EvidenceItem::with_desc(
+                    "sig.macho.universal",
+                    "Universal Binary (Multi-architecture FAT)",
+                ),
+            ],
+        );
     }
 
     MachoMatch::None
@@ -148,17 +181,49 @@ pub fn probe_macho(header: &[u8]) -> MachoMatch {
 
 fn match_macho_cputype(cputype: u32) -> Option<EvidenceItem> {
     const ARCHES: &[(u32, &str, &str)] = &[
-        (0x00000007, "sig.macho.arch.x86", "Target Architecture: x86 (i386)"),
-        (0x01000007, "sig.macho.arch.x86_64", "Target Architecture: x86-64 (AMD64)"),
-        (0x0000000C, "sig.macho.arch.arm", "Target Architecture: ARM (32-bit)"),
-        (0x0100000C, "sig.macho.arch.arm64", "Target Architecture: ARM64 (Apple Silicon)"),
-        (0x00000012, "sig.macho.arch.powerpc", "Target Architecture: PowerPC"),
-        (0x01000012, "sig.macho.arch.powerpc64", "Target Architecture: PowerPC 64-bit"),
+        (
+            0x00000007,
+            "sig.macho.arch.x86",
+            "Target Architecture: x86 (i386)",
+        ),
+        (
+            0x01000007,
+            "sig.macho.arch.x86_64",
+            "Target Architecture: x86-64 (AMD64)",
+        ),
+        (
+            0x0000000C,
+            "sig.macho.arch.arm",
+            "Target Architecture: ARM (32-bit)",
+        ),
+        (
+            0x0100000C,
+            "sig.macho.arch.arm64",
+            "Target Architecture: ARM64 (Apple Silicon)",
+        ),
+        (
+            0x00000012,
+            "sig.macho.arch.powerpc",
+            "Target Architecture: PowerPC",
+        ),
+        (
+            0x01000012,
+            "sig.macho.arch.powerpc64",
+            "Target Architecture: PowerPC 64-bit",
+        ),
     ];
-    ARCHES.iter().find(|(c, _, _)| *c == cputype).map(|(_, k, d)| EvidenceItem::with_desc(*k, *d))
+    ARCHES
+        .iter()
+        .find(|(c, _, _)| *c == cputype)
+        .map(|(_, k, d)| EvidenceItem::with_desc(*k, *d))
 }
 
-fn build_macho_report(fmt: &str, ext: &str, verification: Verification, evidence: Vec<EvidenceItem>) -> MachoMatch {
+fn build_macho_report(
+    fmt: &str,
+    ext: &str,
+    verification: Verification,
+    evidence: Vec<EvidenceItem>,
+) -> MachoMatch {
     MachoMatch::Confirmed(Box::new(DetectionReport {
         schema_version: 1,
         format_id: Some(fmt.to_string()),
@@ -171,7 +236,12 @@ fn build_macho_report(fmt: &str, ext: &str, verification: Verification, evidence
         accepted_extensions: if fmt == "class" {
             vec!["class".to_string()]
         } else {
-            vec!["dylib".to_string(), "bundle".to_string(), "so".to_string(), "bin".to_string()]
+            vec![
+                "dylib".to_string(),
+                "bundle".to_string(),
+                "so".to_string(),
+                "bin".to_string(),
+            ]
         },
         extension_status: ExtensionStatus::Undetermined,
         evidence,

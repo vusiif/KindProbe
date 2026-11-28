@@ -32,7 +32,10 @@ pub fn probe_rar(header: &[u8]) -> RarProbeResult {
     }
 
     // Truncated detection
-    if !header.is_empty() && header.len() < 8 && (RAR4_SIGNATURE.starts_with(header) || RAR5_SIGNATURE.starts_with(header)) {
+    if !header.is_empty()
+        && header.len() < 8
+        && (RAR4_SIGNATURE.starts_with(header) || RAR5_SIGNATURE.starts_with(header))
+    {
         RarProbeResult::Truncated
     } else {
         RarProbeResult::None

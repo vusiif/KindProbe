@@ -60,10 +60,12 @@ pub fn probe_sqlite_core(header: &[u8]) -> Option<DetectionCore> {
 
     let verification = if header.len() >= 20 {
         let raw_page_size = u16::from_be_bytes([header[16], header[17]]);
-        let is_valid_page_size = raw_page_size == 1 || (raw_page_size >= 512 && raw_page_size.is_power_of_two());
+        let is_valid_page_size =
+            raw_page_size == 1 || (raw_page_size >= 512 && raw_page_size.is_power_of_two());
         let write_ver = header[18];
         let read_ver = header[19];
-        let is_valid_versions = (write_ver == 1 || write_ver == 2) && (read_ver == 1 || read_ver == 2);
+        let is_valid_versions =
+            (write_ver == 1 || write_ver == 2) && (read_ver == 1 || read_ver == 2);
 
         if is_valid_page_size && is_valid_versions {
             Verification::Structure
@@ -96,10 +98,12 @@ pub fn probe_sqlite(header: &[u8]) -> SqliteMatch {
     // Read page size (offset 16..18) and write/read versions (offsets 18, 19)
     let verification = if header.len() >= 20 {
         let raw_page_size = u16::from_be_bytes([header[16], header[17]]);
-        let is_valid_page_size = raw_page_size == 1 || (raw_page_size >= 512 && raw_page_size.is_power_of_two());
+        let is_valid_page_size =
+            raw_page_size == 1 || (raw_page_size >= 512 && raw_page_size.is_power_of_two());
         let write_ver = header[18];
         let read_ver = header[19];
-        let is_valid_versions = (write_ver == 1 || write_ver == 2) && (read_ver == 1 || read_ver == 2);
+        let is_valid_versions =
+            (write_ver == 1 || write_ver == 2) && (read_ver == 1 || read_ver == 2);
 
         if is_valid_page_size && is_valid_versions {
             evidence.push(EvidenceItem::new("sig.sqlite.page_size"));
@@ -111,14 +115,33 @@ pub fn probe_sqlite(header: &[u8]) -> SqliteMatch {
         Verification::Signature
     };
 
-    let (fmt_id, cat, container, rec_ext, accepted) = if header.len() >= 72
-        && (&header[68..72] == b"GPKG" || &header[68..72] == b"GP10")
-    {
-        evidence.push(EvidenceItem::with_desc("sig.sqlite.geopackage", "OGC GeoPackage container"));
-        ("gpkg", "database", Some("sqlite3".to_string()), "gpkg", vec!["gpkg".to_string(), "sqlite3".to_string(), "db".to_string()])
-    } else {
-        ("sqlite3", "database", None, "sqlite3", vec!["sqlite3".to_string(), "sqlite".to_string(), "db".to_string(), "db3".to_string()])
-    };
+    let (fmt_id, cat, container, rec_ext, accepted) =
+        if header.len() >= 72 && (&header[68..72] == b"GPKG" || &header[68..72] == b"GP10") {
+            evidence.push(EvidenceItem::with_desc(
+                "sig.sqlite.geopackage",
+                "OGC GeoPackage container",
+            ));
+            (
+                "gpkg",
+                "database",
+                Some("sqlite3".to_string()),
+                "gpkg",
+                vec!["gpkg".to_string(), "sqlite3".to_string(), "db".to_string()],
+            )
+        } else {
+            (
+                "sqlite3",
+                "database",
+                None,
+                "sqlite3",
+                vec![
+                    "sqlite3".to_string(),
+                    "sqlite".to_string(),
+                    "db".to_string(),
+                    "db3".to_string(),
+                ],
+            )
+        };
 
     SqliteMatch::Confirmed(Box::new(DetectionReport {
         schema_version: 1,

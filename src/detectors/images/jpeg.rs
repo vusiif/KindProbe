@@ -16,7 +16,11 @@ pub fn probe_jpeg(header: &[u8]) -> JpegProbeResult {
             let marker = header[3];
             // Valid JPEG marker after SOI:
             // 0xE0..=0xEF (APP0-APP15), 0xDB (DQT), 0xC0..=0xC3 (SOF0-SOF3), 0xFE (COM)
-            if (0xE0..=0xEF).contains(&marker) || marker == 0xDB || (0xC0..=0xC3).contains(&marker) || marker == 0xFE {
+            if (0xE0..=0xEF).contains(&marker)
+                || marker == 0xDB
+                || (0xC0..=0xC3).contains(&marker)
+                || marker == 0xFE
+            {
                 // If we have at least 6 bytes, we can verify segment length
                 if header.len() >= 6 {
                     let seg_len = u16::from_be_bytes([header[4], header[5]]) as usize;

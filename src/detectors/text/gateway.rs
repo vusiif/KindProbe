@@ -18,35 +18,37 @@ pub fn examine_text_gateway(bytes: &[u8]) -> Option<&str> {
     // Fast bailout: First byte must be valid text starter
     // Valid starters: whitespace (0x09, 0x0A, 0x0D, 0x20), printable ASCII (0x21..=0x7E), or UTF-8 lead (0xC2..=0xF4)
     let b0 = raw[0];
-    if (b0 < 0x20 && b0 != b'\t' && b0 != b'\n' && b0 != b'\r') || (b0 >= 0x7F && (b0 <= 0xC1 || b0 >= 0xF5)) {
+    if (b0 < 0x20 && b0 != b'\t' && b0 != b'\n' && b0 != b'\r')
+        || (b0 >= 0x7F && (b0 <= 0xC1 || b0 >= 0xF5))
+    {
         return None;
     }
 
     #[inline]
-fn scan_ascii_slice(
-    slice: &[u8],
-    base_idx: usize,
-    control_count: &mut usize,
-    max_controls: usize,
-    ascii_end: &mut usize,
-) -> bool {
-    for (offset, &b) in slice.iter().enumerate() {
-        if b == 0 {
-            return false;
-        }
-        if b >= 0x80 {
-            *ascii_end = base_idx + offset;
-            return true;
-        }
-        if (b < 0x20 && b != b'\t' && b != b'\n' && b != b'\r') || b == 0x7F {
-            *control_count += 1;
-            if *control_count > max_controls {
+    fn scan_ascii_slice(
+        slice: &[u8],
+        base_idx: usize,
+        control_count: &mut usize,
+        max_controls: usize,
+        ascii_end: &mut usize,
+    ) -> bool {
+        for (offset, &b) in slice.iter().enumerate() {
+            if b == 0 {
                 return false;
             }
+            if b >= 0x80 {
+                *ascii_end = base_idx + offset;
+                return true;
+            }
+            if (b < 0x20 && b != b'\t' && b != b'\n' && b != b'\r') || b == 0x7F {
+                *control_count += 1;
+                if *control_count > max_controls {
+                    return false;
+                }
+            }
         }
+        true
     }
-    true
-}
     // 2. Single-pass unified ASCII / NUL / control character scan
     // Use 8-byte SWAR for >= 64B payloads; direct scalar scan avoids SWAR setup overhead on tiny snippets.
     let total_len = raw.len();
@@ -78,7 +80,13 @@ fn scan_ascii_slice(
         }
 
         if ascii_end == raw.len()
-            && !scan_ascii_slice(remainder, idx, &mut control_count, max_controls, &mut ascii_end)
+            && !scan_ascii_slice(
+                remainder,
+                idx,
+                &mut control_count,
+                max_controls,
+                &mut ascii_end,
+            )
         {
             return None;
         }

@@ -43,11 +43,7 @@ pub fn make_png_core(has_ihdr: bool) -> DetectionCore {
         recommended_extension: Some("png"),
         accepted_extensions: &["png"],
         primary_evidence: Some("sig.png.header"),
-        secondary_evidence: if has_ihdr {
-            Some("sig.png.ihdr")
-        } else {
-            None
-        },
+        secondary_evidence: if has_ihdr { Some("sig.png.ihdr") } else { None },
         warning: None,
         candidate: None,
     }

@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus, Verification};
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_batch_1000_finance_network_and_virtualization() {
@@ -13,7 +13,10 @@ fn test_detect_batch_1000_finance_network_and_virtualization() {
     assert_eq!(rep.format_id.as_deref(), Some("fix_protocol"));
     assert_eq!(rep.category, "finance");
     assert_eq!(rep.verification, Verification::Signature);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("fix"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("fix"))),
+        ExtensionStatus::Match
+    );
 
     // 2. SWIFT MT Message
     let swift = b"{1:F01BANKBEBBAXXX0000000000}{2:I103...";
@@ -61,7 +64,10 @@ fn test_detect_batch_1000_crypto_compilers_and_bio() {
     let rep = detect_bytes(blk, &opts).expect("detect bitcoin blk");
     assert_eq!(rep.format_id.as_deref(), Some("bitcoin_blk_dat"));
     assert_eq!(rep.category, "blockchain");
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("blk"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("blk"))),
+        ExtensionStatus::Match
+    );
 
     // 2. Chia Plot
     let plot = b"Proof of Space Plot v1.0\x00";

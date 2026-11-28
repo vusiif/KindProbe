@@ -1,8 +1,8 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::detect_bytes;
 use kindprobe::extension::compare_extension;
 use kindprobe::model::ExtensionStatus;
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_texture_formats() {
@@ -15,7 +15,10 @@ fn test_detect_texture_formats() {
     assert_eq!(rep.format_id.as_deref(), Some("dds"));
     assert_eq!(rep.category, "image");
     assert_eq!(rep.recommended_extension.as_deref(), Some("dds"));
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("dds"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("dds"))),
+        ExtensionStatus::Match
+    );
 
     // 2. KTX 1.0 & KTX 2.0
     let mut ktx1 = vec![0u8; 64];
@@ -48,21 +51,34 @@ fn test_detect_multimedia_streams() {
     // 1. ASF / WMV / WMA
     let mut asf = vec![0u8; 64];
     asf[0..16].copy_from_slice(&[
-        0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11, 0xa6, 0xd9, 0x00, 0xaa, 0x00, 0x62, 0xce, 0x6c,
+        0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11, 0xa6, 0xd9, 0x00, 0xaa, 0x00, 0x62, 0xce,
+        0x6c,
     ]);
     let rep = detect_bytes(&asf, &opts).expect("detect asf");
     assert_eq!(rep.format_id.as_deref(), Some("asf"));
     assert_eq!(rep.category, "video");
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("wmv"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("wma"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("asf"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("wmv"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("wma"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("asf"))),
+        ExtensionStatus::Match
+    );
 
     // 2. RealMedia (.rm / .rmvb)
     let mut rm = vec![0u8; 32];
     rm[0..4].copy_from_slice(b".RMF");
     let rep = detect_bytes(&rm, &opts).expect("detect rm");
     assert_eq!(rep.format_id.as_deref(), Some("rm"));
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("rmvb"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("rmvb"))),
+        ExtensionStatus::Match
+    );
 
     // 3. Flash SWF (FWS, CWS, ZWS)
     for magic in [b"FWS", b"CWS", b"ZWS"] {

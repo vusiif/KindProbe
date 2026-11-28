@@ -42,7 +42,10 @@ fn test_detect_7z_with_start_header() {
     assert_eq!(report.verification, Verification::Structure);
     assert_eq!(report.inspection, Inspection::Complete);
     assert!(report.evidence.iter().any(|e| e.code == "sig.7z.header"));
-    assert!(report.evidence.iter().any(|e| e.code == "sig.7z.start_header"));
+    assert!(report
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.7z.start_header"));
 }
 
 #[test]
@@ -56,7 +59,10 @@ fn test_detect_7z_signature_only() {
     assert_eq!(report.format_id.as_deref(), Some("7z"));
     assert_eq!(report.verification, Verification::Signature);
     assert!(report.evidence.iter().any(|e| e.code == "sig.7z.header"));
-    assert!(!report.evidence.iter().any(|e| e.code == "sig.7z.start_header"));
+    assert!(!report
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.7z.start_header"));
 }
 
 #[test]
@@ -77,7 +83,7 @@ fn test_detect_rar4_with_main_header() {
     let mut rar4 = Vec::new();
     rar4.extend_from_slice(b"Rar!\x1A\x07\x00");
     rar4.extend_from_slice(&[0x12, 0x34]); // head_crc
-    rar4.push(0x73);                     // head_type = 0x73 (Main Archive Header)
+    rar4.push(0x73); // head_type = 0x73 (Main Archive Header)
     rar4.extend_from_slice(&[0x00; 10]);
 
     let options = DetectOptions::default();
@@ -91,7 +97,10 @@ fn test_detect_rar4_with_main_header() {
     assert_eq!(report.verification, Verification::Structure);
     assert_eq!(report.inspection, Inspection::Complete);
     assert!(report.evidence.iter().any(|e| e.code == "sig.rar.header"));
-    assert!(report.evidence.iter().any(|e| e.code == "sig.rar.main_header"));
+    assert!(report
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.rar.main_header"));
 }
 
 #[test]
@@ -108,7 +117,10 @@ fn test_detect_rar5_signature() {
     assert_eq!(report.format_id.as_deref(), Some("rar"));
     assert_eq!(report.verification, Verification::Structure);
     assert!(report.evidence.iter().any(|e| e.code == "sig.rar.header"));
-    assert!(report.evidence.iter().any(|e| e.code == "sig.rar5.signature"));
+    assert!(report
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.rar5.signature"));
 }
 
 #[test]

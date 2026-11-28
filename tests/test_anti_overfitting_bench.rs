@@ -17,7 +17,9 @@ fn create_cfb_xls(stream_name: &str, biff_version: u16) -> Vec<u8> {
     bof[4..6].copy_from_slice(&biff_version.to_le_bytes());
     bof[6..8].copy_from_slice(&0x0005u16.to_le_bytes());
     {
-        let mut stream = comp.create_stream(format!("/{}", stream_name)).expect("create stream");
+        let mut stream = comp
+            .create_stream(format!("/{}", stream_name))
+            .expect("create stream");
         stream.write_all(&bof).expect("write bof");
         stream.write_all(&[0u8; 64]).expect("write padding");
     }
@@ -33,7 +35,9 @@ fn create_cfb_ppt(has_current_user: bool) -> Vec<u8> {
         ppt_data[0..2].copy_from_slice(&0x000Fu16.to_le_bytes());
         ppt_data[2..4].copy_from_slice(&0x03E8u16.to_le_bytes());
         ppt_data[4..8].copy_from_slice(&56u32.to_le_bytes());
-        let mut stream = comp.create_stream("/PowerPoint Document").expect("create stream");
+        let mut stream = comp
+            .create_stream("/PowerPoint Document")
+            .expect("create stream");
         stream.write_all(&ppt_data).expect("write ppt");
     }
     if has_current_user {
@@ -139,7 +143,10 @@ fn test_anti_overfitting_comprehensive_benchmark() {
     let total_operations = total_samples * rounds;
 
     println!("[1] Dynamic Mixed-Stream Detection (55 Formats Interleaved):");
-    println!("    Sample Pool Size:     {} distinct formats/payloads", total_samples);
+    println!(
+        "    Sample Pool Size:     {} distinct formats/payloads",
+        total_samples
+    );
     println!("    Interleaved Rounds:   {} rounds", rounds);
     println!("    Total Operations:     {} detections", total_operations);
 
@@ -153,8 +160,14 @@ fn test_anti_overfitting_comprehensive_benchmark() {
     let ns_per_op_mixed = elapsed_mixed.as_nanos() as f64 / total_operations as f64;
     let qps_mixed = total_operations as f64 / elapsed_mixed.as_secs_f64();
 
-    println!("    Mixed Stream Latency:    {:.2} ns / detection", ns_per_op_mixed);
-    println!("    Mixed Stream Throughput: {:.2} thousand files / sec", qps_mixed / 1000.0);
+    println!(
+        "    Mixed Stream Latency:    {:.2} ns / detection",
+        ns_per_op_mixed
+    );
+    println!(
+        "    Mixed Stream Throughput: {:.2} thousand files / sec",
+        qps_mixed / 1000.0
+    );
 
     // =========================================================================
     // Part 2: Complex Real-World Source Code with Multi-Line Preamble Permutations
@@ -173,21 +186,30 @@ fn test_anti_overfitting_comprehensive_benchmark() {
         }),
         ("Java with package, 20 imports and Javadoc", "java", {
             let mut s = String::new();
-            s.push_str("/**\n * Enterprise Java Application\n * Multi-line Javadoc documentation\n */\n");
+            s.push_str(
+                "/**\n * Enterprise Java Application\n * Multi-line Javadoc documentation\n */\n",
+            );
             s.push_str("package com.enterprise.service.impl;\n\n");
             for i in 0..20 {
-                s.push_str(&format!("import org.springframework.beans.factory.annotation.Import{};\n", i));
+                s.push_str(&format!(
+                    "import org.springframework.beans.factory.annotation.Import{};\n",
+                    i
+                ));
             }
             s.push_str("\npublic class ServiceImpl {\n    public void execute() {}\n}\n");
             s.into_bytes()
         }),
-        ("Rust with module docs, inner attributes and crates", "rs", {
-            let mut s = String::new();
-            s.push_str("//! High performance probe library\n//! Crate level documentation\n\n");
-            s.push_str("#![allow(dead_code)]\n#![warn(missing_docs)]\n\n");
-            s.push_str("use std::collections::HashMap;\nuse std::io::{Read, Write};\n\npub struct Engine {\n    pub version: u32,\n}\n");
-            s.into_bytes()
-        }),
+        (
+            "Rust with module docs, inner attributes and crates",
+            "rs",
+            {
+                let mut s = String::new();
+                s.push_str("//! High performance probe library\n//! Crate level documentation\n\n");
+                s.push_str("#![allow(dead_code)]\n#![warn(missing_docs)]\n\n");
+                s.push_str("use std::collections::HashMap;\nuse std::io::{Read, Write};\n\npub struct Engine {\n    pub version: u32,\n}\n");
+                s.into_bytes()
+            },
+        ),
         ("C++ with Header Guard, Namespaces and Templates", "cpp", {
             let mut s = String::new();
             s.push_str("/* C++ Header Guard File */\n#ifndef KINDPROBE_CORE_H\n#define KINDPROBE_CORE_H\n\n");
@@ -207,8 +229,15 @@ fn test_anti_overfitting_comprehensive_benchmark() {
     for (desc, expected_ext, data) in &complex_text_cases {
         let rep = detect_bytes(data, &opts).expect("detect complex text");
         let detected = rep.recommended_extension.as_deref().unwrap_or("none");
-        let status = if detected == *expected_ext { "MATCH" } else { "MISMATCH" };
-        assert_eq!(detected, *expected_ext, "Complex code must be correctly identified");
+        let status = if detected == *expected_ext {
+            "MATCH"
+        } else {
+            "MISMATCH"
+        };
+        assert_eq!(
+            detected, *expected_ext,
+            "Complex code must be correctly identified"
+        );
 
         let start = Instant::now();
         for _ in 0..text_iterations {
@@ -216,7 +245,10 @@ fn test_anti_overfitting_comprehensive_benchmark() {
         }
         let dur = start.elapsed();
         let ns = dur.as_nanos() as f64 / text_iterations as f64;
-        println!("    {:<50}: {:6.2} ns (Ext: {:<4} [{}])", desc, ns, detected, status);
+        println!(
+            "    {:<50}: {:6.2} ns (Ext: {:<4} [{}])",
+            desc, ns, detected, status
+        );
     }
 
     // =========================================================================
@@ -224,14 +256,46 @@ fn test_anti_overfitting_comprehensive_benchmark() {
     // =========================================================================
     println!("\n[3] Adversarial Near-Miss Rejection Matrix (Fast Negative Bailout):");
     let near_misses: Vec<(&'static str, Vec<u8>, &'static str)> = vec![
-        ("Near-Miss ZIP (PK\\x03\\x09)", b"PK\x03\x09\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec(), "zip"),
-        ("Near-Miss PNG (\\x89PNG\\r\\n\\x1a\\x00)", b"\x89PNG\r\n\x1a\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec(), "png"),
-        ("Near-Miss PDF (%PDG-1.5)", b"%PDG-1.5 fake pdf stream without catalog".to_vec(), "pdf"),
-        ("Near-Miss ELF (\\x7fEL\\x00)", b"\x7fEL\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec(), "elf"),
-        ("Near-Miss CFB (D0CF11E0A1B11A00)", b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\x00\x00\x00\x00\x00".to_vec(), "cfb"),
-        ("Near-Miss GIF (GIF87x)", b"GIF87x\x01\x00\x01\x00\x80\x00\x00".to_vec(), "gif"),
-        ("Near-Miss JPEG (FFD80000)", b"\xff\xd8\x00\x00\x10JFIF\x00".to_vec(), "jpeg"),
-        ("Near-Miss JSON ({ not_quoted)", b"{\n  not_quoted_key: 123\n}".to_vec(), "json"),
+        (
+            "Near-Miss ZIP (PK\\x03\\x09)",
+            b"PK\x03\x09\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec(),
+            "zip",
+        ),
+        (
+            "Near-Miss PNG (\\x89PNG\\r\\n\\x1a\\x00)",
+            b"\x89PNG\r\n\x1a\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec(),
+            "png",
+        ),
+        (
+            "Near-Miss PDF (%PDG-1.5)",
+            b"%PDG-1.5 fake pdf stream without catalog".to_vec(),
+            "pdf",
+        ),
+        (
+            "Near-Miss ELF (\\x7fEL\\x00)",
+            b"\x7fEL\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec(),
+            "elf",
+        ),
+        (
+            "Near-Miss CFB (D0CF11E0A1B11A00)",
+            b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\x00\x00\x00\x00\x00".to_vec(),
+            "cfb",
+        ),
+        (
+            "Near-Miss GIF (GIF87x)",
+            b"GIF87x\x01\x00\x01\x00\x80\x00\x00".to_vec(),
+            "gif",
+        ),
+        (
+            "Near-Miss JPEG (FFD80000)",
+            b"\xff\xd8\x00\x00\x10JFIF\x00".to_vec(),
+            "jpeg",
+        ),
+        (
+            "Near-Miss JSON ({ not_quoted)",
+            b"{\n  not_quoted_key: 123\n}".to_vec(),
+            "json",
+        ),
     ];
 
     let miss_iterations = 50_000;
@@ -252,7 +316,12 @@ fn test_anti_overfitting_comprehensive_benchmark() {
         let dur = start.elapsed();
         let ns = dur.as_nanos() as f64 / miss_iterations as f64;
         let qps = miss_iterations as f64 / dur.as_secs_f64();
-        println!("    {:<35}: {:6.2} ns ({:.2} M refusals/sec)", desc, ns, qps / 1_000_000.0);
+        println!(
+            "    {:<35}: {:6.2} ns ({:.2} M refusals/sec)",
+            desc,
+            ns,
+            qps / 1_000_000.0
+        );
     }
 
     // =========================================================================
@@ -269,8 +338,12 @@ fn test_anti_overfitting_comprehensive_benchmark() {
         }
         let dur = start.elapsed();
         let ns = dur.as_nanos() as f64 / size_iterations as f64;
-        let mb_per_sec = (sz as f64 * size_iterations as f64) / dur.as_secs_f64() / (1024.0 * 1024.0);
-        println!("    Payload {:>6} bytes: {:6.2} ns ({:8.2} MB/s scan speed)", sz, ns, mb_per_sec);
+        let mb_per_sec =
+            (sz as f64 * size_iterations as f64) / dur.as_secs_f64() / (1024.0 * 1024.0);
+        println!(
+            "    Payload {:>6} bytes: {:6.2} ns ({:8.2} MB/s scan speed)",
+            sz, ns, mb_per_sec
+        );
     }
 
     // =========================================================================
@@ -285,20 +358,32 @@ fn test_anti_overfitting_comprehensive_benchmark() {
     let mut containers: Vec<(&'static str, Vec<u8>)> = Vec::new();
     if docx_path.exists() {
         let mut buf = Vec::new();
-        File::open(&docx_path).unwrap().read_to_end(&mut buf).unwrap();
+        File::open(&docx_path)
+            .unwrap()
+            .read_to_end(&mut buf)
+            .unwrap();
         containers.push(("Transitional DOCX", buf));
     }
     if docx_strict_path.exists() {
         let mut buf = Vec::new();
-        File::open(&docx_strict_path).unwrap().read_to_end(&mut buf).unwrap();
+        File::open(&docx_strict_path)
+            .unwrap()
+            .read_to_end(&mut buf)
+            .unwrap();
         containers.push(("Strict ISO/IEC 29500 DOCX", buf));
     }
     if doc_path.exists() {
         let mut buf = Vec::new();
-        File::open(&doc_path).unwrap().read_to_end(&mut buf).unwrap();
+        File::open(&doc_path)
+            .unwrap()
+            .read_to_end(&mut buf)
+            .unwrap();
         containers.push(("MS-DOC WordDocument CFB", buf));
     }
-    containers.push(("MS-XLS Workbook (BIFF8) CFB", create_cfb_xls("Workbook", 0x0600)));
+    containers.push((
+        "MS-XLS Workbook (BIFF8) CFB",
+        create_cfb_xls("Workbook", 0x0600),
+    ));
     containers.push(("MS-XLS Book (BIFF5) CFB", create_cfb_xls("Book", 0x0500)));
     containers.push(("MS-PPT PowerPoint CFB", create_cfb_ppt(true)));
 
@@ -306,7 +391,11 @@ fn test_anti_overfitting_comprehensive_benchmark() {
     for (desc, buf) in &containers {
         let mut cur = Cursor::new(buf);
         let rep = detect_reader(&mut cur, &opts).expect("detect container");
-        assert_eq!(rep.identification, Identification::Format, "Must confirm container format");
+        assert_eq!(
+            rep.identification,
+            Identification::Format,
+            "Must confirm container format"
+        );
 
         let start = Instant::now();
         for _ in 0..container_iter {
@@ -316,7 +405,10 @@ fn test_anti_overfitting_comprehensive_benchmark() {
         let dur = start.elapsed();
         let us = dur.as_micros() as f64 / container_iter as f64;
         let qps = container_iter as f64 / dur.as_secs_f64();
-        println!("    {:<32}: {:6.2} μs / doc ({:6.0} docs/sec)", desc, us, qps);
+        println!(
+            "    {:<32}: {:6.2} μs / doc ({:6.0} docs/sec)",
+            desc, us, qps
+        );
     }
 
     println!("==================================================================\n");

@@ -84,8 +84,16 @@ pub fn probe_pcap_core(header: &[u8]) -> Option<DetectionCore> {
     if is_pcap {
         let is_le = is_pcap_micro_le || is_pcap_nano_le;
         let verification = if header.len() >= 8 {
-            let ver_major = if is_le { u16::from_le_bytes([header[4], header[5]]) } else { u16::from_be_bytes([header[4], header[5]]) };
-            let ver_minor = if is_le { u16::from_le_bytes([header[6], header[7]]) } else { u16::from_be_bytes([header[6], header[7]]) };
+            let ver_major = if is_le {
+                u16::from_le_bytes([header[4], header[5]])
+            } else {
+                u16::from_be_bytes([header[4], header[5]])
+            };
+            let ver_minor = if is_le {
+                u16::from_le_bytes([header[6], header[7]])
+            } else {
+                u16::from_be_bytes([header[6], header[7]])
+            };
             if ver_major == 2 && ver_minor == 4 {
                 Verification::Structure
             } else {

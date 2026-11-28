@@ -1,6 +1,6 @@
-use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 use kindprobe::budget::DetectOptions;
 use kindprobe::{detect_bytes, detect_reader, Identification, Inspection};
+use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
@@ -13,7 +13,10 @@ impl<R: Read> Read for InterruptedReader<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.toggle = !self.toggle;
         if self.toggle {
-            return Err(io::Error::new(io::ErrorKind::Interrupted, "simulated EINTR"));
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "simulated EINTR",
+            ));
         }
         self.inner.read(buf)
     }
@@ -80,7 +83,9 @@ fn test_phase17_streaming_xml_budget_exceeded() {
     let rep = detect_bytes(&docx, &opts).expect("detect_bytes");
     assert_eq!(rep.inspection, Inspection::Limited);
     assert!(
-        rep.warnings.iter().any(|w| w.code == "budget.xml_output_exceeded"),
+        rep.warnings
+            .iter()
+            .any(|w| w.code == "budget.xml_output_exceeded"),
         "Expected budget.xml_output_exceeded, got: {:?}",
         rep.warnings
     );

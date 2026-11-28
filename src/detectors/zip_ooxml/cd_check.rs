@@ -1,8 +1,8 @@
-use std::collections::HashSet;
-use std::io::{Read, Seek, SeekFrom};
+use super::opc::{normalize_opc_path, normalize_opc_path_cow};
 use crate::budget::{BudgetReader, DetectOptions};
 use crate::model::{DetectError, DetectionReport, Identification, Inspection, WarningItem};
-use super::opc::{normalize_opc_path, normalize_opc_path_cow};
+use std::collections::HashSet;
+use std::io::{Read, Seek, SeekFrom};
 
 pub struct ZipCdPreCheckResult {
     pub cd_total_entries: usize,
@@ -72,18 +72,12 @@ fn find_eocd_in_slice(slice: &[u8]) -> Option<(usize, usize, u64)> {
                 continue;
             }
             let total_ent = u16::from_le_bytes([slice[i + 10], slice[i + 11]]) as usize;
-            let size = u32::from_le_bytes([
-                slice[i + 12],
-                slice[i + 13],
-                slice[i + 14],
-                slice[i + 15],
-            ]) as usize;
-            let offset = u32::from_le_bytes([
-                slice[i + 16],
-                slice[i + 17],
-                slice[i + 18],
-                slice[i + 19],
-            ]) as u64;
+            let size =
+                u32::from_le_bytes([slice[i + 12], slice[i + 13], slice[i + 14], slice[i + 15]])
+                    as usize;
+            let offset =
+                u32::from_le_bytes([slice[i + 16], slice[i + 17], slice[i + 18], slice[i + 19]])
+                    as u64;
             return Some((total_ent, size, offset));
         }
     }
@@ -126,7 +120,8 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
         if reader.seek(SeekFrom::Start(fast_seek_pos)).is_ok()
             && reader.read_exact(&mut fast_buf[..fast_probe_len]).is_ok()
         {
-            if let Some((total_ent, size, offset)) = find_eocd_in_slice(&fast_buf[..fast_probe_len]) {
+            if let Some((total_ent, size, offset)) = find_eocd_in_slice(&fast_buf[..fast_probe_len])
+            {
                 cd_total_entries = total_ent;
                 cd_size = size;
                 cd_offset = offset;
@@ -275,12 +270,9 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
             cd_bytes[pos + 22],
             cd_bytes[pos + 23],
         ]);
-        let fn_len =
-            u16::from_le_bytes([cd_bytes[pos + 28], cd_bytes[pos + 29]]) as usize;
-        let extra_len =
-            u16::from_le_bytes([cd_bytes[pos + 30], cd_bytes[pos + 31]]) as usize;
-        let comment_len =
-            u16::from_le_bytes([cd_bytes[pos + 32], cd_bytes[pos + 33]]) as usize;
+        let fn_len = u16::from_le_bytes([cd_bytes[pos + 28], cd_bytes[pos + 29]]) as usize;
+        let extra_len = u16::from_le_bytes([cd_bytes[pos + 30], cd_bytes[pos + 31]]) as usize;
+        let comment_len = u16::from_le_bytes([cd_bytes[pos + 32], cd_bytes[pos + 33]]) as usize;
         let local_header_offset = u32::from_le_bytes([
             cd_bytes[pos + 42],
             cd_bytes[pos + 43],
@@ -366,7 +358,9 @@ pub fn precheck_zip_central_directory<R: Read + Seek>(
 
         let norm: std::borrow::Cow<'_, str> = match std::str::from_utf8(raw_bytes) {
             Ok(s) => normalize_opc_path_cow(s),
-            Err(_) => std::borrow::Cow::Owned(normalize_opc_path(&String::from_utf8_lossy(raw_bytes))),
+            Err(_) => {
+                std::borrow::Cow::Owned(normalize_opc_path(&String::from_utf8_lossy(raw_bytes)))
+            }
         };
         if !norm.is_empty()
             && !seen_normalized_names.insert(norm.clone())

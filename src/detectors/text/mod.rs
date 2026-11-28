@@ -155,5 +155,6 @@ fn probe_text_str_core(text: &str) -> Option<DetectionCore> {
 
 /// Probes whether the header bytes belong to structured, source code, or plain text formats.
 pub fn probe_text(header: &[u8]) -> Option<DetectionReport> {
-    probe_text_core(header).map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
+    probe_text_core(header)
+        .map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
 }

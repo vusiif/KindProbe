@@ -1,7 +1,7 @@
+use cfb::CompoundFile;
 use std::io::Read;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use cfb::CompoundFile;
 
 use crate::model::{
     DetectError, DetectionReport, EvidenceItem, Identification, Inspection, Verification,
@@ -41,7 +41,9 @@ pub fn verify_cfb_ppt<R: Read + std::io::Seek>(
                     ));
                     return Ok(false);
                 }
-                report.warnings.push(WarningItem::new("cfb.stream_read_error", e.to_string()));
+                report
+                    .warnings
+                    .push(WarningItem::new("cfb.stream_read_error", e.to_string()));
                 return Ok(false);
             }
         }
@@ -54,7 +56,9 @@ pub fn verify_cfb_ppt<R: Read + std::io::Seek>(
                 ));
                 return Ok(false);
             }
-            report.warnings.push(WarningItem::new("cfb.stream_open_error", e.to_string()));
+            report
+                .warnings
+                .push(WarningItem::new("cfb.stream_open_error", e.to_string()));
             return Ok(false);
         }
     }
@@ -81,8 +85,7 @@ pub fn verify_cfb_ppt<R: Read + std::io::Seek>(
                 let cu_type = u16::from_le_bytes([cu_buf[2], cu_buf[3]]);
                 let header_token =
                     u32::from_le_bytes([cu_buf[12], cu_buf[13], cu_buf[14], cu_buf[15]]);
-                if cu_type != 0x0FF6
-                    || (header_token != 0xE391_C05F && header_token != 0xF3D1_C4DF)
+                if cu_type != 0x0FF6 || (header_token != 0xE391_C05F && header_token != 0xF3D1_C4DF)
                 {
                     report.warnings.push(WarningItem::new(
                         "cfb.invalid_powerpoint_stream",
@@ -103,9 +106,13 @@ pub fn verify_cfb_ppt<R: Read + std::io::Seek>(
     report.inspection = Inspection::Complete;
     report.recommended_extension = Some("ppt".to_string());
     report.accepted_extensions = vec!["ppt".to_string(), "pot".to_string(), "pps".to_string()];
-    report.evidence.push(EvidenceItem::new("cfb.powerpoint_stream"));
+    report
+        .evidence
+        .push(EvidenceItem::new("cfb.powerpoint_stream"));
     if has_current_user {
-        report.evidence.push(EvidenceItem::new("cfb.current_user_stream"));
+        report
+            .evidence
+            .push(EvidenceItem::new("cfb.current_user_stream"));
     }
 
     Ok(true)

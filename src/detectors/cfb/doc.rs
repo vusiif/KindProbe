@@ -1,7 +1,7 @@
+use cfb::CompoundFile;
 use std::io::Read;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use cfb::CompoundFile;
 
 use crate::model::{
     DetectError, DetectionReport, EvidenceItem, Identification, Inspection, Verification,
@@ -32,7 +32,9 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
         return Ok(false);
     }
 
-    report.evidence.push(EvidenceItem::new("cfb.word_document_stream"));
+    report
+        .evidence
+        .push(EvidenceItem::new("cfb.word_document_stream"));
 
     let mut stream = match comp.open_stream(stream_path) {
         Ok(s) => s,
@@ -45,7 +47,9 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
                 ));
                 return Ok(false);
             }
-            report.warnings.push(WarningItem::new("cfb.stream_open_error", e.to_string()));
+            report
+                .warnings
+                .push(WarningItem::new("cfb.stream_open_error", e.to_string()));
             return Ok(false);
         }
     };
@@ -62,7 +66,9 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
                 ));
                 return Ok(false);
             }
-            report.warnings.push(WarningItem::new("cfb.stream_read_error", e.to_string()));
+            report
+                .warnings
+                .push(WarningItem::new("cfb.stream_read_error", e.to_string()));
             return Ok(false);
         }
     };
@@ -81,7 +87,10 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
     if w_ident != FIB_WIDENT_WORD97 {
         report.warnings.push(WarningItem::new(
             "cfb.invalid_word_fib",
-            format!("Invalid FibBase wIdent: 0x{:04X} (expected 0xA5EC)", w_ident),
+            format!(
+                "Invalid FibBase wIdent: 0x{:04X} (expected 0xA5EC)",
+                w_ident
+            ),
         ));
         return Ok(false);
     }
@@ -111,7 +120,11 @@ pub fn verify_cfb_doc<R: Read + std::io::Seek>(
     let is_1table = (flags & 0x0200) != 0;
     let required_table_name = if is_1table { "1Table" } else { "0Table" };
 
-    let table_hint = if is_1table { table_1_path } else { table_0_path };
+    let table_hint = if is_1table {
+        table_1_path
+    } else {
+        table_0_path
+    };
     let fallback_path;
     let actual_table_path: &Path = if let Some(p) = table_hint {
         p

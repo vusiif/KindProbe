@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus, Identification, Inspection, Verification};
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_json() {
@@ -21,8 +21,14 @@ fn test_detect_json() {
     assert_eq!(rep.accepted_extensions, vec!["json"]);
     assert!(rep.evidence.iter().any(|e| e.code == "sig.text.json"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("json"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("xml"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("json"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("xml"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. JSON array
     let json_arr = b"[1, 2, 3, {\"key\": \"value\"}]";
@@ -42,7 +48,10 @@ fn test_detect_xml_and_html() {
     assert_eq!(rep_xml.category, "text");
     assert_eq!(rep_xml.verification, Verification::Structure);
     assert!(rep_xml.evidence.iter().any(|e| e.code == "sig.text.xml"));
-    assert_eq!(compare_extension(&rep_xml, Some(OsStr::new("xml"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_xml, Some(OsStr::new("xml"))),
+        ExtensionStatus::Match
+    );
 
     // 2. HTML document
     let html = b"<!DOCTYPE html>\n<html><head><title>KindProbe</title></head><body><h1>Hello</h1></body></html>";
@@ -52,9 +61,18 @@ fn test_detect_xml_and_html() {
     assert_eq!(rep_html.category, "text");
     assert_eq!(rep_html.verification, Verification::Structure);
     assert!(rep_html.evidence.iter().any(|e| e.code == "sig.text.html"));
-    assert_eq!(compare_extension(&rep_html, Some(OsStr::new("html"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_html, Some(OsStr::new("htm"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_html, Some(OsStr::new("json"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_html, Some(OsStr::new("html"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_html, Some(OsStr::new("htm"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_html, Some(OsStr::new("json"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -69,8 +87,14 @@ fn test_detect_config_yaml_and_toml() {
     assert_eq!(rep_yaml.category, "text");
     assert_eq!(rep_yaml.verification, Verification::Structure);
     assert!(rep_yaml.evidence.iter().any(|e| e.code == "sig.text.yaml"));
-    assert_eq!(compare_extension(&rep_yaml, Some(OsStr::new("yaml"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_yaml, Some(OsStr::new("yml"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_yaml, Some(OsStr::new("yaml"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_yaml, Some(OsStr::new("yml"))),
+        ExtensionStatus::Match
+    );
 
     // 2. TOML document with [section]
     let toml = b"[package]\nname = \"kindprobe\"\nversion = \"0.1.0\"\nedition = \"2021\"\n";
@@ -80,7 +104,10 @@ fn test_detect_config_yaml_and_toml() {
     assert_eq!(rep_toml.category, "text");
     assert_eq!(rep_toml.verification, Verification::Structure);
     assert!(rep_toml.evidence.iter().any(|e| e.code == "sig.text.toml"));
-    assert_eq!(compare_extension(&rep_toml, Some(OsStr::new("toml"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_toml, Some(OsStr::new("toml"))),
+        ExtensionStatus::Match
+    );
 }
 
 #[test]
@@ -95,8 +122,14 @@ fn test_detect_csv_and_tsv() {
     assert_eq!(rep_csv.category, "text");
     assert_eq!(rep_csv.verification, Verification::Structure);
     assert!(rep_csv.evidence.iter().any(|e| e.code == "sig.text.csv"));
-    assert_eq!(compare_extension(&rep_csv, Some(OsStr::new("csv"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_csv, Some(OsStr::new("tsv"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_csv, Some(OsStr::new("csv"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_csv, Some(OsStr::new("tsv"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. TSV (3 consistent tab-separated columns)
     let tsv = b"id\tname\trole\n1\tAlice\tEngineer\n2\tBob\tArchitect\n";
@@ -106,8 +139,14 @@ fn test_detect_csv_and_tsv() {
     assert_eq!(rep_tsv.category, "text");
     assert_eq!(rep_tsv.verification, Verification::Structure);
     assert!(rep_tsv.evidence.iter().any(|e| e.code == "sig.text.tsv"));
-    assert_eq!(compare_extension(&rep_tsv, Some(OsStr::new("tsv"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_tsv, Some(OsStr::new("tab"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_tsv, Some(OsStr::new("tsv"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_tsv, Some(OsStr::new("tab"))),
+        ExtensionStatus::Match
+    );
 }
 
 #[test]
@@ -124,8 +163,14 @@ fn test_detect_plain_text() {
     assert_eq!(rep.accepted_extensions, vec!["txt", "text", "log"]);
     assert!(rep.evidence.iter().any(|e| e.code == "sig.text.plain"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("txt"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("log"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("txt"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("log"))),
+        ExtensionStatus::Match
+    );
 }
 
 #[test]

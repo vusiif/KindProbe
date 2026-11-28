@@ -6,8 +6,8 @@ use std::process;
 use std::time::Instant;
 
 use kindprobe::budget::DetectOptions;
-use kindprobe::{detect_path, detect_path_core, Identification};
 use kindprobe::model::{DetectError, ErrorDetails, ErrorEnvelope};
+use kindprobe::{detect_path, detect_path_core, Identification};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -27,10 +27,7 @@ pub fn is_chinese_locale_str(s: &str) -> bool {
     if s.is_empty() || s.eq_ignore_ascii_case("c") || s.eq_ignore_ascii_case("posix") {
         return false;
     }
-    let lang = s
-        .split(['_', '-', '.', '@'])
-        .next()
-        .unwrap_or("");
+    let lang = s.split(['_', '-', '.', '@']).next().unwrap_or("");
     lang.eq_ignore_ascii_case("zh") || lang.eq_ignore_ascii_case("zho")
 }
 
@@ -43,11 +40,7 @@ pub fn detect_posix_locale_from_env() -> Option<String> {
                 .ok()
                 .filter(|s| !s.trim().is_empty())
         })
-        .or_else(|| {
-            std::env::var("LANG")
-                .ok()
-                .filter(|s| !s.trim().is_empty())
-        })
+        .or_else(|| std::env::var("LANG").ok().filter(|s| !s.trim().is_empty()))
 }
 
 #[cfg(windows)]
@@ -97,7 +90,9 @@ mod platform_locale {
 
 #[cfg(not(windows))]
 mod platform_locale {
-    use super::{detect_posix_locale_from_env, is_chinese_locale_str, is_chinese_win_langid, AppLanguage};
+    use super::{
+        detect_posix_locale_from_env, is_chinese_locale_str, is_chinese_win_langid, AppLanguage,
+    };
 
     pub fn detect_app_language() -> AppLanguage {
         // Deterministic test hook for platform-specific language ID mapping on non-Windows platforms
@@ -135,7 +130,7 @@ mod win_console {
     type HWND = *mut std::ffi::c_void;
 
     const STD_OUTPUT_HANDLE: DWORD = 0xfffffff5; // -11i32 as u32
-    const STD_INPUT_HANDLE: DWORD = 0xfffffff6;  // -10i32 as u32
+    const STD_INPUT_HANDLE: DWORD = 0xfffffff6; // -10i32 as u32
 
     #[link(name = "kernel32")]
     extern "system" {
@@ -542,7 +537,9 @@ fn format_warning_explanation_cn<'a>(code: &str, default_msg: &'a str) -> &'a st
         "zip.conflicting_entries" => "Zip 中发现冲突或重复的条目名称",
         "zip.truncated_or_corrupted" => "解析 Zip 压缩包或查找核心目录失败",
         "ooxml.content_type_not_found" => "未找到对应部件的内容类型",
-        "ooxml.conflicting_relationships" => "OOXML _rels/.rels 中存在多个冲突的 officeDocument 核心关系",
+        "ooxml.conflicting_relationships" => {
+            "OOXML _rels/.rels 中存在多个冲突的 officeDocument 核心关系"
+        }
         "ooxml.content_types" => "未找到有效的 openxmlformats 内容类型覆盖项",
         "ooxml.content_types_missing" => "Zip 容器中缺少 [Content_Types].xml",
         "ooxml.content_types_read_error" => "读取 [Content_Types].xml 失败",
@@ -724,7 +721,13 @@ fn process_batch_file(
                 let fmt = core.format_id.unwrap_or("unknown");
                 match lang {
                     AppLanguage::Chinese => {
-                        let _ = writeln!(out, "{} -> {} ({})", path_str, fmt, format_category_cn(core.category));
+                        let _ = writeln!(
+                            out,
+                            "{} -> {} ({})",
+                            path_str,
+                            fmt,
+                            format_category_cn(core.category)
+                        );
                     }
                     AppLanguage::English => {
                         let _ = writeln!(out, "{} -> {} ({})", path_str, fmt, core.category);
@@ -794,9 +797,10 @@ fn run_batch(
                 total_files += 1;
                 errors += 1;
                 let path_str = path.to_string_lossy();
-                let code = error_code_for_detect_error(&DetectError::Io(
-                    std::io::Error::new(e.kind(), e.to_string()),
-                ));
+                let code = error_code_for_detect_error(&DetectError::Io(std::io::Error::new(
+                    e.kind(),
+                    e.to_string(),
+                )));
                 if jsonl_mode {
                     let _ = serde_json::to_writer(
                         &mut out,
@@ -1078,7 +1082,13 @@ fn run(args: &[OsString], json_mode: bool, is_dedicated: bool, lang: AppLanguage
         if target_files.is_empty() {
             return print_arg_error(json_mode, lang, ArgErrorType::MissingFile);
         }
-        return run_batch(&target_files, recursive, jsonl_mode || json_mode, jobs, lang);
+        return run_batch(
+            &target_files,
+            recursive,
+            jsonl_mode || json_mode,
+            jobs,
+            lang,
+        );
     }
 
     let file_path = match target_files.into_iter().next() {

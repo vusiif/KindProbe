@@ -1,9 +1,7 @@
 use std::io::{Read, Seek};
 use zip::ZipArchive;
 
-use crate::model::{
-    DetectionReport, EvidenceItem, Identification, Inspection, Verification,
-};
+use crate::model::{DetectionReport, EvidenceItem, Identification, Inspection, Verification};
 
 /// Inspects ZIP archive for package derivatives: APK, IPA, JAR, or KMZ.
 pub fn check_zip_packages<R: Read + Seek>(

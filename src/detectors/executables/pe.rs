@@ -1,8 +1,8 @@
+use super::pe_meta::extract_pe_metadata;
 use crate::model::{
     DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
     Verification,
 };
-use super::pe_meta::extract_pe_metadata;
 
 pub enum PeMatch {
     Confirmed(Box<DetectionReport>),
@@ -37,7 +37,8 @@ pub fn probe_pe_core(header: &[u8]) -> Option<DetectionCore> {
     }
 
     let (verification, is_dll) = if header.len() >= 0x40 {
-        let pe_offset = u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
+        let pe_offset =
+            u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
         let pe_sig_end = pe_offset.checked_add(4);
         if pe_offset >= 0x40
             && pe_sig_end.is_some_and(|end| end <= header.len())
@@ -70,9 +71,12 @@ pub fn probe_pe(header: &[u8]) -> PeMatch {
 
     let mut evidence = vec![EvidenceItem::new("sig.pe.mz_header")];
     let (verification, is_dll) = if header.len() >= 0x40 {
-        let pe_offset = u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
+        let pe_offset =
+            u32::from_le_bytes([header[0x3C], header[0x3D], header[0x3E], header[0x3F]]) as usize;
         if pe_offset >= 0x40
-            && pe_offset.checked_add(4).is_some_and(|end| end <= header.len())
+            && pe_offset
+                .checked_add(4)
+                .is_some_and(|end| end <= header.len())
             && &header[pe_offset..pe_offset + 4] == b"PE\0\0"
         {
             evidence.push(EvidenceItem::new("sig.pe.signature"));

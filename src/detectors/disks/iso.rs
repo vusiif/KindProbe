@@ -1,7 +1,7 @@
-use std::io::{Read, Seek, SeekFrom};
 use crate::model::{
     DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
 };
+use std::io::{Read, Seek, SeekFrom};
 
 pub const ISO_OFFSET: u64 = 0x8000; // 32768 bytes (16 sectors of 2048 bytes)
 
@@ -40,7 +40,9 @@ pub fn probe_iso_buffer_core(header: &[u8]) -> Option<DetectionCore> {
 /// Probes ISO 9660 volume descriptor from memory buffer if sufficiently large.
 pub fn probe_iso_buffer(header: &[u8]) -> IsoMatch {
     match probe_iso_buffer_core(header) {
-        Some(core) => IsoMatch::Confirmed(Box::new(core.to_report(Default::default(), ExtensionStatus::Undetermined))),
+        Some(core) => IsoMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
         None => IsoMatch::None,
     }
 }

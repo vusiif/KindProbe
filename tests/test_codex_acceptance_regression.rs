@@ -1,10 +1,10 @@
-use std::io::{Cursor, Write};
-use std::path::PathBuf;
 use kindprobe::budget::DetectOptions;
 use kindprobe::{
     detect_bytes, detect_path, detect_reader, ExtensionStatus, Identification, Inspection,
     Verification,
 };
+use std::io::{Cursor, Write};
+use std::path::PathBuf;
 
 fn create_docx_package(path: &PathBuf, document_xml: &str) {
     let file = std::fs::File::create(path).expect("create docx file");
@@ -27,13 +27,7 @@ fn create_docx_package(path: &PathBuf, document_xml: &str) {
     zip.finish().unwrap();
 }
 
-fn create_cfb_case(
-    path: &PathBuf,
-    nested: bool,
-    version: u16,
-    flags: u16,
-    create_table: bool,
-) {
+fn create_cfb_case(path: &PathBuf, nested: bool, version: u16, flags: u16, create_table: bool) {
     let mut comp = cfb::create(path).expect("create cfb");
     let mut fib = vec![0u8; 64];
     fib[0..2].copy_from_slice(&0xA5ECu16.to_le_bytes());
@@ -79,7 +73,10 @@ fn test_regression_invalid_root_deep() {
     assert_eq!(rep.format_id, None);
     assert_eq!(rep.container_id.as_deref(), Some("zip"));
     assert_eq!(rep.inspection, Inspection::Limited);
-    assert!(rep.warnings.iter().any(|w| w.code == "budget.xml_depth_exceeded"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.xml_depth_exceeded"));
 }
 
 // 2. wrong_namespace_prefixed
@@ -138,7 +135,10 @@ fn test_regression_cfb_forged_fib_missing_table() {
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.format_id, None);
     assert_eq!(rep.container_id.as_deref(), Some("cfb"));
-    assert!(rep.warnings.iter().any(|w| w.code == "cfb.table_stream_missing"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "cfb.table_stream_missing"));
 }
 
 // 6. cfb_embedded_word_in_workbook
@@ -168,7 +168,10 @@ fn test_regression_cfb_unsupported_fib_version() {
     assert_eq!(rep.identification, Identification::ContainerOnly);
     assert_eq!(rep.format_id, None);
     assert_eq!(rep.container_id.as_deref(), Some("cfb"));
-    assert!(rep.warnings.iter().any(|w| w.code == "cfb.unsupported_word_version"));
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "cfb.unsupported_word_version"));
 }
 
 // 8. api_missing_extension

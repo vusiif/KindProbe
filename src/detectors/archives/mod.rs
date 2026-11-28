@@ -10,7 +10,9 @@ pub mod xz_zstd;
 use bzip2::{probe_bzip2, probe_bzip2_core, Bzip2Match};
 use gzip::{probe_gzip, probe_gzip_core, GzipMatch};
 use nested::{probe_nested_gzip, probe_nested_gzip_core};
-use rar::{make_rar4_core, make_rar4_report, make_rar5_core, make_rar5_report, probe_rar, RarProbeResult};
+use rar::{
+    make_rar4_core, make_rar4_report, make_rar5_core, make_rar5_report, probe_rar, RarProbeResult,
+};
 use sevenz::{make_sevenz_core, make_sevenz_report, probe_sevenz, SevenZProbeResult};
 use tar::{probe_tar, probe_tar_core, TarMatch};
 use xz_zstd::{probe_xz_zstd, probe_xz_zstd_core, XzZstdMatch};

@@ -53,9 +53,9 @@ pub fn probe_image_signatures_core(header: &[u8]) -> ImageMatchCore {
 
 pub fn probe_image_signatures(header: &[u8]) -> ImageMatch {
     match probe_image_signatures_core(header) {
-        ImageMatchCore::Confirmed(core) => {
-            ImageMatch::Confirmed(Box::new(core.to_report(Default::default(), ExtensionStatus::Undetermined)))
-        }
+        ImageMatchCore::Confirmed(core) => ImageMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
         ImageMatchCore::Truncated(fmt) => ImageMatch::Truncated(fmt.to_string()),
         ImageMatchCore::None => ImageMatch::None,
     }

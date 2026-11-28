@@ -1,10 +1,10 @@
-pub mod pcap;
 pub mod parquet_avro;
+pub mod pcap;
 pub mod sqlite;
 
 use crate::model::{DetectionCore, DetectionReport};
-use pcap::{probe_pcap, probe_pcap_core, PcapMatch};
 use parquet_avro::{probe_parquet_avro, probe_parquet_avro_core, ColumnarMatch};
+use pcap::{probe_pcap, probe_pcap_core, PcapMatch};
 use sqlite::{probe_sqlite, probe_sqlite_core, SqliteMatch};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

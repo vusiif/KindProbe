@@ -1,12 +1,12 @@
-use std::io::{self, Read};
 use flate2::read::GzDecoder;
+use std::io::{self, Read};
 
+use super::gzip::GZIP_MAGIC;
+use super::tar::check_tar_header;
 use crate::model::{
     DetectionCore, DetectionReport, EvidenceItem, ExtensionStatus, Identification, Inspection,
     Verification,
 };
-use super::gzip::GZIP_MAGIC;
-use super::tar::check_tar_header;
 
 enum NestedGzipKind {
     TarGz(Verification),
@@ -107,13 +107,23 @@ pub fn probe_nested_gzip(header: &[u8]) -> Option<DetectionReport> {
             let mut ev = vec![
                 EvidenceItem::new("sig.gzip.magic"),
                 EvidenceItem::new("sig.gzip.header"),
-                EvidenceItem::with_desc("sig.tar.embedded", "Embedded POSIX ustar archive detected"),
+                EvidenceItem::with_desc(
+                    "sig.tar.embedded",
+                    "Embedded POSIX ustar archive detected",
+                ),
                 EvidenceItem::new("sig.tar.ustar"),
             ];
             if ver == Verification::Structure {
                 ev.push(EvidenceItem::new("sig.tar.checksum"));
             }
-            Some(make_nested_rep("tar.gz", "archive", "tar.gz", &["tar.gz", "tgz", "gz"], ver, ev))
+            Some(make_nested_rep(
+                "tar.gz",
+                "archive",
+                "tar.gz",
+                &["tar.gz", "tgz", "gz"],
+                ver,
+                ev,
+            ))
         }
         NestedGzipKind::Svgz => {
             let ev = vec![
@@ -121,7 +131,14 @@ pub fn probe_nested_gzip(header: &[u8]) -> Option<DetectionReport> {
                 EvidenceItem::new("sig.gzip.header"),
                 EvidenceItem::with_desc("sig.svg.embedded", "Embedded SVG image detected"),
             ];
-            Some(make_nested_rep("svgz", "image", "svgz", &["svgz", "svg", "gz"], Verification::Structure, ev))
+            Some(make_nested_rep(
+                "svgz",
+                "image",
+                "svgz",
+                &["svgz", "svg", "gz"],
+                Verification::Structure,
+                ev,
+            ))
         }
     }
 }

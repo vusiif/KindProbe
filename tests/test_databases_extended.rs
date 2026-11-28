@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus, Identification, Inspection, Verification};
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_sqlite3_database() {
@@ -20,14 +20,32 @@ fn test_detect_sqlite3_database() {
     assert_eq!(rep.verification, Verification::Structure);
     assert_eq!(rep.inspection, Inspection::Complete);
     assert_eq!(rep.recommended_extension.as_deref(), Some("sqlite3"));
-    assert_eq!(rep.accepted_extensions, vec!["sqlite3", "sqlite", "db", "db3"]);
+    assert_eq!(
+        rep.accepted_extensions,
+        vec!["sqlite3", "sqlite", "db", "db3"]
+    );
     assert!(rep.evidence.iter().any(|e| e.code == "sig.sqlite.header"));
-    assert!(rep.evidence.iter().any(|e| e.code == "sig.sqlite.page_size"));
+    assert!(rep
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.sqlite.page_size"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("sqlite3"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("sqlite"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("db"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("pcap"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("sqlite3"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("sqlite"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("db"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("pcap"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -48,11 +66,23 @@ fn test_detect_pcap_and_pcapng() {
     assert_eq!(rep_pcap.recommended_extension.as_deref(), Some("pcap"));
     assert_eq!(rep_pcap.accepted_extensions, vec!["pcap", "cap", "dmp"]);
     assert!(rep_pcap.evidence.iter().any(|e| e.code == "sig.pcap.magic"));
-    assert!(rep_pcap.evidence.iter().any(|e| e.code == "sig.pcap.version"));
+    assert!(rep_pcap
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.pcap.version"));
 
-    assert_eq!(compare_extension(&rep_pcap, Some(OsStr::new("pcap"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_pcap, Some(OsStr::new("cap"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_pcap, Some(OsStr::new("pcapng"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_pcap, Some(OsStr::new("pcap"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_pcap, Some(OsStr::new("cap"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_pcap, Some(OsStr::new("pcapng"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. PCAPNG (Section Header Block 0x0A0D0D0A + BOM 0x1A2B3C4D)
     let mut pcapng = vec![0u8; 32];
@@ -67,11 +97,23 @@ fn test_detect_pcap_and_pcapng() {
     assert_eq!(rep_pcapng.verification, Verification::Structure);
     assert_eq!(rep_pcapng.recommended_extension.as_deref(), Some("pcapng"));
     assert_eq!(rep_pcapng.accepted_extensions, vec!["pcapng", "ntar"]);
-    assert!(rep_pcapng.evidence.iter().any(|e| e.code == "sig.pcapng.shb"));
-    assert!(rep_pcapng.evidence.iter().any(|e| e.code == "sig.pcapng.bom"));
+    assert!(rep_pcapng
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.pcapng.shb"));
+    assert!(rep_pcapng
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.pcapng.bom"));
 
-    assert_eq!(compare_extension(&rep_pcapng, Some(OsStr::new("pcapng"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_pcapng, Some(OsStr::new("pcap"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_pcapng, Some(OsStr::new("pcapng"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_pcapng, Some(OsStr::new("pcap"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -85,11 +127,23 @@ fn test_detect_parquet_and_avro() {
     assert_eq!(rep_parquet.format_id.as_deref(), Some("parquet"));
     assert_eq!(rep_parquet.category, "database");
     assert_eq!(rep_parquet.verification, Verification::Structure);
-    assert_eq!(rep_parquet.recommended_extension.as_deref(), Some("parquet"));
-    assert!(rep_parquet.evidence.iter().any(|e| e.code == "sig.parquet.magic"));
+    assert_eq!(
+        rep_parquet.recommended_extension.as_deref(),
+        Some("parquet")
+    );
+    assert!(rep_parquet
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.parquet.magic"));
 
-    assert_eq!(compare_extension(&rep_parquet, Some(OsStr::new("parquet"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_parquet, Some(OsStr::new("avro"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_parquet, Some(OsStr::new("parquet"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_parquet, Some(OsStr::new("avro"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. Apache Avro ("Obj\x01")
     let avro = b"Obj\x01\x02\x04\x00\x00";
@@ -101,8 +155,14 @@ fn test_detect_parquet_and_avro() {
     assert_eq!(rep_avro.recommended_extension.as_deref(), Some("avro"));
     assert!(rep_avro.evidence.iter().any(|e| e.code == "sig.avro.magic"));
 
-    assert_eq!(compare_extension(&rep_avro, Some(OsStr::new("avro"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_avro, Some(OsStr::new("parquet"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_avro, Some(OsStr::new("avro"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_avro, Some(OsStr::new("parquet"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -112,20 +172,32 @@ fn test_detect_database_truncated() {
     // 1. Truncated SQLite
     let rep_sqlite = detect_bytes(b"SQLite for", &opts).expect("truncated sqlite");
     assert_eq!(rep_sqlite.identification, Identification::Unknown);
-    assert_eq!(rep_sqlite.candidates.as_deref(), Some(&["sqlite3".to_string()][..]));
+    assert_eq!(
+        rep_sqlite.candidates.as_deref(),
+        Some(&["sqlite3".to_string()][..])
+    );
 
     // 2. Truncated PCAP
     let rep_pcap = detect_bytes(&[0xD4, 0xC3], &opts).expect("truncated pcap");
     assert_eq!(rep_pcap.identification, Identification::Unknown);
-    assert_eq!(rep_pcap.candidates.as_deref(), Some(&["pcap".to_string()][..]));
+    assert_eq!(
+        rep_pcap.candidates.as_deref(),
+        Some(&["pcap".to_string()][..])
+    );
 
     // 3. Truncated Parquet
     let rep_par = detect_bytes(b"PAR", &opts).expect("truncated parquet");
     assert_eq!(rep_par.identification, Identification::Unknown);
-    assert_eq!(rep_par.candidates.as_deref(), Some(&["parquet".to_string()][..]));
+    assert_eq!(
+        rep_par.candidates.as_deref(),
+        Some(&["parquet".to_string()][..])
+    );
 
     // 4. Truncated Avro
     let rep_avro = detect_bytes(b"Obj", &opts).expect("truncated avro");
     assert_eq!(rep_avro.identification, Identification::Unknown);
-    assert_eq!(rep_avro.candidates.as_deref(), Some(&["avro".to_string()][..]));
+    assert_eq!(
+        rep_avro.candidates.as_deref(),
+        Some(&["avro".to_string()][..])
+    );
 }

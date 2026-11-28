@@ -1,7 +1,7 @@
+use crate::model::DetectionStats;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-use crate::model::DetectionStats;
 
 /// Detection budget and resource limits according to specification §9.
 #[derive(Debug, Clone)]

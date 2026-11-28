@@ -1,6 +1,6 @@
+use kindprobe::model::{DetectionReport, ErrorEnvelope, Identification, Inspection};
 use std::io::Write;
 use std::process::{Command, Stdio};
-use kindprobe::model::{DetectionReport, ErrorEnvelope, Identification, Inspection};
 
 const BIN_PATH: &str = env!("CARGO_BIN_EXE_kindprobe");
 
@@ -308,11 +308,24 @@ fn test_dedicated_interactive_console_behavior() {
         // Drop stdin immediately (simulate empty pipe / EOF)
         drop(child.stdin.take());
         let output = child.wait_with_output().expect("wait child");
-        assert_eq!(output.status.code(), Some(expected_code), "failed for args {:?}", args);
+        assert_eq!(
+            output.status.code(),
+            Some(expected_code),
+            "failed for args {:?}",
+            args
+        );
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(!stdout.contains("Press Enter to close"), "stdout had pause text for {:?}", args);
-        assert!(!stderr.contains("Press Enter to close"), "stderr had pause text for {:?}", args);
+        assert!(
+            !stdout.contains("Press Enter to close"),
+            "stdout had pause text for {:?}",
+            args
+        );
+        assert!(
+            !stderr.contains("Press Enter to close"),
+            "stderr had pause text for {:?}",
+            args
+        );
     }
 
     // 2. --json mode: must NOT pause or output pause prompt even if test flag is set
@@ -551,14 +564,16 @@ fn test_cli_bilingual_arguments_and_io_errors() {
         .output()
         .expect("run en missing arg");
     assert_eq!(out_en.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&out_en.stderr).contains("Error: missing file argument; use --help for usage information"));
+    assert!(String::from_utf8_lossy(&out_en.stderr)
+        .contains("Error: missing file argument; use --help for usage information"));
 
     let out_zh = Command::new(BIN_PATH)
         .env("LC_ALL", "zh_CN.UTF-8")
         .output()
         .expect("run zh missing arg");
     assert_eq!(out_zh.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&out_zh.stderr).contains("错误: 缺少文件参数；使用 --help 查看用法信息"));
+    assert!(String::from_utf8_lossy(&out_zh.stderr)
+        .contains("错误: 缺少文件参数；使用 --help 查看用法信息"));
 
     // 2. Unrecognized option
     let out_en = Command::new(BIN_PATH)
@@ -567,7 +582,8 @@ fn test_cli_bilingual_arguments_and_io_errors() {
         .output()
         .expect("run en bad opt");
     assert_eq!(out_en.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&out_en.stderr).contains("Error: unrecognized option '--unrecognized-opt'"));
+    assert!(String::from_utf8_lossy(&out_en.stderr)
+        .contains("Error: unrecognized option '--unrecognized-opt'"));
 
     let out_zh = Command::new(BIN_PATH)
         .env("LC_ALL", "zh_CN.UTF-8")
@@ -575,7 +591,9 @@ fn test_cli_bilingual_arguments_and_io_errors() {
         .output()
         .expect("run zh bad opt");
     assert_eq!(out_zh.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&out_zh.stderr).contains("错误: 未识别的选项 '--unrecognized-opt'"));
+    assert!(
+        String::from_utf8_lossy(&out_zh.stderr).contains("错误: 未识别的选项 '--unrecognized-opt'")
+    );
 
     // 3. Multiple files
     let out_en = Command::new(BIN_PATH)
@@ -585,7 +603,9 @@ fn test_cli_bilingual_arguments_and_io_errors() {
         .output()
         .expect("run en multi files");
     assert_eq!(out_en.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&out_en.stderr).contains("Error: multiple file arguments provided"));
+    assert!(
+        String::from_utf8_lossy(&out_en.stderr).contains("Error: multiple file arguments provided")
+    );
 
     let out_zh = Command::new(BIN_PATH)
         .env("LC_ALL", "zh_CN.UTF-8")
@@ -613,7 +633,8 @@ fn test_cli_bilingual_arguments_and_io_errors() {
         .expect("run zh missing file");
     assert_eq!(out_zh.status.code(), Some(4));
     let stderr_zh = String::from_utf8_lossy(&out_zh.stderr);
-    assert!(stderr_zh.contains("错误 [io.open_failed]: 打开或读取文件 'fixtures/not_found_sample.bin' 失败"));
+    assert!(stderr_zh
+        .contains("错误 [io.open_failed]: 打开或读取文件 'fixtures/not_found_sample.bin' 失败"));
 
     // 5. Directory path (not regular file, exit code 4)
     let out_en = Command::new(BIN_PATH)
@@ -622,7 +643,8 @@ fn test_cli_bilingual_arguments_and_io_errors() {
         .output()
         .expect("run en dir");
     assert_eq!(out_en.status.code(), Some(4));
-    assert!(String::from_utf8_lossy(&out_en.stderr).contains("Error [io.not_regular_file]: Path 'fixtures' is not a regular file"));
+    assert!(String::from_utf8_lossy(&out_en.stderr)
+        .contains("Error [io.not_regular_file]: Path 'fixtures' is not a regular file"));
 
     let out_zh = Command::new(BIN_PATH)
         .env("LC_ALL", "zh_CN.UTF-8")
@@ -630,7 +652,8 @@ fn test_cli_bilingual_arguments_and_io_errors() {
         .output()
         .expect("run zh dir");
     assert_eq!(out_zh.status.code(), Some(4));
-    assert!(String::from_utf8_lossy(&out_zh.stderr).contains("错误 [io.not_regular_file]: 路径 'fixtures' 不是普通文件"));
+    assert!(String::from_utf8_lossy(&out_zh.stderr)
+        .contains("错误 [io.not_regular_file]: 路径 'fixtures' 不是普通文件"));
 }
 
 #[test]
@@ -722,7 +745,9 @@ fn test_cli_bilingual_dedicated_console_drag_and_pause() {
     if let Some(mut stdin) = child.stdin.take() {
         let _ = stdin.write_all(b"\n");
     }
-    let output = child.wait_with_output().expect("wait zh drag multiple files");
+    let output = child
+        .wait_with_output()
+        .expect("wait zh drag multiple files");
     assert_eq!(output.status.code(), Some(2));
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("错误: 提供了多个文件参数"));
@@ -759,15 +784,25 @@ fn test_cli_json_contract_identical_across_locales() {
         assert_eq!(report.category, "image");
         assert_eq!(report.identification, Identification::Format);
         assert_eq!(report.inspection, Inspection::Complete);
-        assert_eq!(report.verification, kindprobe::model::Verification::Structure);
-        assert_eq!(report.extension_status, kindprobe::model::ExtensionStatus::Match);
+        assert_eq!(
+            report.verification,
+            kindprobe::model::Verification::Structure
+        );
+        assert_eq!(
+            report.extension_status,
+            kindprobe::model::ExtensionStatus::Match
+        );
 
         // Normalize non-deterministic runtime duration for exact schema/content comparison
         report.stats.duration_micros = 0;
         let normalized = serde_json::to_string(&report).unwrap();
 
         if let Some(ref base) = baseline_json {
-            assert_eq!(&normalized, base, "JSON stdout deviated under locale {}", loc);
+            assert_eq!(
+                &normalized, base,
+                "JSON stdout deviated under locale {}",
+                loc
+            );
         } else {
             baseline_json = Some(normalized);
         }
@@ -812,10 +847,17 @@ fn test_cli_json_contract_identical_across_locales() {
             .unwrap_or_else(|e| panic!("parse arg error envelope under {}: {}", loc, e));
         assert_eq!(env.schema_version, 1);
         assert_eq!(env.error.code, "error.invalid_arguments");
-        assert_eq!(env.error.message, "unrecognized option '--invalid-flag-abc'");
+        assert_eq!(
+            env.error.message,
+            "unrecognized option '--invalid-flag-abc'"
+        );
 
         if let Some(ref base) = baseline_arg_err {
-            assert_eq!(&stdout, base, "Arg ErrorEnvelope deviated under locale {}", loc);
+            assert_eq!(
+                &stdout, base,
+                "Arg ErrorEnvelope deviated under locale {}",
+                loc
+            );
         } else {
             baseline_arg_err = Some(stdout);
         }

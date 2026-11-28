@@ -38,7 +38,8 @@ pub fn probe_csv_or_tsv_core(text: &str) -> Option<DetectionCore> {
 
 /// Probes whether the text represents a structured CSV or TSV tabular document.
 pub fn probe_csv_or_tsv(text: &str) -> Option<DetectionReport> {
-    probe_csv_or_tsv_core(text).map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
+    probe_csv_or_tsv_core(text)
+        .map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
 }
 
 fn count_consistent_fields(lines: &[&str], delimiter: char) -> Option<usize> {
@@ -56,7 +57,11 @@ fn count_consistent_fields(lines: &[&str], delimiter: char) -> Option<usize> {
     Some(first_count)
 }
 
-fn make_tabular_core(fid: &'static str, exts: &'static [&'static str], ev: &'static str) -> DetectionCore {
+fn make_tabular_core(
+    fid: &'static str,
+    exts: &'static [&'static str],
+    ev: &'static str,
+) -> DetectionCore {
     DetectionCore {
         format_id: Some(fid),
         category: "text",

@@ -21,7 +21,9 @@ fn test_phase20b_swar_and_differential_fuzz_regression() {
 
     // 1. Exact SWAR length boundaries (63, 64, 65, 71, 72, 4095, 4096, 4097)
     // with NUL, control bytes, and UTF-8 placed at every boundary offset.
-    for len in [0usize, 1, 7, 8, 9, 63, 64, 65, 71, 72, 512, 4095, 4096, 4097] {
+    for len in [
+        0usize, 1, 7, 8, 9, 63, 64, 65, 71, 72, 512, 4095, 4096, 4097,
+    ] {
         let mut buf = vec![b'A'; len];
         if len > 0 {
             let r1 = detect_bytes(&buf, &opts).expect("detect ascii");

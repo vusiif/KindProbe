@@ -17,7 +17,11 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
             if let Some(next_line) = lines.next() {
                 let nl = next_line.trim();
                 if (nl.starts_with('[') && nl.ends_with(']')) || nl.contains('=') {
-                    return Some(make_config_core("ini", &["ini", "cfg", "conf"], "sig.text.ini"));
+                    return Some(make_config_core(
+                        "ini",
+                        &["ini", "cfg", "conf"],
+                        "sig.text.ini",
+                    ));
                 }
             }
         }
@@ -49,12 +53,22 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
             break;
         }
         let lb = line.as_bytes();
-        let is_hdr = lb.get(..5).is_some_and(|p| p.eq_ignore_ascii_case(b"from:"))
+        let is_hdr = lb
+            .get(..5)
+            .is_some_and(|p| p.eq_ignore_ascii_case(b"from:"))
             || lb.get(..3).is_some_and(|p| p.eq_ignore_ascii_case(b"to:"))
-            || lb.get(..8).is_some_and(|p| p.eq_ignore_ascii_case(b"subject:"))
-            || lb.get(..5).is_some_and(|p| p.eq_ignore_ascii_case(b"date:"))
-            || lb.get(..13).is_some_and(|p| p.eq_ignore_ascii_case(b"mime-version:"))
-            || lb.get(..11).is_some_and(|p| p.eq_ignore_ascii_case(b"message-id:"));
+            || lb
+                .get(..8)
+                .is_some_and(|p| p.eq_ignore_ascii_case(b"subject:"))
+            || lb
+                .get(..5)
+                .is_some_and(|p| p.eq_ignore_ascii_case(b"date:"))
+            || lb
+                .get(..13)
+                .is_some_and(|p| p.eq_ignore_ascii_case(b"mime-version:"))
+            || lb
+                .get(..11)
+                .is_some_and(|p| p.eq_ignore_ascii_case(b"message-id:"));
         if is_hdr {
             eml_headers += 1;
             if eml_headers >= 2 {
@@ -101,7 +115,9 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
             let k_trimmed = k.trim();
             if !k_trimmed.is_empty()
                 && !k_trimmed.contains(' ')
-                && k_trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+                && k_trimmed
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
             {
                 valid_yaml_lines += 1;
             }
@@ -110,8 +126,10 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
 
     if total_lines >= 2
         && valid_yaml_lines == total_lines
-        && !(trimmed.contains("web: ") && (trimmed.contains("worker: ") || trimmed.contains("release: ")))
-        && !(trimmed.contains("User-agent:") && (trimmed.contains("Disallow:") || trimmed.contains("Allow:")))
+        && !(trimmed.contains("web: ")
+            && (trimmed.contains("worker: ") || trimmed.contains("release: ")))
+        && !(trimmed.contains("User-agent:")
+            && (trimmed.contains("Disallow:") || trimmed.contains("Allow:")))
     {
         return Some(make_config_core("yaml", &["yaml", "yml"], "sig.text.yaml"));
     }
@@ -121,10 +139,15 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
 
 /// Probes whether the text represents a YAML or TOML configuration document.
 pub fn probe_config(text: &str) -> Option<DetectionReport> {
-    probe_config_core(text).map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
+    probe_config_core(text)
+        .map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
 }
 
-fn make_config_core(fid: &'static str, exts: &'static [&'static str], ev: &'static str) -> DetectionCore {
+fn make_config_core(
+    fid: &'static str,
+    exts: &'static [&'static str],
+    ev: &'static str,
+) -> DetectionCore {
     DetectionCore {
         format_id: Some(fid),
         category: "text",

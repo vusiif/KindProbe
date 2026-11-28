@@ -1,7 +1,7 @@
-use std::fs;
-use std::path::Path;
 use kindprobe::budget::DetectOptions;
 use kindprobe::{detect_bytes, detect_path, ExtensionStatus, Identification};
+use std::fs;
+use std::path::Path;
 
 #[test]
 fn test_fast_path_optimistic_hits_on_real_fixtures() {
@@ -28,7 +28,8 @@ fn test_fast_path_optimistic_hits_on_real_fixtures() {
             extension_hint: Some(expected_fid.to_string()),
             ..DetectOptions::default()
         };
-        let rep_hint = detect_bytes(&bytes, &hint_opts).expect("detect_bytes with hint should succeed");
+        let rep_hint =
+            detect_bytes(&bytes, &hint_opts).expect("detect_bytes with hint should succeed");
         assert_eq!(rep_hint.identification, Identification::Format);
         assert_eq!(rep_hint.format_id.as_deref(), Some(expected_fid));
     }
@@ -87,14 +88,30 @@ fn test_fast_path_adversarial_mismatch_fallback() {
     // 1. fixtures/mismatched_png.pdf (PNG content with .pdf extension)
     let p_png_as_pdf = Path::new("fixtures/mismatched_png.pdf");
     let rep1 = detect_path(p_png_as_pdf, &opts).expect("detect_path should succeed");
-    assert_eq!(rep1.format_id.as_deref(), Some("png"), "Must detect real format as png");
-    assert_eq!(rep1.extension_status, ExtensionStatus::Mismatch, "Must report extension mismatch");
+    assert_eq!(
+        rep1.format_id.as_deref(),
+        Some("png"),
+        "Must detect real format as png"
+    );
+    assert_eq!(
+        rep1.extension_status,
+        ExtensionStatus::Mismatch,
+        "Must report extension mismatch"
+    );
 
     // 2. fixtures/mismatched_doc.docx (DOC CFB content with .docx extension)
     let p_doc_as_docx = Path::new("fixtures/mismatched_doc.docx");
     let rep2 = detect_path(p_doc_as_docx, &opts).expect("detect_path should succeed");
-    assert_eq!(rep2.format_id.as_deref(), Some("doc"), "Must detect real format as doc");
-    assert_eq!(rep2.extension_status, ExtensionStatus::Mismatch, "Must report extension mismatch");
+    assert_eq!(
+        rep2.format_id.as_deref(),
+        Some("doc"),
+        "Must detect real format as doc"
+    );
+    assert_eq!(
+        rep2.extension_status,
+        ExtensionStatus::Mismatch,
+        "Must report extension mismatch"
+    );
 
     // 3. PE executable disguised with .pdf hint
     let mut pe_buf = vec![0u8; 512];
@@ -106,7 +123,11 @@ fn test_fast_path_adversarial_mismatch_fallback() {
         ..DetectOptions::default()
     };
     let rep3 = detect_bytes(&pe_buf, &opts_fake_pdf).unwrap();
-    assert_eq!(rep3.format_id.as_deref(), Some("pe"), "Must fall back and detect true PE format");
+    assert_eq!(
+        rep3.format_id.as_deref(),
+        Some("pe"),
+        "Must fall back and detect true PE format"
+    );
 
     // 4. Plain ZIP disguised with .docx hint
     let plain_zip = fs::read("fixtures/plain_zip.zip").unwrap();
@@ -115,7 +136,11 @@ fn test_fast_path_adversarial_mismatch_fallback() {
         ..DetectOptions::default()
     };
     let rep4 = detect_bytes(&plain_zip, &opts_fake_docx).unwrap();
-    assert_eq!(rep4.format_id.as_deref(), Some("zip"), "Must fall back to container zip");
+    assert_eq!(
+        rep4.format_id.as_deref(),
+        Some("zip"),
+        "Must fall back to container zip"
+    );
 
     // 5. Fake DOCX (missing [Content_Types].xml) disguised with .docx hint
     let fake_docx = fs::read("fixtures/fake_docx_zip.zip").unwrap();
@@ -131,7 +156,10 @@ fn test_fast_path_truncated_and_unrecognized_fallback() {
     // 1. Truncated PNG
     let p_trunc = Path::new("fixtures/truncated_png.png");
     let rep_trunc = detect_path(p_trunc, &opts).unwrap();
-    assert!(rep_trunc.warnings.iter().any(|w| w.code == "input.truncated"));
+    assert!(rep_trunc
+        .warnings
+        .iter()
+        .any(|w| w.code == "input.truncated"));
 
     // 2. Unrecognized extension with authentic content
     let png_bytes = fs::read("fixtures/valid_png.png").unwrap();

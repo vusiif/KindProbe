@@ -1,8 +1,8 @@
-use std::ffi::OsStr;
-use std::io::{Cursor, Write};
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus, Identification, Inspection, Verification};
+use std::ffi::OsStr;
+use std::io::{Cursor, Write};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
@@ -23,11 +23,23 @@ fn test_detect_ttf_and_otf() {
     assert_eq!(rep_ttf.inspection, Inspection::Complete);
     assert_eq!(rep_ttf.recommended_extension.as_deref(), Some("ttf"));
     assert_eq!(rep_ttf.accepted_extensions, vec!["ttf"]);
-    assert!(rep_ttf.evidence.iter().any(|e| e.code == "sig.font.ttf_magic"));
-    assert!(rep_ttf.evidence.iter().any(|e| e.code == "sig.font.num_tables"));
+    assert!(rep_ttf
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.font.ttf_magic"));
+    assert!(rep_ttf
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.font.num_tables"));
 
-    assert_eq!(compare_extension(&rep_ttf, Some(OsStr::new("ttf"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_ttf, Some(OsStr::new("otf"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_ttf, Some(OsStr::new("ttf"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_ttf, Some(OsStr::new("otf"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. OpenType font (OTF)
     let mut otf = vec![0u8; 32];
@@ -40,11 +52,23 @@ fn test_detect_ttf_and_otf() {
     assert_eq!(rep_otf.category, "font");
     assert_eq!(rep_otf.verification, Verification::Structure);
     assert_eq!(rep_otf.recommended_extension.as_deref(), Some("otf"));
-    assert!(rep_otf.evidence.iter().any(|e| e.code == "sig.font.otf_magic"));
-    assert!(rep_otf.evidence.iter().any(|e| e.code == "sig.font.num_tables"));
+    assert!(rep_otf
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.font.otf_magic"));
+    assert!(rep_otf
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.font.num_tables"));
 
-    assert_eq!(compare_extension(&rep_otf, Some(OsStr::new("otf"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_otf, Some(OsStr::new("ttf"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_otf, Some(OsStr::new("otf"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_otf, Some(OsStr::new("ttf"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -64,11 +88,23 @@ fn test_detect_woff_and_woff2() {
     assert_eq!(rep_woff.category, "font");
     assert_eq!(rep_woff.verification, Verification::Structure);
     assert_eq!(rep_woff.recommended_extension.as_deref(), Some("woff"));
-    assert!(rep_woff.evidence.iter().any(|e| e.code == "sig.font.woff_magic"));
-    assert!(rep_woff.evidence.iter().any(|e| e.code == "sig.font.woff_header"));
+    assert!(rep_woff
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.font.woff_magic"));
+    assert!(rep_woff
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.font.woff_header"));
 
-    assert_eq!(compare_extension(&rep_woff, Some(OsStr::new("woff"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_woff, Some(OsStr::new("woff2"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_woff, Some(OsStr::new("woff"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_woff, Some(OsStr::new("woff2"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. WOFF 2.0
     let mut woff2 = vec![0u8; 48];
@@ -83,8 +119,14 @@ fn test_detect_woff_and_woff2() {
     assert_eq!(rep_woff2.category, "font");
     assert_eq!(rep_woff2.verification, Verification::Structure);
     assert_eq!(rep_woff2.recommended_extension.as_deref(), Some("woff2"));
-    assert!(rep_woff2.evidence.iter().any(|e| e.code == "sig.font.woff2_magic"));
-    assert!(rep_woff2.evidence.iter().any(|e| e.code == "sig.font.woff2_header"));
+    assert!(rep_woff2
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.font.woff2_magic"));
+    assert!(rep_woff2
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.font.woff2_header"));
 }
 
 #[test]
@@ -93,13 +135,15 @@ fn test_detect_epub_in_zip() {
     let cursor = Cursor::new(Vec::new());
     let mut zip = ZipWriter::new(cursor);
 
-    let zip_opts = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Stored);
+    let zip_opts = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
-    zip.start_file("mimetype", zip_opts).expect("start mimetype");
-    zip.write_all(b"application/epub+zip").expect("write mimetype");
+    zip.start_file("mimetype", zip_opts)
+        .expect("start mimetype");
+    zip.write_all(b"application/epub+zip")
+        .expect("write mimetype");
 
-    zip.start_file("META-INF/container.xml", zip_opts).expect("start container");
+    zip.start_file("META-INF/container.xml", zip_opts)
+        .expect("start container");
     zip.write_all(b"<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\"><rootfiles/></container>").expect("write container");
 
     let cursor = zip.finish().expect("finish zip");
@@ -117,9 +161,18 @@ fn test_detect_epub_in_zip() {
     assert!(rep.evidence.iter().any(|e| e.code == "epub.mimetype"));
     assert!(rep.evidence.iter().any(|e| e.code == "epub.container"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("epub"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("zip"))), ExtensionStatus::Mismatch);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("pdf"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("epub"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("zip"))),
+        ExtensionStatus::Mismatch
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("pdf"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -128,11 +181,12 @@ fn test_detect_odt_in_zip() {
     let cursor = Cursor::new(Vec::new());
     let mut zip = ZipWriter::new(cursor);
 
-    let zip_opts = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Stored);
+    let zip_opts = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
-    zip.start_file("mimetype", zip_opts).expect("start mimetype");
-    zip.write_all(b"application/vnd.oasis.opendocument.text").expect("write mimetype");
+    zip.start_file("mimetype", zip_opts)
+        .expect("start mimetype");
+    zip.write_all(b"application/vnd.oasis.opendocument.text")
+        .expect("write mimetype");
 
     let cursor = zip.finish().expect("finish zip");
     let data = cursor.into_inner();
@@ -147,8 +201,14 @@ fn test_detect_odt_in_zip() {
     assert_eq!(rep.accepted_extensions, vec!["odt", "ott"]);
     assert!(rep.evidence.iter().any(|e| e.code == "odf.mimetype"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("odt"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("docx"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("odt"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("docx"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -172,9 +232,18 @@ fn test_detect_mobi_ebook() {
     assert_eq!(rep.accepted_extensions, vec!["mobi", "azw", "prc"]);
     assert!(rep.evidence.iter().any(|e| e.code == "sig.mobi.header"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("mobi"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("azw"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("epub"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("mobi"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("azw"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("epub"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -184,17 +253,26 @@ fn test_detect_fonts_and_ebooks_truncated() {
     // 1. Truncated TTF
     let rep_ttf = detect_bytes(&[0x00, 0x01], &opts).expect("truncated ttf");
     assert_eq!(rep_ttf.identification, Identification::Unknown);
-    assert_eq!(rep_ttf.candidates.as_deref(), Some(&["ttf".to_string()][..]));
+    assert_eq!(
+        rep_ttf.candidates.as_deref(),
+        Some(&["ttf".to_string()][..])
+    );
 
     // 2. Truncated WOFF
     let rep_woff = detect_bytes(b"wO", &opts).expect("truncated woff");
     assert_eq!(rep_woff.identification, Identification::Unknown);
-    assert_eq!(rep_woff.candidates.as_deref(), Some(&["woff".to_string()][..]));
+    assert_eq!(
+        rep_woff.candidates.as_deref(),
+        Some(&["woff".to_string()][..])
+    );
 
     // 3. Truncated MOBI
     let mut mobi_short = vec![0u8; 64];
     mobi_short[60..64].copy_from_slice(b"BOOK");
     let rep_mobi = detect_bytes(&mobi_short, &opts).expect("truncated mobi");
     assert_eq!(rep_mobi.identification, Identification::Unknown);
-    assert_eq!(rep_mobi.candidates.as_deref(), Some(&["mobi".to_string()][..]));
+    assert_eq!(
+        rep_mobi.candidates.as_deref(),
+        Some(&["mobi".to_string()][..])
+    );
 }

@@ -1,7 +1,5 @@
 use super::types::{SignatureRule, ValidationStatus};
-use crate::model::{
-    DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection,
-};
+use crate::model::{DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuleMatchCore {
@@ -33,7 +31,11 @@ pub fn evaluate_single_rule_core(header: &[u8], rule: &SignatureRule) -> RuleMat
         if available.len() < pat.bytes.len() {
             if available.len() >= 2 || (pat.offset > 0 && !available.is_empty()) {
                 let is_trunc = match pat.mask {
-                    Some(m) => available.iter().zip(m).zip(pat.bytes).all(|((&b, &mk), &p)| (b & mk) == p),
+                    Some(m) => available
+                        .iter()
+                        .zip(m)
+                        .zip(pat.bytes)
+                        .all(|((&b, &mk), &p)| (b & mk) == p),
                     None => pat.bytes.starts_with(available),
                 };
                 if is_trunc {
@@ -61,15 +63,24 @@ pub fn evaluate_single_rule_core(header: &[u8], rule: &SignatureRule) -> RuleMat
                         let b = &available[..4];
                         u32::from_ne_bytes([b[0], b[1], b[2], b[3]])
                             == u32::from_ne_bytes([
-                                pat.bytes[0], pat.bytes[1], pat.bytes[2], pat.bytes[3],
+                                pat.bytes[0],
+                                pat.bytes[1],
+                                pat.bytes[2],
+                                pat.bytes[3],
                             ])
                     }
                     8 => {
                         let b = &available[..8];
                         u64::from_ne_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
                             == u64::from_ne_bytes([
-                                pat.bytes[0], pat.bytes[1], pat.bytes[2], pat.bytes[3],
-                                pat.bytes[4], pat.bytes[5], pat.bytes[6], pat.bytes[7],
+                                pat.bytes[0],
+                                pat.bytes[1],
+                                pat.bytes[2],
+                                pat.bytes[3],
+                                pat.bytes[4],
+                                pat.bytes[5],
+                                pat.bytes[6],
+                                pat.bytes[7],
                             ])
                     }
                     _ => &available[..pat.bytes.len()] == pat.bytes,
@@ -120,9 +131,9 @@ pub fn evaluate_single_rule_core(header: &[u8], rule: &SignatureRule) -> RuleMat
 #[inline]
 pub fn evaluate_single_rule(header: &[u8], rule: &SignatureRule) -> RuleMatch {
     match evaluate_single_rule_core(header, rule) {
-        RuleMatchCore::Confirmed(core) => {
-            RuleMatch::Confirmed(Box::new(core.to_report(Default::default(), ExtensionStatus::Undetermined)))
-        }
+        RuleMatchCore::Confirmed(core) => RuleMatch::Confirmed(Box::new(
+            core.to_report(Default::default(), ExtensionStatus::Undetermined),
+        )),
         RuleMatchCore::Truncated(cand) => RuleMatch::Truncated(cand.to_string()),
         RuleMatchCore::None => RuleMatch::None,
     }
@@ -141,7 +152,9 @@ pub fn evaluate_rules_core(header: &[u8], rules: &[SignatureRule]) -> RuleMatchC
             RuleMatchCore::None => (),
         }
     }
-    truncated_candidate.map(RuleMatchCore::Truncated).unwrap_or(RuleMatchCore::None)
+    truncated_candidate
+        .map(RuleMatchCore::Truncated)
+        .unwrap_or(RuleMatchCore::None)
 }
 
 pub fn evaluate_rules(header: &[u8], rules: &[SignatureRule]) -> RuleMatch {
@@ -157,5 +170,7 @@ pub fn evaluate_rules(header: &[u8], rules: &[SignatureRule]) -> RuleMatch {
             RuleMatch::None => (),
         }
     }
-    truncated_candidate.map(RuleMatch::Truncated).unwrap_or(RuleMatch::None)
+    truncated_candidate
+        .map(RuleMatch::Truncated)
+        .unwrap_or(RuleMatch::None)
 }

@@ -1,7 +1,7 @@
-use std::io::Write;
-use std::process::Command;
 use flate2::write::GzEncoder;
 use flate2::Compression;
+use std::io::Write;
+use std::process::Command;
 
 use kindprobe::budget::DetectOptions;
 use kindprobe::detect_bytes;
@@ -25,7 +25,11 @@ fn make_dummy_tar_block() -> Vec<u8> {
     // Calculate checksum treating 148..156 as spaces (0x20)
     let mut sum: u32 = 0;
     for (i, &b) in block.iter().enumerate() {
-        sum += if (148..156).contains(&i) { 0x20 } else { b as u32 };
+        sum += if (148..156).contains(&i) {
+            0x20
+        } else {
+            b as u32
+        };
     }
     let chk_str = format!("{:06o}\0 ", sum);
     block[148..156].copy_from_slice(chk_str.as_bytes());
@@ -56,7 +60,10 @@ fn test_plain_gzip_vs_nested_tar_gz() {
     assert_eq!(rep_plain.identification, Identification::Format);
     assert_eq!(rep_plain.format_id.as_deref(), Some("gzip"));
     assert_eq!(rep_plain.recommended_extension.as_deref(), Some("gz"));
-    assert!(!rep_plain.evidence.iter().any(|e| e.code == "sig.tar.embedded"));
+    assert!(!rep_plain
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.tar.embedded"));
 
     // 2. Nested tar.gz
     let tar_gz = create_tar_gz_bytes();
@@ -67,12 +74,23 @@ fn test_plain_gzip_vs_nested_tar_gz() {
     assert_eq!(rep_tar_gz.category, "archive");
     assert_eq!(rep_tar_gz.verification, Verification::Structure);
     assert_eq!(rep_tar_gz.recommended_extension.as_deref(), Some("tar.gz"));
-    assert!(rep_tar_gz.accepted_extensions.contains(&"tar.gz".to_string()));
+    assert!(rep_tar_gz
+        .accepted_extensions
+        .contains(&"tar.gz".to_string()));
     assert!(rep_tar_gz.accepted_extensions.contains(&"tgz".to_string()));
     assert!(rep_tar_gz.accepted_extensions.contains(&"gz".to_string()));
-    assert!(rep_tar_gz.evidence.iter().any(|e| e.code == "sig.tar.embedded"));
-    assert!(rep_tar_gz.evidence.iter().any(|e| e.code == "sig.tar.ustar"));
-    assert!(rep_tar_gz.evidence.iter().any(|e| e.code == "sig.tar.checksum"));
+    assert!(rep_tar_gz
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.tar.embedded"));
+    assert!(rep_tar_gz
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.tar.ustar"));
+    assert!(rep_tar_gz
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.tar.checksum"));
 }
 
 #[test]
@@ -165,7 +183,8 @@ fn test_tar_gz_cli_e2e_display() {
         .expect("run cli json");
     assert_eq!(out_json.status.code(), Some(0));
     let stdout_json = String::from_utf8_lossy(&out_json.stdout);
-    let report: DetectionReport = serde_json::from_str(stdout_json.trim()).expect("deserialize json");
+    let report: DetectionReport =
+        serde_json::from_str(stdout_json.trim()).expect("deserialize json");
     assert_eq!(report.format_id.as_deref(), Some("tar.gz"));
     assert_eq!(report.container_id.as_deref(), Some("gzip"));
     assert_eq!(report.recommended_extension.as_deref(), Some("tar.gz"));

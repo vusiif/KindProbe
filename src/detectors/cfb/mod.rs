@@ -2,8 +2,8 @@ pub mod doc;
 pub mod ppt;
 pub mod xls;
 
-use std::io::{self, Read, Seek};
 use cfb::CompoundFile;
+use std::io::{self, Read, Seek};
 
 use crate::budget::{BudgetReader, DetectOptions};
 use crate::model::{
@@ -91,19 +91,40 @@ pub fn detect_cfb<R: Read + Seek>(
         if entry.is_stream() && entry.path().parent() == Some(std::path::Path::new("/")) {
             let name = entry.name();
             if name == "WordDocument" {
-                word_doc = Some((std::borrow::Cow::Borrowed(std::path::Path::new("/WordDocument")), entry.len()));
+                word_doc = Some((
+                    std::borrow::Cow::Borrowed(std::path::Path::new("/WordDocument")),
+                    entry.len(),
+                ));
             } else if name.eq_ignore_ascii_case("WordDocument") {
-                word_doc = Some((std::borrow::Cow::Owned(entry.path().to_path_buf()), entry.len()));
+                word_doc = Some((
+                    std::borrow::Cow::Owned(entry.path().to_path_buf()),
+                    entry.len(),
+                ));
             } else if name == "Workbook" {
-                xls_doc = Some((std::borrow::Cow::Borrowed(std::path::Path::new("/Workbook")), entry.len()));
+                xls_doc = Some((
+                    std::borrow::Cow::Borrowed(std::path::Path::new("/Workbook")),
+                    entry.len(),
+                ));
             } else if name == "Book" {
-                xls_doc = Some((std::borrow::Cow::Borrowed(std::path::Path::new("/Book")), entry.len()));
+                xls_doc = Some((
+                    std::borrow::Cow::Borrowed(std::path::Path::new("/Book")),
+                    entry.len(),
+                ));
             } else if name.eq_ignore_ascii_case("Workbook") || name.eq_ignore_ascii_case("Book") {
-                xls_doc = Some((std::borrow::Cow::Owned(entry.path().to_path_buf()), entry.len()));
+                xls_doc = Some((
+                    std::borrow::Cow::Owned(entry.path().to_path_buf()),
+                    entry.len(),
+                ));
             } else if name == "PowerPoint Document" {
-                ppt_doc = Some((std::borrow::Cow::Borrowed(std::path::Path::new("/PowerPoint Document")), entry.len()));
+                ppt_doc = Some((
+                    std::borrow::Cow::Borrowed(std::path::Path::new("/PowerPoint Document")),
+                    entry.len(),
+                ));
             } else if name.eq_ignore_ascii_case("PowerPoint Document") {
-                ppt_doc = Some((std::borrow::Cow::Owned(entry.path().to_path_buf()), entry.len()));
+                ppt_doc = Some((
+                    std::borrow::Cow::Owned(entry.path().to_path_buf()),
+                    entry.len(),
+                ));
             } else if name.eq_ignore_ascii_case("Current User") {
                 has_current_user = true;
             } else if name == "0Table" {
@@ -143,7 +164,14 @@ pub fn detect_cfb<R: Read + Seek>(
 
     // 3. Try PowerPoint verification if PowerPoint Document stream exists
     if let Some((path, len)) = ppt_doc {
-        if verify_cfb_ppt(&mut comp, &path, len, has_current_user, &budget_handle, &mut report)? {
+        if verify_cfb_ppt(
+            &mut comp,
+            &path,
+            len,
+            has_current_user,
+            &budget_handle,
+            &mut report,
+        )? {
             return Ok(report);
         }
     }

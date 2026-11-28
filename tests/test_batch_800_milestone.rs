@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus, Verification};
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_batch_800_industrial_and_legacy() {
@@ -13,7 +13,10 @@ fn test_detect_batch_800_industrial_and_legacy() {
     assert_eq!(rep.format_id.as_deref(), Some("s7p"));
     assert_eq!(rep.category, "engineering");
     assert_eq!(rep.verification, Verification::Signature);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("s7p"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("s7p"))),
+        ExtensionStatus::Match
+    );
 
     // 2. Rockwell APA Project Archive
     let apa = b"APA_ARC_BACKUP";

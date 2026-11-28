@@ -1,8 +1,8 @@
 pub mod registry;
 
-use std::ffi::OsStr;
 use crate::model::{DetectionCore, DetectionReport, ExtensionStatus, Identification};
 pub use registry::find_registered_format;
+use std::ffi::OsStr;
 
 fn compare_extension_fields(
     identification: Identification,
@@ -37,7 +37,10 @@ fn compare_extension_fields(
     }
 
     // Priority 3: Fast-path local check against accepted_extensions (case-insensitive)
-    if accepted_extensions.into_iter().any(|acc| acc.as_ref().eq_ignore_ascii_case(raw_str)) {
+    if accepted_extensions
+        .into_iter()
+        .any(|acc| acc.as_ref().eq_ignore_ascii_case(raw_str))
+    {
         return ExtensionStatus::Match;
     }
 
@@ -60,10 +63,7 @@ fn compare_extension_fields(
 }
 
 /// Pure function for independent extension diagnosis on zero-allocation DetectionCore.
-pub fn compare_extension_core(
-    core: &DetectionCore,
-    extension: Option<&OsStr>,
-) -> ExtensionStatus {
+pub fn compare_extension_core(core: &DetectionCore, extension: Option<&OsStr>) -> ExtensionStatus {
     compare_extension_fields(
         core.identification,
         core.format_id,
@@ -74,10 +74,7 @@ pub fn compare_extension_core(
 }
 
 /// Pure function for independent extension diagnosis according to specification §6.3.
-pub fn compare_extension(
-    report: &DetectionReport,
-    extension: Option<&OsStr>,
-) -> ExtensionStatus {
+pub fn compare_extension(report: &DetectionReport, extension: Option<&OsStr>) -> ExtensionStatus {
     compare_extension_fields(
         report.identification,
         report.format_id.as_deref(),

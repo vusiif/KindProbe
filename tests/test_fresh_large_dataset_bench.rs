@@ -747,7 +747,10 @@ fn test_fresh_large_scale_multi_stage_benchmark() {
     println!("\n==================================================================");
     println!("     KindProbe Fresh Large-Scale Multi-Stage Benchmark Suite      ");
     println!("==================================================================");
-    println!("Total Unique Fresh Formats & Payloads: {}", total_sample_count);
+    println!(
+        "Total Unique Fresh Formats & Payloads: {}",
+        total_sample_count
+    );
 
     // =========================================================================
     // Part 1: High-Volume In-Memory Multi-Format Stress Test (Phase 16 Engine)
@@ -760,7 +763,10 @@ fn test_fresh_large_scale_multi_stage_benchmark() {
     let opts = DetectOptions::default();
 
     println!("\n[1] Massive Interleaved Memory Stress Test (Phase 16 Engine):");
-    println!("    Total Operations:     {} iterations ({} rounds x {} samples)", actual_ops, rounds, total_sample_count);
+    println!(
+        "    Total Operations:     {} iterations ({} rounds x {} samples)",
+        actual_ops, rounds, total_sample_count
+    );
 
     // 1.1 Full Report
     let start_full = Instant::now();
@@ -773,7 +779,10 @@ fn test_fresh_large_scale_multi_stage_benchmark() {
     let ns_per_full = dur_full.as_nanos() as f64 / actual_ops as f64;
     let qps_full = actual_ops as f64 / dur_full.as_secs_f64();
     println!("    Full Report Latency:  {:8.2} ns / op", ns_per_full);
-    println!("    Full Report QPS:      {:8.2} thousand ops / sec", qps_full / 1000.0);
+    println!(
+        "    Full Report QPS:      {:8.2} thousand ops / sec",
+        qps_full / 1000.0
+    );
 
     // 1.2 Zero-Allocation Core
     let start_core = Instant::now();
@@ -787,7 +796,10 @@ fn test_fresh_large_scale_multi_stage_benchmark() {
     let qps_core = actual_ops as f64 / dur_core.as_secs_f64();
     let speedup = ns_per_full / ns_per_core;
     println!("    Zero-Alloc Core:      {:8.2} ns / op", ns_per_core);
-    println!("    Zero-Alloc Core QPS:  {:8.2} thousand ops / sec", qps_core / 1000.0);
+    println!(
+        "    Zero-Alloc Core QPS:  {:8.2} thousand ops / sec",
+        qps_core / 1000.0
+    );
     println!("    Zero-Alloc Speedup:   {:8.2}x faster", speedup);
 
     // =========================================================================
@@ -809,13 +821,28 @@ fn test_fresh_large_scale_multi_stage_benchmark() {
     }
 
     println!("\n[2] Real Out-of-Process Phase Binary Benchmark on Disk Files:");
-    println!("    Generated Test Dataset: {} real files in target/fresh_benchmark_dataset", file_paths.len());
+    println!(
+        "    Generated Test Dataset: {} real files in target/fresh_benchmark_dataset",
+        file_paths.len()
+    );
 
     let phase_binaries = [
-        ("Phase 13 (Baseline)", "target/phase_binaries/kindprobe_phase13.exe"),
-        ("Phase 14 (Buckets)",  "target/phase_binaries/kindprobe_phase14.exe"),
-        ("Phase 15 (7-Domains)","target/phase_binaries/kindprobe_phase15.exe"),
-        ("Phase 16 (Token+SWAR)","target/phase_binaries/kindprobe_phase16.exe"),
+        (
+            "Phase 13 (Baseline)",
+            "target/phase_binaries/kindprobe_phase13.exe",
+        ),
+        (
+            "Phase 14 (Buckets)",
+            "target/phase_binaries/kindprobe_phase14.exe",
+        ),
+        (
+            "Phase 15 (7-Domains)",
+            "target/phase_binaries/kindprobe_phase15.exe",
+        ),
+        (
+            "Phase 16 (Token+SWAR)",
+            "target/phase_binaries/kindprobe_phase16.exe",
+        ),
     ];
 
     struct PhaseStats {
@@ -881,15 +908,26 @@ fn test_fresh_large_scale_multi_stage_benchmark() {
     if p15_path.exists() && p16_path.exists() {
         println!("\n    Per-File Detailed Comparison (Phase 15 vs Phase 16, delta > 5 µs):");
         for (fp, id) in &file_paths {
-            let out15 = Command::new(p15_path).arg("--json").arg(fp).output().unwrap();
-            let out16 = Command::new(p16_path).arg("--json").arg(fp).output().unwrap();
+            let out15 = Command::new(p15_path)
+                .arg("--json")
+                .arg(fp)
+                .output()
+                .unwrap();
+            let out16 = Command::new(p16_path)
+                .arg("--json")
+                .arg(fp)
+                .output()
+                .unwrap();
             let v15: Value = serde_json::from_slice(&out15.stdout).unwrap_or(Value::Null);
             let v16: Value = serde_json::from_slice(&out16.stdout).unwrap_or(Value::Null);
             let d15 = v15["stats"]["duration_micros"].as_u64().unwrap_or(0);
             let d16 = v16["stats"]["duration_micros"].as_u64().unwrap_or(0);
             let diff = (d16 as i64) - (d15 as i64);
             if diff.abs() > 5 {
-                println!("      {:<20}: P15 = {:4} µs, P16 = {:4} µs (diff = {:+4} µs)", id, d15, d16, diff);
+                println!(
+                    "      {:<20}: P15 = {:4} µs, P16 = {:4} µs (diff = {:+4} µs)",
+                    id, d15, d16, diff
+                );
             }
         }
     }
@@ -907,7 +945,12 @@ fn test_fresh_large_scale_multi_stage_benchmark() {
         };
         println!(
             "    | {:<21} | {:>12} | {:>10} µs | {:>11.2} µs | {:>13.2}x | {:>10.1} ms |",
-            r.name, r.files_passed, r.total_engine_micros, r.avg_engine_micros, rel_speedup, r.wall_clock_ms
+            r.name,
+            r.files_passed,
+            r.total_engine_micros,
+            r.avg_engine_micros,
+            rel_speedup,
+            r.wall_clock_ms
         );
     }
     println!("    +-----------------------+--------------+---------------+----------------+----------------+---------------+");

@@ -1,5 +1,5 @@
-use std::fmt;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -123,7 +123,8 @@ impl DetectionReport {
         }
 
         // Rule: FORBIDDEN combination: format + ambiguous
-        if self.identification == Identification::Format && self.inspection == Inspection::Ambiguous {
+        if self.identification == Identification::Format && self.inspection == Inspection::Ambiguous
+        {
             return Err("FORBIDDEN: identification=format cannot be ambiguous");
         }
 
@@ -139,7 +140,8 @@ impl DetectionReport {
 
     /// Computes the CLI exit code according to specification §8.
     pub fn cli_exit_code(&self) -> i32 {
-        if self.identification == Identification::Format && self.inspection == Inspection::Complete {
+        if self.identification == Identification::Format && self.inspection == Inspection::Complete
+        {
             0
         } else {
             3
@@ -195,7 +197,10 @@ impl DetectionCore {
             accepted_extensions: &[],
             primary_evidence: None,
             secondary_evidence: None,
-            warning: Some(("format.unknown", "No matching signature or structural evidence found")),
+            warning: Some((
+                "format.unknown",
+                "No matching signature or structural evidence found",
+            )),
             candidate: None,
         }
     }
@@ -232,13 +237,20 @@ impl DetectionCore {
             accepted_extensions: &[],
             primary_evidence: None,
             secondary_evidence: None,
-            warning: Some(("input.truncated", "Input header matches truncated signature")),
+            warning: Some((
+                "input.truncated",
+                "Input header matches truncated signature",
+            )),
             candidate: Some(candidate),
         }
     }
 
     /// Converts the zero-allocation DetectionCore into an owned DetectionReport.
-    pub fn to_report(&self, stats: DetectionStats, extension_status: ExtensionStatus) -> DetectionReport {
+    pub fn to_report(
+        &self,
+        stats: DetectionStats,
+        extension_status: ExtensionStatus,
+    ) -> DetectionReport {
         let mut evidence = Vec::new();
         if let Some(code) = self.primary_evidence {
             evidence.push(EvidenceItem::new(code));
@@ -291,7 +303,8 @@ impl DetectionCore {
             return Err("identification != format requires recommended_extension to be null");
         }
 
-        if self.identification == Identification::Format && self.inspection == Inspection::Ambiguous {
+        if self.identification == Identification::Format && self.inspection == Inspection::Ambiguous
+        {
             return Err("FORBIDDEN: identification=format cannot be ambiguous");
         }
 
@@ -306,10 +319,9 @@ impl DetectionCore {
 
     /// Constructs a DetectionCore from an existing DetectionReport.
     pub fn from_report(rep: &DetectionReport) -> Self {
-        let format_id: Option<&'static str> = rep
-            .format_id
-            .as_deref()
-            .and_then(|fid| static_format_id(fid).or_else(|| crate::extension::find_registered_format(fid)));
+        let format_id: Option<&'static str> = rep.format_id.as_deref().and_then(|fid| {
+            static_format_id(fid).or_else(|| crate::extension::find_registered_format(fid))
+        });
         let category: &'static str = match rep.category.as_str() {
             "archive" => "archive",
             "audio" => "audio",
@@ -393,21 +405,38 @@ impl DetectionCore {
             })
         });
 
-        let primary_evidence = rep.evidence.first().and_then(|e| find_static_evidence(&e.code));
-        let secondary_evidence = rep.evidence.get(1).and_then(|e| find_static_evidence(&e.code));
+        let primary_evidence = rep
+            .evidence
+            .first()
+            .and_then(|e| find_static_evidence(&e.code));
+        let secondary_evidence = rep
+            .evidence
+            .get(1)
+            .and_then(|e| find_static_evidence(&e.code));
         let accepted_extensions = format_id.map(static_accepted_extensions).unwrap_or(&[]);
         let recommended_extension = format_id.and_then(|fid| {
             rep.recommended_extension
                 .as_deref()
-                .and_then(|rec| if rec == fid { Some(fid) } else { static_recommended_extension(fid) })
+                .and_then(|rec| {
+                    if rec == fid {
+                        Some(fid)
+                    } else {
+                        static_recommended_extension(fid)
+                    }
+                })
                 .or(Some(fid))
         });
-        let warning = rep.warnings.first().and_then(|w| find_static_warning(&w.code));
+        let warning = rep
+            .warnings
+            .first()
+            .and_then(|w| find_static_warning(&w.code));
         let candidate = rep
             .candidates
             .as_ref()
             .and_then(|c| c.first())
-            .and_then(|s| static_format_id(s).or_else(|| crate::extension::find_registered_format(s)));
+            .and_then(|s| {
+                static_format_id(s).or_else(|| crate::extension::find_registered_format(s))
+            });
 
         Self {
             format_id,
@@ -673,8 +702,14 @@ fn static_accepted_extensions(fid: &str) -> &'static [&'static str] {
 fn find_static_warning(code: &str) -> Option<(&'static str, &'static str)> {
     match code {
         "input.empty" => Some(("input.empty", "Input file has 0 bytes")),
-        "format.unknown" => Some(("format.unknown", "No matching signature or structural evidence found")),
-        "input.truncated" => Some(("input.truncated", "Input header matches truncated signature")),
+        "format.unknown" => Some((
+            "format.unknown",
+            "No matching signature or structural evidence found",
+        )),
+        "input.truncated" => Some((
+            "input.truncated",
+            "Input header matches truncated signature",
+        )),
         "budget.source_read_exceeded" => Some((
             "budget.source_read_exceeded",
             "Total source read budget exceeded during detection",
@@ -719,10 +754,7 @@ fn find_static_warning(code: &str) -> Option<(&'static str, &'static str)> {
             "ooxml.required_relationship_missing",
             "No officeDocument core relationship found in _rels/.rels",
         )),
-        "ooxml.rels_xml_error" => Some((
-            "ooxml.rels_xml_error",
-            "XML error parsing _rels/.rels",
-        )),
+        "ooxml.rels_xml_error" => Some(("ooxml.rels_xml_error", "XML error parsing _rels/.rels")),
         "ooxml.conflicting_relationships" => Some((
             "ooxml.conflicting_relationships",
             "Multiple officeDocument core relationships found in _rels/.rels",
@@ -743,10 +775,9 @@ fn find_static_warning(code: &str) -> Option<(&'static str, &'static str)> {
             "ooxml.main_part_missing",
             "Failed to open main document part in package",
         )),
-        "ooxml.main_part_xml_error" => Some((
-            "ooxml.main_part_xml_error",
-            "XML error parsing main part",
-        )),
+        "ooxml.main_part_xml_error" => {
+            Some(("ooxml.main_part_xml_error", "XML error parsing main part"))
+        }
         "ooxml.invalid_root_element" => Some((
             "ooxml.invalid_root_element",
             "Main part XML does not have valid root element",
@@ -763,10 +794,7 @@ fn find_static_warning(code: &str) -> Option<(&'static str, &'static str)> {
             "cfb.unsupported_word_version",
             "Unsupported legacy Word FIB version",
         )),
-        "cfb.document_encrypted" => Some((
-            "cfb.document_encrypted",
-            "Word document is encrypted",
-        )),
+        "cfb.document_encrypted" => Some(("cfb.document_encrypted", "Word document is encrypted")),
         "cfb.table_stream_missing" => Some((
             "cfb.table_stream_missing",
             "Required Word Table stream (0Table or 1Table) missing",

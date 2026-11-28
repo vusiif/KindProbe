@@ -57,7 +57,11 @@ pub fn check_tar_header(header: &[u8]) -> Option<Verification> {
 
     let mut sum: u32 = 0;
     for (i, &b) in header[..512].iter().enumerate() {
-        sum += if (148..156).contains(&i) { 0x20 } else { b as u32 };
+        sum += if (148..156).contains(&i) {
+            0x20
+        } else {
+            b as u32
+        };
     }
 
     if sum == expected_chk {

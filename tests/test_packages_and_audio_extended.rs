@@ -1,8 +1,8 @@
-use std::ffi::OsStr;
-use std::io::{Cursor, Write};
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, detect_reader, ExtensionStatus, Identification, Verification};
+use std::ffi::OsStr;
+use std::io::{Cursor, Write};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
@@ -29,11 +29,23 @@ fn test_detect_apk_and_jar_in_zip() {
     assert_eq!(rep_apk.category, "package");
     assert_eq!(rep_apk.container_id.as_deref(), Some("zip"));
     assert_eq!(rep_apk.verification, Verification::Structure);
-    assert!(rep_apk.evidence.iter().any(|e| e.code == "zip.apk.manifest"));
+    assert!(rep_apk
+        .evidence
+        .iter()
+        .any(|e| e.code == "zip.apk.manifest"));
     assert!(rep_apk.evidence.iter().any(|e| e.code == "zip.apk.dex"));
-    assert_eq!(compare_extension(&rep_apk, Some(OsStr::new("apk"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_apk, Some(OsStr::new("xapk"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_apk, Some(OsStr::new("jar"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_apk, Some(OsStr::new("apk"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_apk, Some(OsStr::new("xapk"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_apk, Some(OsStr::new("jar"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. Java JAR in ZIP container
     let mut jar_buf = Cursor::new(Vec::new());
@@ -41,7 +53,8 @@ fn test_detect_apk_and_jar_in_zip() {
         let mut zip = ZipWriter::new(&mut jar_buf);
         let zip_opts = SimpleFileOptions::default();
         zip.start_file("META-INF/MANIFEST.MF", zip_opts).unwrap();
-        zip.write_all(b"Manifest-Version: 1.0\nCreated-By: 1.8.0\n").unwrap();
+        zip.write_all(b"Manifest-Version: 1.0\nCreated-By: 1.8.0\n")
+            .unwrap();
         zip.finish().unwrap();
     }
     jar_buf.set_position(0);
@@ -51,8 +64,14 @@ fn test_detect_apk_and_jar_in_zip() {
     assert_eq!(rep_jar.format_id.as_deref(), Some("jar"));
     assert_eq!(rep_jar.category, "package");
     assert_eq!(rep_jar.container_id.as_deref(), Some("zip"));
-    assert_eq!(compare_extension(&rep_jar, Some(OsStr::new("jar"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_jar, Some(OsStr::new("war"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_jar, Some(OsStr::new("jar"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_jar, Some(OsStr::new("war"))),
+        ExtensionStatus::Match
+    );
 }
 
 #[test]
@@ -63,7 +82,8 @@ fn test_detect_ipa_in_zip() {
     {
         let mut zip = ZipWriter::new(&mut ipa_buf);
         let zip_opts = SimpleFileOptions::default();
-        zip.start_file("Payload/KindProbe.app/Info.plist", zip_opts).unwrap();
+        zip.start_file("Payload/KindProbe.app/Info.plist", zip_opts)
+            .unwrap();
         zip.write_all(b"<plist version=\"1.0\"></plist>").unwrap();
         zip.finish().unwrap();
     }
@@ -75,8 +95,14 @@ fn test_detect_ipa_in_zip() {
     assert_eq!(rep_ipa.category, "package");
     assert_eq!(rep_ipa.container_id.as_deref(), Some("zip"));
     assert!(rep_ipa.evidence.iter().any(|e| e.code == "zip.ipa.payload"));
-    assert_eq!(compare_extension(&rep_ipa, Some(OsStr::new("ipa"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_ipa, Some(OsStr::new("apk"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_ipa, Some(OsStr::new("ipa"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_ipa, Some(OsStr::new("apk"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -90,8 +116,14 @@ fn test_detect_aac_audio() {
     assert_eq!(rep.category, "audio");
     assert_eq!(rep.verification, Verification::Structure);
     assert!(rep.evidence.iter().any(|e| e.code == "sig.aac.magic"));
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("aac"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("mp3"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("aac"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("mp3"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -108,9 +140,18 @@ fn test_detect_aiff_and_midi() {
     assert_eq!(rep_aiff.identification, Identification::Format);
     assert_eq!(rep_aiff.format_id.as_deref(), Some("aiff"));
     assert_eq!(rep_aiff.category, "audio");
-    assert_eq!(compare_extension(&rep_aiff, Some(OsStr::new("aif"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_aiff, Some(OsStr::new("aiff"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_aiff, Some(OsStr::new("wav"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep_aiff, Some(OsStr::new("aif"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_aiff, Some(OsStr::new("aiff"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_aiff, Some(OsStr::new("wav"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. MIDI Audio ("MThd" + length 6)
     let mut midi = vec![0u8; 16];
@@ -121,8 +162,14 @@ fn test_detect_aiff_and_midi() {
     assert_eq!(rep_mid.identification, Identification::Format);
     assert_eq!(rep_mid.format_id.as_deref(), Some("mid"));
     assert_eq!(rep_mid.category, "audio");
-    assert_eq!(compare_extension(&rep_mid, Some(OsStr::new("mid"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep_mid, Some(OsStr::new("midi"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_mid, Some(OsStr::new("mid"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep_mid, Some(OsStr::new("midi"))),
+        ExtensionStatus::Match
+    );
 }
 
 #[test]
@@ -140,5 +187,8 @@ fn test_detect_chm_document() {
     assert_eq!(rep_chm.category, "document");
     assert_eq!(rep_chm.verification, Verification::Structure);
     assert!(rep_chm.evidence.iter().any(|e| e.code == "sig.chm.magic"));
-    assert_eq!(compare_extension(&rep_chm, Some(OsStr::new("chm"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension(&rep_chm, Some(OsStr::new("chm"))),
+        ExtensionStatus::Match
+    );
 }

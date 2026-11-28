@@ -9,22 +9,52 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         let trimmed = first_line.trim_start();
         if trimmed.starts_with("#!") {
             if trimmed.contains("python") {
-                return Some(make_source_core("py", &["py", "pyw"], "sig.text.shebang", Verification::Signature));
+                return Some(make_source_core(
+                    "py",
+                    &["py", "pyw"],
+                    "sig.text.shebang",
+                    Verification::Signature,
+                ));
             }
             if trimmed.contains("bash") || trimmed.contains("sh") || trimmed.contains("zsh") {
-                return Some(make_source_core("sh", &["sh", "bash", "zsh"], "sig.text.shebang", Verification::Signature));
+                return Some(make_source_core(
+                    "sh",
+                    &["sh", "bash", "zsh"],
+                    "sig.text.shebang",
+                    Verification::Signature,
+                ));
             }
             if trimmed.contains("node") {
-                return Some(make_source_core("js", &["js", "mjs", "cjs"], "sig.text.shebang", Verification::Signature));
+                return Some(make_source_core(
+                    "js",
+                    &["js", "mjs", "cjs"],
+                    "sig.text.shebang",
+                    Verification::Signature,
+                ));
             }
             if trimmed.contains("perl") {
-                return Some(make_source_core("pl", &["pl", "pm"], "sig.text.shebang", Verification::Signature));
+                return Some(make_source_core(
+                    "pl",
+                    &["pl", "pm"],
+                    "sig.text.shebang",
+                    Verification::Signature,
+                ));
             }
             if trimmed.contains("ruby") {
-                return Some(make_source_core("rb", &["rb"], "sig.text.shebang", Verification::Signature));
+                return Some(make_source_core(
+                    "rb",
+                    &["rb"],
+                    "sig.text.shebang",
+                    Verification::Signature,
+                ));
             }
             if trimmed.contains("sed") {
-                return Some(make_source_core("sed", &["sed"], "sig.text.shebang", Verification::Signature));
+                return Some(make_source_core(
+                    "sed",
+                    &["sed"],
+                    "sig.text.shebang",
+                    Verification::Signature,
+                ));
             }
         }
     }
@@ -43,19 +73,52 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     let w_bytes = window.as_bytes();
 
     if window.starts_with("diff --git ") || window.starts_with("--- a/") {
-        return Some(make_source_core("diff", &["diff", "patch"], "sig.text.diff", Verification::Structure));
+        return Some(make_source_core(
+            "diff",
+            &["diff", "patch"],
+            "sig.text.diff",
+            Verification::Structure,
+        ));
     }
-    if window.lines().next().map(|l| l.trim().eq_ignore_ascii_case("@echo off")).unwrap_or(false) {
-        return Some(make_source_core("bat", &["bat", "cmd"], "sig.text.batch", Verification::Structure));
+    if window
+        .lines()
+        .next()
+        .map(|l| l.trim().eq_ignore_ascii_case("@echo off"))
+        .unwrap_or(false)
+    {
+        return Some(make_source_core(
+            "bat",
+            &["bat", "cmd"],
+            "sig.text.batch",
+            Verification::Structure,
+        ));
     }
-    if window.starts_with("Windows Registry Editor Version 5.00") || window.starts_with("REGEDIT4") {
-        return Some(make_source_core("reg", &["reg"], "sig.text.reg", Verification::Structure));
+    if window.starts_with("Windows Registry Editor Version 5.00") || window.starts_with("REGEDIT4")
+    {
+        return Some(make_source_core(
+            "reg",
+            &["reg"],
+            "sig.text.reg",
+            Verification::Structure,
+        ));
     }
     if window.starts_with("Microsoft Visual Studio Solution File") {
-        return Some(make_source_core("sln", &["sln"], "sig.text.sln", Verification::Structure));
+        return Some(make_source_core(
+            "sln",
+            &["sln"],
+            "sig.text.sln",
+            Verification::Structure,
+        ));
     }
-    if window.contains("@import(\"std\")") || (window.contains("pub fn ") && window.contains("@import(")) {
-        return Some(make_source_core("zig", &["zig"], "sig.text.zig", Verification::Structure));
+    if window.contains("@import(\"std\")")
+        || (window.contains("pub fn ") && window.contains("@import("))
+    {
+        return Some(make_source_core(
+            "zig",
+            &["zig"],
+            "sig.text.zig",
+            Verification::Structure,
+        ));
     }
 
     // CUDA (.cu / .cuh) and GLSL (.glsl / .vert / .frag) before C/C++ #include check
@@ -87,7 +150,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // WebGPU Shading Language (.wgsl) before Rust token scan (`fn ` / `->`)
     if (window.contains("@vertex") || window.contains("@fragment") || window.contains("@compute"))
         && window.contains("fn ")
-        && (window.contains("@location(") || window.contains("@builtin(") || window.contains("@group("))
+        && (window.contains("@location(")
+            || window.contains("@builtin(")
+            || window.contains("@group("))
     {
         return Some(make_source_core(
             "wgsl",
@@ -130,13 +195,30 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
                 || window.contains("class ")
                 || window.contains("using namespace ")
             {
-                return Some(make_source_core("cpp", &["cpp", "cxx", "cc", "hpp", "hxx"], "sig.text.cpp", Verification::Structure));
+                return Some(make_source_core(
+                    "cpp",
+                    &["cpp", "cxx", "cc", "hpp", "hxx"],
+                    "sig.text.cpp",
+                    Verification::Structure,
+                ));
             } else {
-                return Some(make_source_core("c", &["c", "h"], "sig.text.c", Verification::Structure));
+                return Some(make_source_core(
+                    "c",
+                    &["c", "h"],
+                    "sig.text.c",
+                    Verification::Structure,
+                ));
             }
         }
-        if window.starts_with("# ") && (window.contains("](") || window.contains("\n- ") || window.contains("\n```")) {
-            return Some(make_source_core("md", &["md", "markdown"], "sig.text.markdown", Verification::Structure));
+        if window.starts_with("# ")
+            && (window.contains("](") || window.contains("\n- ") || window.contains("\n```"))
+        {
+            return Some(make_source_core(
+                "md",
+                &["md", "markdown"],
+                "sig.text.markdown",
+                Verification::Structure,
+            ));
         }
     }
 
@@ -237,7 +319,8 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Odin (.odin) before Go `package ` scan
-    if window.contains("package ") && window.contains("import \"core:") && window.contains("proc(") {
+    if window.contains("package ") && window.contains("import \"core:") && window.contains("proc(")
+    {
         return Some(make_source_core(
             "odin",
             &["odin"],
@@ -277,7 +360,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // SystemVerilog (.sv / .svh) before Verilog scan
     if window.contains("module ")
         && window.contains("endmodule")
-        && (window.contains("logic ") || window.contains("always_ff") || window.contains("always_comb"))
+        && (window.contains("logic ")
+            || window.contains("always_ff")
+            || window.contains("always_comb"))
     {
         return Some(make_source_core(
             "sv",
@@ -303,7 +388,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // Move (.move) before Rust/Kotlin `fun` scan
     if window.contains("module ")
         && window.contains("public fun ")
-        && (window.contains("has key") || window.contains("has store") || window.contains("use std::"))
+        && (window.contains("has key")
+            || window.contains("has store")
+            || window.contains("use std::"))
     {
         return Some(make_source_core(
             "move",
@@ -348,7 +435,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Cargo.lock & Poetry poetry.lock
-    if window.contains("# This file is automatically @generated by Cargo.") && window.contains("[[package]]") {
+    if window.contains("# This file is automatically @generated by Cargo.")
+        && window.contains("[[package]]")
+    {
         return Some(make_source_core(
             "cargo_lock",
             &["lock"],
@@ -421,7 +510,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
         // High-performance byte-level token boundary scan
         let trimmed_bytes = trimmed.as_bytes();
-        let split_pos = trimmed_bytes.iter().position(|&b| b.is_ascii_whitespace() || b == b'(');
+        let split_pos = trimmed_bytes
+            .iter()
+            .position(|&b| b.is_ascii_whitespace() || b == b'(');
         let (first_word, rest) = match split_pos {
             Some(pos) => (&trimmed[..pos], trimmed[pos..].trim_start()),
             None => (trimmed, ""),
@@ -431,7 +522,12 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "fn" => {
                 has_rs_fn = true;
                 if rest.starts_with("main(") || rest.starts_with("main (") {
-                    return Some(make_source_core("rs", &["rs"], "sig.text.rust", Verification::Structure));
+                    return Some(make_source_core(
+                        "rs",
+                        &["rs"],
+                        "sig.text.rust",
+                        Verification::Structure,
+                    ));
                 }
                 if rest.contains("->") || rest.contains("mut ") {
                     has_rs_kw = true;
@@ -444,20 +540,36 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
                     has_rs_fn = true;
                     let fn_rest = stripped.trim_start();
                     if fn_rest.starts_with("main(") || fn_rest.starts_with("main (") {
-                        return Some(make_source_core("rs", &["rs"], "sig.text.rust", Verification::Structure));
+                        return Some(make_source_core(
+                            "rs",
+                            &["rs"],
+                            "sig.text.rust",
+                            Verification::Structure,
+                        ));
                     }
                     if fn_rest.contains("->") || fn_rest.contains("mut ") {
                         has_rs_kw = true;
                     }
                 } else if rest.starts_with("struct ") || rest.starts_with("enum ") {
                     has_rs_type = true;
-                } else if rest.starts_with("mod ") || rest.starts_with("use ") || rest.starts_with("const ") {
+                } else if rest.starts_with("mod ")
+                    || rest.starts_with("use ")
+                    || rest.starts_with("const ")
+                {
                     has_rs_impl = true;
                 }
             }
             "use" => {
-                if rest.starts_with("std::") || rest.starts_with("core::") || rest.starts_with("crate::") {
-                    return Some(make_source_core("rs", &["rs"], "sig.text.rust", Verification::Structure));
+                if rest.starts_with("std::")
+                    || rest.starts_with("core::")
+                    || rest.starts_with("crate::")
+                {
+                    return Some(make_source_core(
+                        "rs",
+                        &["rs"],
+                        "sig.text.rust",
+                        Verification::Structure,
+                    ));
                 }
             }
             "struct" | "enum" => {
@@ -475,7 +587,12 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "endmodule" => {
                 has_v_end = true;
                 if has_v_module {
-                    return Some(make_source_core("v", &["v", "vh", "sv"], "sig.text.verilog", Verification::Structure));
+                    return Some(make_source_core(
+                        "v",
+                        &["v", "vh", "sv"],
+                        "sig.text.verilog",
+                        Verification::Structure,
+                    ));
                 }
             }
             "package" => {
@@ -497,7 +614,12 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
                     || rest.starts_with("static class ")
                     || rest.starts_with("final class ")
                 {
-                    return Some(make_source_core("java", &["java"], "sig.text.java", Verification::Structure));
+                    return Some(make_source_core(
+                        "java",
+                        &["java"],
+                        "sig.text.java",
+                        Verification::Structure,
+                    ));
                 }
             }
             "class" | "interface" => {
@@ -519,7 +641,12 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
                     || rest.starts_with("__name__==")
                     || trimmed.contains("if __name__ == ")
                 {
-                    return Some(make_source_core("py", &["py", "pyw"], "sig.text.python", Verification::Structure));
+                    return Some(make_source_core(
+                        "py",
+                        &["py", "pyw"],
+                        "sig.text.python",
+                        Verification::Structure,
+                    ));
                 }
             }
             _ => {
@@ -531,19 +658,39 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     if has_v_module && has_v_end {
-        return Some(make_source_core("v", &["v", "vh", "sv"], "sig.text.verilog", Verification::Structure));
+        return Some(make_source_core(
+            "v",
+            &["v", "vh", "sv"],
+            "sig.text.verilog",
+            Verification::Structure,
+        ));
     }
 
     if ((has_rs_fn && has_rs_kw) || (has_rs_type && has_rs_impl)) && !window.contains("@import(") {
-        return Some(make_source_core("rs", &["rs"], "sig.text.rust", Verification::Structure));
+        return Some(make_source_core(
+            "rs",
+            &["rs"],
+            "sig.text.rust",
+            Verification::Structure,
+        ));
     }
 
     if has_package && has_import && has_class_or_pub {
-        return Some(make_source_core("java", &["java"], "sig.text.java", Verification::Structure));
+        return Some(make_source_core(
+            "java",
+            &["java"],
+            "sig.text.java",
+            Verification::Structure,
+        ));
     }
 
     if has_package && has_go_func {
-        return Some(make_source_core("go", &["go"], "sig.text.go", Verification::Structure));
+        return Some(make_source_core(
+            "go",
+            &["go"],
+            "sig.text.go",
+            Verification::Structure,
+        ));
     }
 
     // Kotlin & Scala (check before Python `def` fallback since Scala uses `def` + `package`/`object`/`case class`)
@@ -560,7 +707,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     if window.contains("package ")
-        && (window.contains("object ") || window.contains("case class ") || window.contains("trait "))
+        && (window.contains("object ")
+            || window.contains("case class ")
+            || window.contains("trait "))
         && window.contains("def ")
     {
         return Some(make_source_core(
@@ -600,7 +749,12 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     if has_py_def || (has_import && (has_py_def || has_class_or_pub || has_py_from)) {
-        return Some(make_source_core("py", &["py", "pyw"], "sig.text.python", Verification::Structure));
+        return Some(make_source_core(
+            "py",
+            &["py", "pyw"],
+            "sig.text.python",
+            Verification::Structure,
+        ));
     }
 
     // Dockerfile detection: first non-comment line starts with FROM <image> + instruction
@@ -768,7 +922,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // PureScript (.purs) before Haskell (.hs)
-    if window.lines().any(|l| l.trim_start().starts_with("module "))
+    if window
+        .lines()
+        .any(|l| l.trim_start().starts_with("module "))
         && window.contains("where")
         && (window.contains("import Prelude") || window.contains("import Effect"))
         && !w_bytes.contains(&b'{')
@@ -782,7 +938,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Haskell (.hs)
-    if window.lines().any(|l| l.trim_start().starts_with("module "))
+    if window
+        .lines()
+        .any(|l| l.trim_start().starts_with("module "))
         && window.contains("where")
         && (window.contains("import ") || window.contains(" :: "))
         && !w_bytes.contains(&b'{')
@@ -894,7 +1052,10 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // Groovy (.groovy / .gvy)
     if window.contains("@Grab(")
-        || (window.contains("def ") && window.contains("println ") && !window.contains("def main(") && !window.contains(':'))
+        || (window.contains("def ")
+            && window.contains("println ")
+            && !window.contains("def main(")
+            && !window.contains(':'))
     {
         return Some(make_source_core(
             "groovy",
@@ -920,7 +1081,10 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // AWK (.awk)
     if (window.contains("BEGIN {") || window.contains("END {"))
-        && (window.contains("print ") || window.contains("printf ") || window.contains("$1") || window.contains("$0"))
+        && (window.contains("print ")
+            || window.contains("printf ")
+            || window.contains("$1")
+            || window.contains("$0"))
         && w_bytes.contains(&b'}')
     {
         return Some(make_source_core(
@@ -977,7 +1141,10 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         || trimmed_mmd.starts_with("classDiagram")
         || trimmed_mmd.starts_with("stateDiagram")
         || trimmed_mmd.starts_with("erDiagram"))
-        && (window.contains("-->") || window.contains("->") || window.contains("||--") || window.contains("participant "))
+        && (window.contains("-->")
+            || window.contains("->")
+            || window.contains("||--")
+            || window.contains("participant "))
     {
         return Some(make_source_core(
             "mmd",
@@ -988,7 +1155,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Graphviz DOT (.dot / .gv)
-    if (window.contains("digraph ") || window.contains("strict digraph ") || window.contains("strict graph "))
+    if (window.contains("digraph ")
+        || window.contains("strict digraph ")
+        || window.contains("strict graph "))
         && w_bytes.contains(&b'{')
         && w_bytes.contains(&b'}')
         && (window.contains("->") || window.contains("--"))
@@ -1038,7 +1207,10 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // AWS Smithy IDL (.smithy)
-    if window.contains("$version:") && window.contains("namespace ") && (window.contains("service ") || window.contains("structure ")) {
+    if window.contains("$version:")
+        && window.contains("namespace ")
+        && (window.contains("service ") || window.contains("structure "))
+    {
         return Some(make_source_core(
             "smithy",
             &["smithy"],
@@ -1049,7 +1221,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // EditorConfig (.editorconfig)
     if (window.contains("root = true") || window.contains("[*]"))
-        && (window.contains("indent_style") || window.contains("indent_size") || window.contains("end_of_line"))
+        && (window.contains("indent_style")
+            || window.contains("indent_size")
+            || window.contains("end_of_line"))
     {
         return Some(make_source_core(
             "editorconfig",
@@ -1090,7 +1264,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // Azure Bicep (.bicep)
     if window.contains("param ")
         && window.contains("resource ")
-        && (window.contains("'Microsoft.") || window.contains("@description(") || window.contains("= {"))
+        && (window.contains("'Microsoft.")
+            || window.contains("@description(")
+            || window.contains("= {"))
     {
         return Some(make_source_core(
             "bicep",
@@ -1101,8 +1277,12 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // DirectX HLSL (.hlsl / .fx)
-    if (window.contains("cbuffer ") || window.contains("StructuredBuffer<") || window.contains("Texture2D"))
-        && (window.contains("SV_Position") || window.contains("SV_Target") || window.contains("float4"))
+    if (window.contains("cbuffer ")
+        || window.contains("StructuredBuffer<")
+        || window.contains("Texture2D"))
+        && (window.contains("SV_Position")
+            || window.contains("SV_Target")
+            || window.contains("float4"))
     {
         return Some(make_source_core(
             "hlsl",
@@ -1158,12 +1338,10 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     if w_bytes.contains(&b'{')
         && w_bytes.contains(&b'}')
         && !w_bytes.contains(&b';')
-        && window
-            .lines()
-            .any(|l| {
-                let t = l.trim();
-                t.ends_with(" {") && t.contains('"')
-            })
+        && window.lines().any(|l| {
+            let t = l.trim();
+            t.ends_with(" {") && t.contains('"')
+        })
         && !window.contains("server {")
         && !window.contains("plugins {")
         && !window.contains("job \"")
@@ -1195,7 +1373,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // JSON5 / JSONC (.json5 / .jsonc)
-    if (ron_trimmed.starts_with('{') || ron_trimmed.starts_with("//") || ron_trimmed.starts_with("/*"))
+    if (ron_trimmed.starts_with('{')
+        || ron_trimmed.starts_with("//")
+        || ron_trimmed.starts_with("/*"))
         && (window.contains("// ") || window.contains("/*"))
         && w_bytes.contains(&b'{')
         && w_bytes.contains(&b'}')
@@ -1257,7 +1437,8 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         || ron_trimmed.starts_with("POLYGON ((")
         || ron_trimmed.starts_with("MULTIPOLYGON ((")
         || ron_trimmed.starts_with("GEOMETRYCOLLECTION (")
-        || (ron_trimmed.starts_with("SRID=") && (ron_trimmed.contains(";POINT") || ron_trimmed.contains(";POLYGON")))
+        || (ron_trimmed.starts_with("SRID=")
+            && (ron_trimmed.contains(";POINT") || ron_trimmed.contains(";POLYGON")))
     {
         return Some(make_source_core(
             "wkt",
@@ -1269,7 +1450,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // D programming language (.d)
     if window.contains("import std.")
-        && (window.contains("void main(") || window.contains("int main(") || window.contains("writeln("))
+        && (window.contains("void main(")
+            || window.contains("int main(")
+            || window.contains("writeln("))
     {
         return Some(make_source_core(
             "d",
@@ -1294,7 +1477,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // HAProxy config (.cfg / haproxy.cfg)
     if window.contains("global\n")
         && window.contains("defaults\n")
-        && (window.contains("frontend ") || window.contains("backend ") || window.contains("listen "))
+        && (window.contains("frontend ")
+            || window.contains("backend ")
+            || window.contains("listen "))
     {
         return Some(make_source_core(
             "haproxy",
@@ -1306,7 +1491,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // systemd unit file (.service / .timer / .socket)
     if window.contains("[Unit]")
-        && (window.contains("[Service]") || window.contains("[Timer]") || window.contains("[Socket]"))
+        && (window.contains("[Service]")
+            || window.contains("[Timer]")
+            || window.contains("[Socket]"))
         && (window.contains("ExecStart=") || window.contains("Description="))
     {
         return Some(make_source_core(
@@ -1318,10 +1505,7 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // XDG Desktop Entry (.desktop)
-    if window.contains("[Desktop Entry]")
-        && window.contains("Type=")
-        && window.contains("Name=")
-    {
+    if window.contains("[Desktop Entry]") && window.contains("Type=") && window.contains("Name=") {
         return Some(make_source_core(
             "desktop",
             &["desktop"],
@@ -1359,7 +1543,8 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             Verification::Structure,
         ));
     }
-    if (window.contains("{% endif %}") || window.contains("{% endfor %}")) && window.contains("{%") {
+    if (window.contains("{% endif %}") || window.contains("{% endfor %}")) && window.contains("{%")
+    {
         return Some(make_source_core(
             "liquid",
             &["liquid"],
@@ -1367,7 +1552,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             Verification::Structure,
         ));
     }
-    if (window.contains("{% block ") || window.contains("{% extends ") || window.contains("{% for "))
+    if (window.contains("{% block ")
+        || window.contains("{% extends ")
+        || window.contains("{% for "))
         && window.contains("%}")
     {
         return Some(make_source_core(
@@ -1377,7 +1564,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             Verification::Structure,
         ));
     }
-    if (window.contains("<%=") || window.contains("<%-") || window.contains("<% ")) && window.contains("%>") {
+    if (window.contains("<%=") || window.contains("<%-") || window.contains("<% "))
+        && window.contains("%>")
+    {
         return Some(make_source_core(
             "ejs",
             &["ejs"],
@@ -1403,7 +1592,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // Earthfile
     if window.contains("VERSION ")
         && window.contains("FROM ")
-        && (window.contains("SAVE ARTIFACT") || window.contains("BUILD +") || window.contains("RUN "))
+        && (window.contains("SAVE ARTIFACT")
+            || window.contains("BUILD +")
+            || window.contains("RUN "))
     {
         return Some(make_source_core(
             "earthfile",
@@ -1415,7 +1606,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // Meson build (meson.build)
     if window.contains("project(")
-        && (window.contains("executable(") || window.contains("dependency(") || window.contains("library("))
+        && (window.contains("executable(")
+            || window.contains("dependency(")
+            || window.contains("library("))
         && !w_bytes.contains(&b'{')
     {
         return Some(make_source_core(
@@ -1448,7 +1641,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // OpenSSH Client Config (ssh_config)
     if window.lines().any(|l| l.trim_start().starts_with("Host "))
-        && (window.contains("HostName ") || window.contains("IdentityFile ") || window.contains("User "))
+        && (window.contains("HostName ")
+            || window.contains("IdentityFile ")
+            || window.contains("User "))
     {
         return Some(make_source_core(
             "ssh_config",
@@ -1533,7 +1728,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // Elm (.elm)
     if window.contains("module ")
         && window.contains("exposing (")
-        && (window.contains("import Html") || window.contains("import Browser") || window.contains("main ="))
+        && (window.contains("import Html")
+            || window.contains("import Browser")
+            || window.contains("main ="))
     {
         return Some(make_source_core(
             "elm",
@@ -1626,7 +1823,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // robots.txt
     if window.contains("User-agent:")
-        && (window.contains("Disallow:") || window.contains("Allow:") || window.contains("Sitemap:"))
+        && (window.contains("Disallow:")
+            || window.contains("Allow:")
+            || window.contains("Sitemap:"))
     {
         return Some(make_source_core(
             "robots",
@@ -1649,10 +1848,14 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // CODEOWNERS
-    if window.lines().filter(|l| {
-        let t = l.trim();
-        !t.starts_with('#') && (t.starts_with("* ") || t.starts_with('/')) && t.contains(" @")
-    }).count() >= 2
+    if window
+        .lines()
+        .filter(|l| {
+            let t = l.trim();
+            !t.starts_with('#') && (t.starts_with("* ") || t.starts_with('/')) && t.contains(" @")
+        })
+        .count()
+        >= 2
     {
         return Some(make_source_core(
             "codeowners",
@@ -1683,7 +1886,8 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Gemfile
-    if (window.contains("source 'https://rubygems.org'") || window.contains("source \"https://rubygems.org\""))
+    if (window.contains("source 'https://rubygems.org'")
+        || window.contains("source \"https://rubygems.org\""))
         && window.contains("gem ")
     {
         return Some(make_source_core(
@@ -1757,7 +1961,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // nftables (.nft)
     if window.contains("table inet ")
         && window.contains("chain ")
-        && (window.contains("type filter hook") || window.contains("accept") || window.contains("drop"))
+        && (window.contains("type filter hook")
+            || window.contains("accept")
+            || window.contains("drop"))
     {
         return Some(make_source_core(
             "nft",
@@ -1803,7 +2009,10 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Fennel (.fnl)
-    if window.contains("(fn ") && (window.contains("(local ") || window.contains("(let ")) && w_bytes.contains(&b')') {
+    if window.contains("(fn ")
+        && (window.contains("(local ") || window.contains("(let "))
+        && w_bytes.contains(&b')')
+    {
         return Some(make_source_core(
             "fennel",
             &["fnl"],
@@ -1882,7 +2091,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // .vimrc
     if window.contains("set nocompatible")
         || (window.contains("set number")
-            && (window.contains("nnoremap ") || window.contains("inoremap ") || window.contains("autocmd ")))
+            && (window.contains("nnoremap ")
+                || window.contains("inoremap ")
+                || window.contains("autocmd ")))
     {
         return Some(make_source_core(
             "vimrc",
@@ -1903,7 +2114,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // sysctl.conf
-    if (window.contains("net.ipv4.") || window.contains("net.core.") || window.contains("vm.swappiness"))
+    if (window.contains("net.ipv4.")
+        || window.contains("net.core.")
+        || window.contains("vm.swappiness"))
         && window.contains(" = ")
     {
         return Some(make_source_core(
@@ -1927,7 +2140,10 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Circom ZK circuits (.circom)
-    if window.contains("pragma circom ") && window.contains("template ") && window.contains("signal ") {
+    if window.contains("pragma circom ")
+        && window.contains("template ")
+        && window.contains("signal ")
+    {
         return Some(make_source_core(
             "circom",
             &["circom"],
@@ -1937,7 +2153,10 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // InfluxDB Flux (.flux)
-    if window.contains("from(bucket:") && window.contains("|> range(") && window.contains("|> filter(") {
+    if window.contains("from(bucket:")
+        && window.contains("|> range(")
+        && window.contains("|> filter(")
+    {
         return Some(make_source_core(
             "flux",
             &["flux"],
@@ -1962,7 +2181,11 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // /etc/fstab
     if (window.contains("UUID=") || window.contains("/dev/"))
-        && (window.contains("ext4") || window.contains("xfs") || window.contains("btrfs") || window.contains("swap") || window.contains("tmpfs"))
+        && (window.contains("ext4")
+            || window.contains("xfs")
+            || window.contains("btrfs")
+            || window.contains("swap")
+            || window.contains("tmpfs"))
         && window.contains("defaults")
     {
         return Some(make_source_core(
@@ -1974,7 +2197,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Textile markup (.textile)
-    if window.contains("h1. ") && (window.contains("h2. ") || window.contains("\n* ") || window.contains("\n# ")) {
+    if window.contains("h1. ")
+        && (window.contains("h2. ") || window.contains("\n* ") || window.contains("\n# "))
+    {
         return Some(make_source_core(
             "textile",
             &["textile"],
@@ -2008,7 +2233,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // GNU Automake (Makefile.am)
-    if (window.contains("bin_PROGRAMS") || window.contains("lib_LTLIBRARIES") || window.contains("SUBDIRS ="))
+    if (window.contains("bin_PROGRAMS")
+        || window.contains("lib_LTLIBRARIES")
+        || window.contains("SUBDIRS ="))
         && window.contains('_')
     {
         return Some(make_source_core(
@@ -2020,7 +2247,8 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // GNU Autoconf (configure.ac)
-    if window.contains("AC_INIT(") && (window.contains("AC_OUTPUT") || window.contains("AC_PROG_")) {
+    if window.contains("AC_INIT(") && (window.contains("AC_OUTPUT") || window.contains("AC_PROG_"))
+    {
         return Some(make_source_core(
             "autoconf",
             &["ac"],
@@ -2064,7 +2292,11 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Mozilla Project Fluent (.ftl)
-    if window.contains(" = ") && window.contains("{$") && window.contains('}') && !w_bytes.contains(&b';') {
+    if window.contains(" = ")
+        && window.contains("{$")
+        && window.contains('}')
+        && !w_bytes.contains(&b';')
+    {
         return Some(make_source_core(
             "ftl",
             &["ftl"],
@@ -2118,7 +2350,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     }
 
     // Buck2 build file (BUCK)
-    if (window.contains("rust_library(") || window.contains("cxx_binary(") || window.contains("python_binary("))
+    if (window.contains("rust_library(")
+        || window.contains("cxx_binary(")
+        || window.contains("python_binary("))
         && window.contains("deps = [")
         && !window.contains("load(")
     {
@@ -2186,7 +2420,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // Linux Device Tree Source (.dts / .dtsi)
     if window.contains("/dts-v1/;")
-        || (window.contains("compatible = \"") && window.contains("reg = <") && window.contains("};"))
+        || (window.contains("compatible = \"")
+            && window.contains("reg = <")
+            && window.contains("};"))
     {
         return Some(make_source_core(
             "dts_src",
@@ -2381,7 +2617,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // php.ini
     if window.contains("[PHP]")
-        && (window.contains("engine") || window.contains("memory_limit") || window.contains("display_errors"))
+        && (window.contains("engine")
+            || window.contains("memory_limit")
+            || window.contains("display_errors"))
     {
         return Some(make_source_core(
             "php_ini",
@@ -2393,7 +2631,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // Emacs Lisp (.el)
     if window.contains("(defun ")
-        && (window.contains("(interactive") || window.contains("(require '") || window.contains("(setq "))
+        && (window.contains("(interactive")
+            || window.contains("(require '")
+            || window.contains("(setq "))
     {
         return Some(make_source_core(
             "elisp",
@@ -2405,7 +2645,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // Common Lisp (.lisp / .lsp / .cl)
     if window.contains("(defun ")
-        && (window.contains("(defparameter ") || window.contains("(defvar ") || window.contains("(format t "))
+        && (window.contains("(defparameter ")
+            || window.contains("(defvar ")
+            || window.contains("(format t "))
     {
         return Some(make_source_core(
             "lisp",
@@ -2417,7 +2659,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // ReScript (.res / .resi)
     if window.contains("let ")
-        && (window.contains("Js.log(") || window.contains("Console.log(") || window.contains("@react.component"))
+        && (window.contains("Js.log(")
+            || window.contains("Console.log(")
+            || window.contains("@react.component"))
         && !w_bytes.contains(&b';')
     {
         return Some(make_source_core(
@@ -2430,7 +2674,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
     // Salesforce Apex (.cls / .trigger)
     if window.contains("public with sharing class ")
-        || (window.contains("trigger ") && window.contains(" on ") && window.contains("before insert"))
+        || (window.contains("trigger ")
+            && window.contains(" on ")
+            && window.contains("before insert"))
     {
         return Some(make_source_core(
             "apex",
@@ -2506,7 +2752,8 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             if let Some((k, _v)) = t.split_once('=') {
                 !k.is_empty()
                     && !k.contains(' ')
-                    && k.bytes().all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_')
+                    && k.bytes()
+                        .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_')
                     && (k.contains('_')
                         || matches!(k, "PORT" | "HOST" | "DEBUG" | "ENV" | "SECRET"))
             } else {
@@ -2656,8 +2903,13 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
     // SCSS (check before CSS since SCSS shares CSS properties + `$` vars / `@mixin`)
     if w_bytes.contains(&b'{')
         && w_bytes.contains(&b'}')
-        && (window.contains("@mixin ") || window.contains("@include ") || (w_bytes.contains(&b'$') && window.contains(": ")))
-        && (window.contains("color:") || window.contains("margin:") || window.contains("padding:") || window.contains("display:"))
+        && (window.contains("@mixin ")
+            || window.contains("@include ")
+            || (w_bytes.contains(&b'$') && window.contains(": ")))
+        && (window.contains("color:")
+            || window.contains("margin:")
+            || window.contains("padding:")
+            || window.contains("display:"))
     {
         return Some(make_source_core(
             "scss",
@@ -2673,9 +2925,16 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         && w_bytes.contains(&b'@')
         && window.lines().any(|l| {
             let t = l.trim_start();
-            t.starts_with('@') && t.contains(':') && t.ends_with(';') && !t.starts_with("@media") && !t.starts_with("@import")
+            t.starts_with('@')
+                && t.contains(':')
+                && t.ends_with(';')
+                && !t.starts_with("@media")
+                && !t.starts_with("@import")
         })
-        && (window.contains("color:") || window.contains("margin:") || window.contains("padding:") || window.contains("display:"))
+        && (window.contains("color:")
+            || window.contains("margin:")
+            || window.contains("padding:")
+            || window.contains("display:"))
     {
         return Some(make_source_core(
             "less",
@@ -2716,10 +2975,16 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
 
 /// Probes source code returning an owned DetectionReport.
 pub fn probe_source_code(text: &str) -> Option<DetectionReport> {
-    probe_source_code_core(text).map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
+    probe_source_code_core(text)
+        .map(|core| core.to_report(Default::default(), ExtensionStatus::Undetermined))
 }
 
-fn make_source_core(fid: &'static str, exts: &'static [&'static str], evidence: &'static str, ver: Verification) -> DetectionCore {
+fn make_source_core(
+    fid: &'static str,
+    exts: &'static [&'static str],
+    evidence: &'static str,
+    ver: Verification,
+) -> DetectionCore {
     DetectionCore {
         format_id: Some(fid),
         category: "text",

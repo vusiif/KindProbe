@@ -1,9 +1,7 @@
 use std::io::Read;
 use zip::ZipArchive;
 
-use crate::model::{
-    DetectionReport, EvidenceItem, Identification, Inspection, Verification,
-};
+use crate::model::{DetectionReport, EvidenceItem, Identification, Inspection, Verification};
 
 /// Inspects ZIP archive for EPUB (OCF) or OpenDocument (ODF) mimetype specification.
 pub fn check_epub_or_odf<R: Read + std::io::Seek>(
@@ -44,10 +42,26 @@ pub fn check_epub_or_odf<R: Read + std::io::Seek>(
     }
 
     const ODF_TYPES: &[(&str, &str, &[&str])] = &[
-        ("application/vnd.oasis.opendocument.text", "odt", &["odt", "ott"]),
-        ("application/vnd.oasis.opendocument.spreadsheet", "ods", &["ods", "ots"]),
-        ("application/vnd.oasis.opendocument.presentation", "odp", &["odp", "otp"]),
-        ("application/vnd.oasis.opendocument.graphics", "odg", &["odg", "otg"]),
+        (
+            "application/vnd.oasis.opendocument.text",
+            "odt",
+            &["odt", "ott"],
+        ),
+        (
+            "application/vnd.oasis.opendocument.spreadsheet",
+            "ods",
+            &["ods", "ots"],
+        ),
+        (
+            "application/vnd.oasis.opendocument.presentation",
+            "odp",
+            &["odp", "otp"],
+        ),
+        (
+            "application/vnd.oasis.opendocument.graphics",
+            "odg",
+            &["odg", "otg"],
+        ),
     ];
 
     for &(m, fid, exts) in ODF_TYPES {

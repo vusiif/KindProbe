@@ -3,7 +3,9 @@
 #![forbid(unsafe_code)]
 
 use kindprobe::model::{DetectionCore, ExtensionStatus, Identification, Inspection, Verification};
-use kindprobe::{compare_extension, compare_extension_core, detect_bytes, detect_bytes_core, DetectOptions};
+use kindprobe::{
+    compare_extension, compare_extension_core, detect_bytes, detect_bytes_core, DetectOptions,
+};
 use std::ffi::OsStr;
 use std::fs;
 
@@ -16,7 +18,11 @@ fn test_detection_core_copy_and_compactness() {
 
     // Validate size of DetectionCore remains compact (fits easily in L1 cache, zero heap allocation)
     let size = std::mem::size_of::<DetectionCore>();
-    assert!(size <= 192, "DetectionCore size is {} bytes, should be <= 192 bytes", size);
+    assert!(
+        size <= 192,
+        "DetectionCore size is {} bytes, should be <= 192 bytes",
+        size
+    );
 }
 
 #[test]
@@ -170,8 +176,14 @@ fn test_budget_exceeded_core_parity() {
     assert_eq!(core.inspection, Inspection::Limited);
     assert_eq!(core.verification, Verification::None);
     assert_eq!(rep.inspection, Inspection::Limited);
-    assert_eq!(core.warning.map(|(c, _)| c), Some("budget.source_read_exceeded"));
-    assert!(rep.warnings.iter().any(|w| w.code == "budget.source_read_exceeded"));
+    assert_eq!(
+        core.warning.map(|(c, _)| c),
+        Some("budget.source_read_exceeded")
+    );
+    assert!(rep
+        .warnings
+        .iter()
+        .any(|w| w.code == "budget.source_read_exceeded"));
     assert!(core.validate_invariants().is_ok());
 }
 
@@ -184,18 +196,30 @@ fn test_detect_path_and_reader_core_container_and_extension_parity() {
     let options = DetectOptions::default();
 
     // 1. DOCX via detect_path_core + compare_extension_core
-    let docx_core = detect_path_core(Path::new("fixtures/true_docx.docx"), &options).expect("docx path core");
+    let docx_core =
+        detect_path_core(Path::new("fixtures/true_docx.docx"), &options).expect("docx path core");
     assert_eq!(docx_core.format_id, Some("docx"));
     assert_eq!(docx_core.container_id, Some("zip"));
-    assert_eq!(compare_extension_core(&docx_core, Some(OsStr::new("docx"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension_core(&docx_core, Some(OsStr::new("pdf"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension_core(&docx_core, Some(OsStr::new("docx"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension_core(&docx_core, Some(OsStr::new("pdf"))),
+        ExtensionStatus::Mismatch
+    );
 
     // 2. PNG via detect_path_core + detect_reader_core
-    let png_path_core = detect_path_core(Path::new("fixtures/valid_png.png"), &options).expect("png path core");
+    let png_path_core =
+        detect_path_core(Path::new("fixtures/valid_png.png"), &options).expect("png path core");
     let png_bytes = fs::read("fixtures/valid_png.png").unwrap();
-    let png_reader_core = detect_reader_core(&mut Cursor::new(&png_bytes), &options).expect("png reader core");
+    let png_reader_core =
+        detect_reader_core(&mut Cursor::new(&png_bytes), &options).expect("png reader core");
     assert_eq!(png_path_core, png_reader_core);
-    assert_eq!(compare_extension_core(&png_path_core, Some(OsStr::new("png"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension_core(&png_path_core, Some(OsStr::new("png"))),
+        ExtensionStatus::Match
+    );
 
     // 3. Large (> 4 KiB) non-container text buffer fast slice evaluation
     let mut big_rust = String::from("use std::io;\nfn main() {\n    println!(\"hi\");\n}\n");
@@ -231,7 +255,10 @@ fn test_dual_path_edge_cases_and_overflow_safety() {
     // 3. SQLite3 accepted_extensions includes db3 across both paths
     let sqlite = b"SQLite format 3\x00\x10\x00\x01\x01\x00\x40\x20\x20";
     let sql_core = detect_bytes_core(sqlite, &options).expect("sqlite core");
-    assert_eq!(compare_extension_core(&sql_core, Some(OsStr::new("db3"))), ExtensionStatus::Match);
+    assert_eq!(
+        compare_extension_core(&sql_core, Some(OsStr::new("db3"))),
+        ExtensionStatus::Match
+    );
 
     // 4. MP4 with >= 16MB box_size (b0 != 0x00) dual-path parity
     let mp4_big_box = b"\x01\x00\x00\x00ftypisom\x00\x00\x02\x00isom";

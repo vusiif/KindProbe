@@ -81,9 +81,7 @@ pub fn classify_ooxml_content_type(ct: &str) -> Option<OoxmlFormatKind> {
             Some(OoxmlFormatKind::Xlsx)
         }
         "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
-        | "application/vnd.ms-excel.template.macroEnabled.main+xml" => {
-            Some(OoxmlFormatKind::Xlsm)
-        }
+        | "application/vnd.ms-excel.template.macroEnabled.main+xml" => Some(OoxmlFormatKind::Xlsm),
 
         // Presentation
         "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"

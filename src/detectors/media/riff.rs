@@ -107,7 +107,10 @@ fn has_wave_fmt_chunk(header: &[u8]) -> bool {
         let Some(padded_size) = chunk_size.checked_add(1).map(|v| v & !1) else {
             break;
         };
-        let Some(next_offset) = offset.checked_add(8).and_then(|v| v.checked_add(padded_size)) else {
+        let Some(next_offset) = offset
+            .checked_add(8)
+            .and_then(|v| v.checked_add(padded_size))
+        else {
             break;
         };
         offset = next_offset;

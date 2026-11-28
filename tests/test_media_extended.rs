@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
 use kindprobe::budget::DetectOptions;
 use kindprobe::extension::compare_extension;
 use kindprobe::{detect_bytes, ExtensionStatus, Identification, Inspection, Verification};
+use std::ffi::OsStr;
 
 #[test]
 fn test_detect_mp4_ftyp_success() {
@@ -26,9 +26,18 @@ fn test_detect_mp4_ftyp_success() {
     assert!(rep.evidence.iter().any(|e| e.code == "sig.mp4.brand"));
 
     // Extension comparison
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("mp4"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("m4v"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("pdf"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("mp4"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("m4v"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("pdf"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -50,9 +59,18 @@ fn test_detect_mov_quicktime_brand() {
     assert_eq!(rep.accepted_extensions, vec!["mov", "qt"]);
     assert!(rep.evidence.iter().any(|e| e.code == "sig.mov.brand"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("mov"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("qt"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("mp4"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("mov"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("qt"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("mp4"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -61,7 +79,7 @@ fn test_detect_webm_and_mkv() {
     let mut webm = Vec::new();
     webm.extend_from_slice(&[0x1A, 0x45, 0xDF, 0xA3]); // EBML ID
     webm.extend_from_slice(&[0x9F]); // EBML Header size = 31
-    // DocType element: ID 0x42 0x82, length VINT 0x84 (4 bytes), string "webm"
+                                     // DocType element: ID 0x42 0x82, length VINT 0x84 (4 bytes), string "webm"
     webm.extend_from_slice(&[0x42, 0x82, 0x84]);
     webm.extend_from_slice(b"webm");
 
@@ -72,7 +90,10 @@ fn test_detect_webm_and_mkv() {
     assert_eq!(rep_webm.container_id.as_deref(), Some("matroska"));
     assert_eq!(rep_webm.verification, Verification::Structure);
     assert_eq!(rep_webm.recommended_extension.as_deref(), Some("webm"));
-    assert!(rep_webm.evidence.iter().any(|e| e.code == "sig.ebml.doctype_webm"));
+    assert!(rep_webm
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.ebml.doctype_webm"));
 
     // 2. MKV: EBML header + DocType "matroska"
     let mut mkv = Vec::new();
@@ -89,7 +110,10 @@ fn test_detect_webm_and_mkv() {
     assert_eq!(rep_mkv.container_id.as_deref(), Some("matroska"));
     assert_eq!(rep_mkv.verification, Verification::Structure);
     assert_eq!(rep_mkv.recommended_extension.as_deref(), Some("mkv"));
-    assert!(rep_mkv.evidence.iter().any(|e| e.code == "sig.ebml.doctype_mkv"));
+    assert!(rep_mkv
+        .evidence
+        .iter()
+        .any(|e| e.code == "sig.ebml.doctype_mkv"));
 }
 
 #[test]
@@ -119,9 +143,18 @@ fn test_detect_wav_riff_success() {
     assert!(rep.evidence.iter().any(|e| e.code == "sig.riff.header"));
     assert!(rep.evidence.iter().any(|e| e.code == "sig.wav.fmt_chunk"));
 
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("wav"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("wave"))), ExtensionStatus::Match);
-    assert_eq!(compare_extension(&rep, Some(OsStr::new("mp3"))), ExtensionStatus::Mismatch);
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("wav"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("wave"))),
+        ExtensionStatus::Match
+    );
+    assert_eq!(
+        compare_extension(&rep, Some(OsStr::new("mp3"))),
+        ExtensionStatus::Mismatch
+    );
 }
 
 #[test]
@@ -154,7 +187,7 @@ fn test_detect_mp3_id3v2_and_raw_sync() {
     id3_mp3.push(0); // flags
     id3_mp3.extend_from_slice(&[0, 0, 0, 10]); // synchsafe size = 10
     id3_mp3.extend_from_slice(&[0u8; 10]); // tag data
-    // MPEG Audio Layer III frame sync: 0xFF 0xFB (11111111 11111011)
+                                           // MPEG Audio Layer III frame sync: 0xFF 0xFB (11111111 11111011)
     id3_mp3.extend_from_slice(&[0xFF, 0xFB, 0x90, 0x64]);
 
     let rep = detect_bytes(&id3_mp3, &DetectOptions::default()).expect("detect id3 mp3");
@@ -181,22 +214,34 @@ fn test_detect_media_truncated() {
     // 1. Truncated ftyp
     let rep_mp4 = detect_bytes(b"\0\0\0\x14ft", &opts).expect("truncated mp4");
     assert_eq!(rep_mp4.identification, Identification::Unknown);
-    assert_eq!(rep_mp4.candidates.as_deref(), Some(&["mp4".to_string()][..]));
+    assert_eq!(
+        rep_mp4.candidates.as_deref(),
+        Some(&["mp4".to_string()][..])
+    );
 
     // 2. Truncated EBML
     let rep_ebml = detect_bytes(&[0x1A, 0x45], &opts).expect("truncated ebml");
     assert_eq!(rep_ebml.identification, Identification::Unknown);
-    assert_eq!(rep_ebml.candidates.as_deref(), Some(&["webm".to_string()][..]));
+    assert_eq!(
+        rep_ebml.candidates.as_deref(),
+        Some(&["webm".to_string()][..])
+    );
 
     // 3. Truncated RIFF
     let rep_riff = detect_bytes(b"RIFF\x10\0", &opts).expect("truncated riff");
     assert_eq!(rep_riff.identification, Identification::Unknown);
-    assert_eq!(rep_riff.candidates.as_deref(), Some(&["wav".to_string()][..]));
+    assert_eq!(
+        rep_riff.candidates.as_deref(),
+        Some(&["wav".to_string()][..])
+    );
 
     // 4. Truncated ID3
     let rep_id3 = detect_bytes(b"ID", &opts).expect("truncated id3");
     assert_eq!(rep_id3.identification, Identification::Unknown);
-    assert_eq!(rep_id3.candidates.as_deref(), Some(&["mp3".to_string()][..]));
+    assert_eq!(
+        rep_id3.candidates.as_deref(),
+        Some(&["mp3".to_string()][..])
+    );
 }
 
 #[test]
@@ -224,8 +269,18 @@ fn test_mp4_64bit_extended_box_and_short_text_not_truncated() {
     for sample in [b"\n".as_slice(), b"G", b"7", b"("] {
         let rep = detect_bytes(sample, &opts).unwrap();
         let core = detect_bytes_core(sample, &opts).unwrap();
-        assert_eq!(rep.identification, Identification::Unknown, "1-byte sample {:?} gave {:?}", sample, rep);
-        assert_eq!(rep.candidates, None, "1-byte sample {:?} falsely gave truncated candidate {:?}", sample, rep.candidates);
+        assert_eq!(
+            rep.identification,
+            Identification::Unknown,
+            "1-byte sample {:?} gave {:?}",
+            sample,
+            rep
+        );
+        assert_eq!(
+            rep.candidates, None,
+            "1-byte sample {:?} falsely gave truncated candidate {:?}",
+            sample, rep.candidates
+        );
         assert_eq!(core.identification, Identification::Unknown);
         assert_eq!(core.candidate, None);
     }

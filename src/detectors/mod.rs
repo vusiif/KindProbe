@@ -13,16 +13,16 @@ pub mod signatures;
 pub mod text;
 pub mod zip_ooxml;
 
-use std::io::{Read, Seek, SeekFrom};
 use crate::budget::{BudgetReader, DetectOptions};
 use crate::model::{
-    DetectError, DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection, Verification,
-    WarningItem,
+    DetectError, DetectionCore, DetectionReport, ExtensionStatus, Identification, Inspection,
+    Verification, WarningItem,
 };
-use signatures::{probe_signatures, probe_signatures_core, SignatureMatch, SignatureMatchCore};
-use zip_ooxml::detect_zip_ooxml;
 use cfb::{detect_cfb, CFB_MAGIC};
 use fast_path::{probe_fast_path, probe_fast_path_core, FastPathCoreOutcome};
+use signatures::{probe_signatures, probe_signatures_core, SignatureMatch, SignatureMatchCore};
+use std::io::{Read, Seek, SeekFrom};
+use zip_ooxml::detect_zip_ooxml;
 
 fn truncated_candidate_str(fmt: std::borrow::Cow<'static, str>) -> &'static str {
     match fmt {
@@ -93,7 +93,9 @@ fn probe_dmg_slice_core(bytes: &[u8]) -> Option<DetectionCore> {
         return None;
     }
     let trailer = &bytes[bytes.len() - 512..bytes.len() - 504];
-    if &trailer[0..4] == b"koly" && u32::from_be_bytes([trailer[4], trailer[5], trailer[6], trailer[7]]) == 4 {
+    if &trailer[0..4] == b"koly"
+        && u32::from_be_bytes([trailer[4], trailer[5], trailer[6], trailer[7]]) == 4
+    {
         return Some(make_dmg_core());
     }
     None
@@ -144,7 +146,8 @@ pub fn detect_bytes_non_container_core(
         return Ok(Some(DetectionCore::truncated("cfb")));
     }
 
-    if (header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
+    if (header.len() >= 4
+        && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
         || (header.len() >= 8 && header.starts_with(CFB_MAGIC))
     {
         return Ok(None);
@@ -181,10 +184,9 @@ pub fn detect_bytes_non_container(
     let header = &bytes[..header_len];
 
     if header.is_empty() {
-        return Ok(Some(DetectionCore::empty().to_report(
-            Default::default(),
-            ExtensionStatus::Undetermined,
-        )));
+        return Ok(Some(
+            DetectionCore::empty().to_report(Default::default(), ExtensionStatus::Undetermined),
+        ));
     }
 
     if let Some(mut rep) = fast_path::probe_fast_path_slice(header, options)? {
@@ -247,7 +249,8 @@ pub fn detect_bytes_non_container(
         )));
     }
 
-    if (header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
+    if (header.len() >= 4
+        && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
         || (header.len() >= 8 && header.starts_with(CFB_MAGIC))
     {
         return Ok(None);
@@ -405,7 +408,8 @@ pub fn detect_slice_non_container(
     }
 
     // If matches full container signature, delegate to stream detector
-    if (header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
+    if (header.len() >= 4
+        && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")))
         || (header.len() >= 8 && header.starts_with(CFB_MAGIC))
         || (header.len() >= options.initial_window_size)
     {
@@ -502,7 +506,8 @@ pub fn detect_stream_core<R: Read + Seek>(
         SignatureMatchCore::None => (),
     }
 
-    if header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")) {
+    if header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06"))
+    {
         let rep = detect_zip_ooxml(reader, options)?;
         return Ok(DetectionCore::from_report(&rep));
     } else if (header.len() >= 2 && header.starts_with(b"PK")) && header.len() < 4 {
@@ -610,7 +615,8 @@ pub fn detect_stream<R: Read + Seek>(
     }
 
     // Step 2: Check ZIP signature (PK\x03\x04 or PK\x05\x06)
-    if header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06")) {
+    if header.len() >= 4 && (header.starts_with(b"PK\x03\x04") || header.starts_with(b"PK\x05\x06"))
+    {
         return detect_zip_ooxml(reader, options);
     } else if (header.len() >= 2 && header.starts_with(b"PK")) && header.len() < 4 {
         return Ok(DetectionReport {

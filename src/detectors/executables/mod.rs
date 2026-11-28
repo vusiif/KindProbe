@@ -50,7 +50,10 @@ pub fn probe_executable_signatures_core(header: &[u8]) -> ExecutableMatchCore {
     }
 
     // 4. Mach-O
-    if header.len() < 4 && !header.is_empty() && (header.starts_with(&[0xFE, 0xED]) || header.starts_with(&[0xCF, 0xFA])) {
+    if header.len() < 4
+        && !header.is_empty()
+        && (header.starts_with(&[0xFE, 0xED]) || header.starts_with(&[0xCF, 0xFA]))
+    {
         return ExecutableMatchCore::Truncated("macho");
     }
     if let Some(core) = probe_macho_core(header) {
