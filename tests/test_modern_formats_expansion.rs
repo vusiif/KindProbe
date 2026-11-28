@@ -1190,6 +1190,74 @@ fn test_round24_owl_pov_scad_lds_dts_puppet_matlab_slint_qml_cuelang_smalltalk_p
 }
 
 #[test]
+fn test_round25_devcontainer_flatpak_mets_mods_jats_srx_tbx_metal_sway_leo_vdf_nb_eiffel_netrc_mycnf_phpini() {
+    assert_both_paths(
+        br#"{"image":"mcr.microsoft.com/devcontainers/rust:1","customizations":{"vscode":{}}}"#,
+        "devcontainer",
+    );
+    assert_both_paths(
+        br#"{"app-id":"org.example.App","runtime":"org.freedesktop.Platform","modules":[]}"#,
+        "flatpak_manifest",
+    );
+    assert_both_paths(
+        b"<mets:mets xmlns:mets=\"http://www.loc.gov/METS/\"><mets:fileSec/></mets:mets>",
+        "mets",
+    );
+    assert_both_paths(
+        b"<mods xmlns=\"http://www.loc.gov/mods/v3\"><titleInfo><title>Book</title></titleInfo></mods>",
+        "mods",
+    );
+    assert_both_paths(
+        b"<article dtd-version=\"1.2\"><front><article-meta><article-id>1</article-id></article-meta></front></article>",
+        "jats",
+    );
+    assert_both_paths(
+        b"<srx version=\"2.0\"><body><languagerules/></body></srx>",
+        "srx",
+    );
+    assert_both_paths(
+        b"<tbx type=\"TBX-Basic\"><text><body><termEntry id=\"1\"/></body></text></tbx>",
+        "tbx",
+    );
+    assert_both_paths(
+        b"#include <metal_stdlib>\nusing namespace metal;\nkernel void add() {}\n",
+        "metal",
+    );
+    assert_both_paths(
+        b"contract;\nabi Counter {\n    fn count() -> u64;\n}\n",
+        "sway",
+    );
+    assert_both_paths(
+        b"program hello.aleo {\n    transition main(public a: u32) -> u32 {\n        return a;\n    }\n}\n",
+        "leo",
+    );
+    assert_both_paths(
+        b"\"AppState\"\n{\n\t\"appid\"\t\t\"730\"\n\t\"name\"\t\t\"CS2\"\n}\n",
+        "vdf",
+    );
+    assert_both_paths(
+        b"Notebook[{\nCell[\"1 + 1\", \"Input\"]\n}]\n",
+        "nb",
+    );
+    assert_both_paths(
+        b"class HELLO\nfeature\n  make do print(\"Hi\") end\nend\n",
+        "eiffel",
+    );
+    assert_both_paths(
+        b"machine api.example.com login bot password secret\n",
+        "netrc",
+    );
+    assert_both_paths(
+        b"[mysqld]\ndatadir=/var/lib/mysql\nport=3306\n",
+        "my_cnf",
+    );
+    assert_both_paths(
+        b"[PHP]\nengine = On\nmemory_limit = 256M\n",
+        "php_ini",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

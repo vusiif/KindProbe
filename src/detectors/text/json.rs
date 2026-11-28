@@ -164,6 +164,17 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         ("insomnia", "data", Some("json"), "json", &["json"], "sig.text.insomnia")
     } else if geo_window.contains("\"_links\"") && geo_window.contains("\"_embedded\"") {
         ("hal", "data", Some("json"), "json", &["json"], "sig.text.hal")
+    } else if (geo_window.contains("\"image\"") || geo_window.contains("\"build\""))
+        && (geo_window.contains("\"customizations\"")
+            || geo_window.contains("\"forwardPorts\"")
+            || geo_window.contains("\"postCreateCommand\""))
+    {
+        ("devcontainer", "configuration", Some("json"), "json", &["json"], "sig.text.devcontainer")
+    } else if geo_window.contains("\"app-id\"")
+        && geo_window.contains("\"runtime\"")
+        && geo_window.contains("\"modules\"")
+    {
+        ("flatpak_manifest", "configuration", Some("json"), "json", &["json"], "sig.text.flatpak_manifest")
     } else if geo_window.contains("\n//") || geo_window.contains("\n  //") || geo_window.contains("/*") {
         ("json5", "configuration", Some("json"), "json5", &["json5", "jsonc"], "sig.text.json5")
     } else {

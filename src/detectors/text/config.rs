@@ -32,6 +32,8 @@ pub fn probe_config_core(text: &str) -> Option<DetectionCore> {
             && !fl.starts_with("[submodule ")
             && !fl.starts_with("[program:")
             && fl != "[Flatpak Ref]"
+            && fl != "[mysqld]"
+            && fl != "[PHP]"
             && !fl.contains("://")
             && !fl.contains('(')
             && fl.len() >= 3

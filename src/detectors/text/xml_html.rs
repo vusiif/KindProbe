@@ -245,6 +245,32 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("owl", "data", Some("xml"), "owl", &["owl", "xml"], "sig.text.owl"));
     }
+    if (head.starts_with(b"<mets") || (is_xml_head && contains_sub(b"<mets")))
+        && trimmed.contains("loc.gov/METS/")
+    {
+        return Some(make_core("mets", "document", Some("xml"), "xml", &["xml"], "sig.text.mets"));
+    }
+    if (head.starts_with(b"<mods") || (is_xml_head && contains_sub(b"<mods")))
+        && trimmed.contains("loc.gov/mods/v3")
+    {
+        return Some(make_core("mods", "document", Some("xml"), "xml", &["xml"], "sig.text.mods"));
+    }
+    if (head.starts_with(b"<article") || (is_xml_head && contains_sub(b"<article")))
+        && trimmed.contains("dtd-version=")
+        && trimmed.contains("<article-meta")
+    {
+        return Some(make_core("jats", "document", Some("xml"), "xml", &["xml", "nxml"], "sig.text.jats"));
+    }
+    if (head.starts_with(b"<srx") || (is_xml_head && contains_sub(b"<srx")))
+        && trimmed.contains("<languagerules")
+    {
+        return Some(make_core("srx", "text", Some("xml"), "srx", &["srx", "xml"], "sig.text.srx"));
+    }
+    if (head.starts_with(b"<tbx") || head.starts_with(b"<martif") || (is_xml_head && (contains_sub(b"<tbx") || contains_sub(b"<martif"))))
+        && trimmed.contains("<termEntry")
+    {
+        return Some(make_core("tbx", "text", Some("xml"), "tbx", &["tbx", "xml"], "sig.text.tbx"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head

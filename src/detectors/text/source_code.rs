@@ -109,6 +109,16 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
         ));
     }
 
+    // Apple Metal Shader (.metal) before C/C++ `#include <` check
+    if window.contains("#include <metal_stdlib>") && window.contains("using namespace metal;") {
+        return Some(make_source_core(
+            "metal",
+            &["metal"],
+            "sig.text.metal",
+            Verification::Structure,
+        ));
+    }
+
     // C / C++ and Markdown fast check (only executed if `#` is present)
     let has_hash = w_bytes.contains(&b'#');
     if has_hash {
@@ -311,6 +321,18 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "cairo",
             &["cairo"],
             "sig.text.cairo",
+            Verification::Structure,
+        ));
+    }
+
+    // Sway (.sw) before Rust `fn` scan
+    if (window.contains("contract;") || window.contains("script;"))
+        && (window.contains("abi ") || window.contains("fn main("))
+    {
+        return Some(make_source_core(
+            "sway",
+            &["sw"],
+            "sig.text.sway",
             Verification::Structure,
         ));
     }
@@ -2257,6 +2279,87 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "sas_script",
             &["sas"],
             "sig.text.sas",
+            Verification::Structure,
+        ));
+    }
+
+    // Aleo Leo (.leo)
+    if window.contains("program ") && window.contains(".aleo") && window.contains("transition ") {
+        return Some(make_source_core(
+            "leo",
+            &["leo"],
+            "sig.text.leo",
+            Verification::Structure,
+        ));
+    }
+
+    // Valve VDF / Steam ACF (.vdf / .acf)
+    if (window.contains("\"AppState\"") || window.contains("\"InstallConfigStore\""))
+        && (window.contains("\"appid\"") || window.contains("\"Software\""))
+        && w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "vdf",
+            &["vdf", "acf"],
+            "sig.text.vdf",
+            Verification::Structure,
+        ));
+    }
+
+    // Wolfram Mathematica Notebook (.nb)
+    if window.contains("Notebook[{") && window.contains("Cell[") {
+        return Some(make_source_core(
+            "nb",
+            &["nb"],
+            "sig.text.mathematica_nb",
+            Verification::Structure,
+        ));
+    }
+
+    // Eiffel (.e)
+    if window.contains("class ")
+        && window.contains("feature")
+        && window.contains("end")
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "eiffel",
+            &["e"],
+            "sig.text.eiffel",
+            Verification::Structure,
+        ));
+    }
+
+    // .netrc
+    if window.contains("machine ") && window.contains("login ") && window.contains("password ") {
+        return Some(make_source_core(
+            "netrc",
+            &["netrc"],
+            "sig.text.netrc",
+            Verification::Structure,
+        ));
+    }
+
+    // MySQL my.cnf
+    if window.contains("[mysqld]")
+        && (window.contains("datadir") || window.contains("port") || window.contains("socket"))
+    {
+        return Some(make_source_core(
+            "my_cnf",
+            &["cnf"],
+            "sig.text.my_cnf",
+            Verification::Structure,
+        ));
+    }
+
+    // php.ini
+    if window.contains("[PHP]")
+        && (window.contains("engine") || window.contains("memory_limit") || window.contains("display_errors"))
+    {
+        return Some(make_source_core(
+            "php_ini",
+            &["ini"],
+            "sig.text.php_ini",
             Verification::Structure,
         ));
     }
