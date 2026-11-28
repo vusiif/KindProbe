@@ -84,6 +84,23 @@ fn probe_modern_binary_core(header: &[u8]) -> Option<DetectionCore> {
         });
     }
 
+    if header.len() >= 12 && header.starts_with(b"fig-kiwi") {
+        return Some(DetectionCore {
+            format_id: Some("figma"),
+            category: "design",
+            container_id: None,
+            identification: Identification::Format,
+            verification: Verification::Signature,
+            inspection: Inspection::Complete,
+            recommended_extension: Some("fig"),
+            accepted_extensions: &["fig"],
+            primary_evidence: Some("sig.figma.header"),
+            secondary_evidence: None,
+            warning: None,
+            candidate: None,
+        });
+    }
+
     if header.len() >= 24
         && (header.starts_with(b"\x30\x82") || header.starts_with(b"\x30\x80"))
         && header[..header.len().min(64)].windows(3).any(|w| w == b"\x02\x01\x03")

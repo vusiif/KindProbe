@@ -1061,6 +1061,75 @@ fn test_round22_jsonschema_jsonld_vega_postman_asyncapi_glade_qtui_xliff_tmx_mus
 }
 
 #[test]
+fn test_round23_figma_sops_insomnia_hal_drawio_bpmn_nuget_maven_flatpakref_minisign_po_spice_gcode_buck_modelica_sudoers_sed() {
+    assert_both_paths(b"fig-kiwi\x00\x00\x00\x01\x00\x00\x00\x00", "figma");
+    assert_both_paths(
+        br#"{"app":"ENC[AES256_GCM,data:abc]","sops":{"mac":"1234","version":"3.8"}}"#,
+        "sops",
+    );
+    assert_both_paths(
+        br#"{"_type":"export","__export_format":4,"resources":[]}"#,
+        "insomnia",
+    );
+    assert_both_paths(
+        br#"{"_links":{"self":{"href":"/orders"}},"_embedded":{"orders":[]}}"#,
+        "hal",
+    );
+    assert_both_paths(
+        b"<mxfile host=\"app.diagrams.net\"><diagram id=\"d1\"><mxGraphModel/></diagram></mxfile>",
+        "drawio",
+    );
+    assert_both_paths(
+        b"<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"><process id=\"P1\"/></definitions>",
+        "bpmn",
+    );
+    assert_both_paths(
+        b"<?xml version=\"1.0\"?><configuration><packageSources><add key=\"nuget.org\"/></packageSources></configuration>",
+        "nuget_config",
+    );
+    assert_both_paths(
+        b"<settings xmlns=\"http://maven.apache.org/SETTINGS/1.2.0\"><localRepository>/m2</localRepository></settings>",
+        "maven_settings",
+    );
+    assert_both_paths(
+        b"[Flatpak Ref]\nName=org.example.App\nUrl=https://dl.flathub.org/repo/\n",
+        "flatpakref",
+    );
+    assert_both_paths(
+        b"untrusted comment: minisign public key ABCD\nRWTKindProbeTestKey\n",
+        "minisig",
+    );
+    assert_both_paths(
+        b"msgid \"Hello\"\nmsgstr \"Bonjour\"\n",
+        "po",
+    );
+    assert_both_paths(
+        b"* RC Circuit\n.tran 1n 100n\n.end\n",
+        "spice",
+    );
+    assert_both_paths(
+        b"G90\nM104 S200\nG28\nG1 X10 Y10 F1500\n",
+        "gcode",
+    );
+    assert_both_paths(
+        b"rust_library(\n    name = \"core\",\n    deps = [\"//third-party/rust:serde\"],\n)\n",
+        "buck",
+    );
+    assert_both_paths(
+        b"model Pendulum\n  Real x;\nequation\n  der(x) = -x;\nend Pendulum;\n",
+        "modelica",
+    );
+    assert_both_paths(
+        b"%wheel ALL=(ALL:ALL) NOPASSWD: ALL\n",
+        "sudoers",
+    );
+    assert_both_paths(
+        b"#!/usr/bin/sed -f\ns/foo/bar/g\n",
+        "sed",
+    );
+}
+
+#[test]
 fn test_modern_ai_models_and_pst() {
     // GGUF v3
     let mut gguf = Vec::new();

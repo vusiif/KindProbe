@@ -23,6 +23,9 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             if trimmed.contains("ruby") {
                 return Some(make_source_core("rb", &["rb"], "sig.text.shebang", Verification::Signature));
             }
+            if trimmed.contains("sed") {
+                return Some(make_source_core("sed", &["sed"], "sig.text.shebang", Verification::Signature));
+            }
         }
     }
 
@@ -2005,6 +2008,87 @@ pub fn probe_source_code_core(text: &str) -> Option<DetectionCore> {
             "ftl",
             &["ftl"],
             "sig.text.fluent",
+            Verification::Structure,
+        ));
+    }
+
+    // Flatpak Reference (.flatpakref)
+    if window.contains("[Flatpak Ref]") && window.contains("Url=") {
+        return Some(make_source_core(
+            "flatpakref",
+            &["flatpakref"],
+            "sig.text.flatpakref",
+            Verification::Structure,
+        ));
+    }
+
+    // GNU gettext PO/POT (.po / .pot)
+    if window.contains("msgid \"") && window.contains("msgstr \"") {
+        return Some(make_source_core(
+            "po",
+            &["po", "pot"],
+            "sig.text.gettext_po",
+            Verification::Structure,
+        ));
+    }
+
+    // SPICE circuit netlist (.cir / .sp)
+    if (window.contains(".subckt ") && window.contains(".ends"))
+        || (window.contains(".tran ") && window.contains(".end"))
+    {
+        return Some(make_source_core(
+            "spice",
+            &["cir", "sp", "ckt"],
+            "sig.text.spice",
+            Verification::Structure,
+        ));
+    }
+
+    // CNC / 3D Printer G-code (.gcode / .nc)
+    if (window.contains("G0 ") || window.contains("G1 ") || window.contains("G28"))
+        && (window.contains("M104") || window.contains("M109") || window.contains("G90"))
+    {
+        return Some(make_source_core(
+            "gcode",
+            &["gcode", "nc"],
+            "sig.text.gcode",
+            Verification::Structure,
+        ));
+    }
+
+    // Buck2 build file (BUCK)
+    if (window.contains("rust_library(") || window.contains("cxx_binary(") || window.contains("python_binary("))
+        && window.contains("deps = [")
+        && !window.contains("load(")
+    {
+        return Some(make_source_core(
+            "buck",
+            &["buck"],
+            "sig.text.buck",
+            Verification::Structure,
+        ));
+    }
+
+    // Modelica (.mo)
+    if window.contains("model ")
+        && window.contains("equation")
+        && window.contains("end ")
+        && !w_bytes.contains(&b'{')
+    {
+        return Some(make_source_core(
+            "modelica",
+            &["mo"],
+            "sig.text.modelica",
+            Verification::Structure,
+        ));
+    }
+
+    // sudoers rules
+    if window.contains("ALL=(ALL") && (window.contains("NOPASSWD:") || window.contains(" ALL")) {
+        return Some(make_source_core(
+            "sudoers",
+            &["sudoers"],
+            "sig.text.sudoers",
             Verification::Structure,
         ));
     }

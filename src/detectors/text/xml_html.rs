@@ -218,6 +218,28 @@ pub fn probe_xml_or_html_core(text: &str) -> Option<DetectionCore> {
     {
         return Some(make_core("musicxml", "audio", Some("xml"), "musicxml", &["musicxml", "xml"], "sig.text.musicxml"));
     }
+    if (head.starts_with(b"<mxfile") || (is_xml_head && contains_sub(b"<mxfile")))
+        && (trimmed.contains("<diagram") || trimmed.contains("<mxGraphModel"))
+    {
+        return Some(make_core("drawio", "diagram", Some("xml"), "drawio", &["drawio", "xml"], "sig.text.drawio"));
+    }
+    if (head.starts_with(b"<definitions")
+        || head.starts_with(b"<bpmn:definitions")
+        || (is_xml_head && (contains_sub(b"<definitions") || contains_sub(b"<bpmn:definitions"))))
+        && trimmed.contains("omg.org/spec/BPMN")
+    {
+        return Some(make_core("bpmn", "diagram", Some("xml"), "bpmn", &["bpmn", "xml"], "sig.text.bpmn"));
+    }
+    if (head.starts_with(b"<configuration") || (is_xml_head && contains_sub(b"<configuration")))
+        && trimmed.contains("<packageSources")
+    {
+        return Some(make_core("nuget_config", "configuration", Some("xml"), "config", &["config", "xml"], "sig.text.nuget_config"));
+    }
+    if (head.starts_with(b"<settings") || (is_xml_head && contains_sub(b"<settings")))
+        && trimmed.contains("maven.apache.org/SETTINGS")
+    {
+        return Some(make_core("maven_settings", "configuration", Some("xml"), "xml", &["xml"], "sig.text.maven_settings"));
+    }
 
     // 3. Generic XML detection
     if is_xml_head

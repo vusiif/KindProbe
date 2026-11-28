@@ -152,6 +152,18 @@ pub fn probe_json_core(text: &str) -> Option<DetectionCore> {
         && geo_window.contains("\"info\"")
     {
         ("asyncapi", "configuration", Some("json"), "json", &["json"], "sig.text.asyncapi")
+    } else if geo_window.contains("\"sops\"")
+        && geo_window.contains("\"mac\"")
+        && geo_window.contains("ENC[")
+    {
+        ("sops", "crypto", Some("json"), "json", &["json"], "sig.text.sops")
+    } else if geo_window.contains("\"_type\"")
+        && geo_window.contains("\"__export_format\"")
+        && geo_window.contains("\"resources\"")
+    {
+        ("insomnia", "data", Some("json"), "json", &["json"], "sig.text.insomnia")
+    } else if geo_window.contains("\"_links\"") && geo_window.contains("\"_embedded\"") {
+        ("hal", "data", Some("json"), "json", &["json"], "sig.text.hal")
     } else if geo_window.contains("\n//") || geo_window.contains("\n  //") || geo_window.contains("/*") {
         ("json5", "configuration", Some("json"), "json5", &["json5", "jsonc"], "sig.text.json5")
     } else {
