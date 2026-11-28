@@ -1,14 +1,14 @@
 # KindProbe Handoff
 
 ## [已完成] (Completed)
-- Committed initial security/correctness fixes (`2963321`) and repo-wide `cargo fmt` + CI `fmt --check` / `test --doc` enforcement (`130b281`).
-- **Remaining Hardening & Engineering Cleanup**:
-  - Wired all 29 fixtures from `fixtures/verifier_manifest.json` directly into `tests/test_codex_acceptance_regression.rs` (`test_verifier_manifest_29_adversarial_matrix`).
-  - Fixed text/short-signature false positives (`source_code.rs` Markdown with `#include`, `config.rs` `[TOC]` vs `toml` & Markdown frontmatter vs `yaml`, `xml_html.rs` generic `<tag>...</tag>` fallback, `telecom_exchange.rs` SREC hex validator, `textures.rs` Crunch binary header validator).
-  - Made `scripts/run_52_fixtures_regression.py` and `scripts/run_acceptance.py` Windows-safe (`getuid`/`getgid` guard), and guarded deprecated `tools/codegen.py` behind `--force`.
+- Committed short-rule hardening, OOXML single-pass CD reuse, core probe deduplication, `source_code` modularization, and `src/lib.rs` doctests (`432ea71`).
+- Committed 3-byte / pure-ASCII rule hardening (`xbm`, `stl`, `orc`, `ihex`, `smk`, `sp3`) and CLI modularization into `src/cli/{mod,i18n,batch}.rs` (`a418dc9`).
 
 ## [当前状态] (Current State)
-- Running final `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-targets`, and `cargo test --doc`.
+- Clean baseline on `main` (verified `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --doc`, and `cargo test --all-targets`).
 
 ## [待办与阻塞] (Blockers & Next Steps)
-- Optional long-term refactor: modularize `src/detectors/text/source_code.rs` (3,000 LOC after formatting) into token-based classifiers and deduplicate remaining legacy non-`_core` wrappers.
+- Potential next optimizations:
+  1. Harden remaining 3-4 byte ASCII rules without validators (`nmea` `b"$GP"`, `bik` `b"BIK"`, `gxt` `b"GXT"`, `gbr` `b"%FS"`, `sp3` / `kml` `b"<kml"`) and deduplicate redundant generated rule entries (`bpg`, `cso`, `ips`, `bdf`, `tta`, `pcf`, `qoi`, `root`, `s3m`, `cas`/`msx_rom_cas`, `uasset`/`unreal_uasset`) while regenerating `static_index.rs`.
+  2. Split `src/detectors/zip_ooxml/mod.rs` (1,015 lines) by extracting direct LFH streaming into `direct_reader.rs`, and eliminate remaining structural duplication between `probe_*` and `probe_*_core` (`probe_signatures`, `probe_riff`, `probe_mp4`, `probe_elf`, `probe_pe`, `probe_macho`).
+  3. Expand `fixtures/real/` coverage beyond the current 25 fixtures (OOXML/ELF/PE/Wasm/MP3/MP4/WebP) and populate `Cargo.toml` publishing metadata (`repository`, `readme`, `keywords`, `categories`).
